@@ -443,9 +443,9 @@ fun HomeScreen(
                             }
                         }
 
-                        // Specific to HOME tab:
+                        // ==================== KHUSUS TAB HOME ====================
                         if (currentNavTab == BottomNavTab.HOME && searchQuery.isEmpty()) {
-                            // 1. Doa Pilihan Hari Ini (Muncul berdasarkan apa yang difavoritkan user - Req 4)
+                            // 1. Doa Pilihan Hari Ini (Muncul berdasarkan apa yang difavoritkan user)
                             item {
                                 Column {
                                     if (isFeaturedFromFavorites) {
@@ -473,18 +473,19 @@ fun HomeScreen(
                                 }
                             }
 
-                            // 2. Category Chips Row
+                            // 2. Category Chips Row (Klik chip langsung mengarah ke tab Doa sesuai kategori)
                             item {
                                 CategoryChips(
                                     selectedCategory = selectedCategory,
                                     onCategorySelected = {
                                         selectedCategory = it
+                                        currentNavTab = BottomNavTab.DOA
                                         filterOnlyFavorites = false
                                     }
                                 )
                             }
 
-                            // 3. Amiinkan Doa Muslimin (Req 3 with arrow button)
+                            // 3. Aamiinkan Doa Saudaramu (dengan tombol + dan kartu kotak seragam)
                             item {
                                 AmiinkanDoaSection(
                                     prayers = communityPrayers,
@@ -498,14 +499,14 @@ fun HomeScreen(
                                 )
                             }
 
-                            // 4. Menu-menu Utama (Promises, Waktu Sholat, Doa doa, Topik, Qiblat, Favorit - Req 2)
+                            // 4. Menu Utama (6 Kotak Menu Sesuai Gambar)
                             item {
                                 Text(
                                     text = "Menu Utama",
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.padding(top = 6.dp)
+                                    modifier = Modifier.padding(top = 4.dp)
                                 )
                             }
 
@@ -522,106 +523,110 @@ fun HomeScreen(
                                             MainMenuItem.TOPIK_DOA -> activeSubScreen = ActiveSubScreen.TOPIK_DOA
                                             MainMenuItem.QIBLAT -> activeSubScreen = ActiveSubScreen.QIBLAT
                                             MainMenuItem.FAVORIT -> {
+                                                currentNavTab = BottomNavTab.DOA
                                                 filterOnlyFavorites = true
                                             }
                                         }
                                     }
                                 )
                             }
+                            // DAFTAR 35 DOA SUDAH DIHILANGKAN DARI MENU UTAMA HOME SESUAI PERMINTAAN!
                         }
 
-                        // Category Chips for DOA tab
-                        if (currentNavTab == BottomNavTab.DOA) {
-                            item {
-                                CategoryChips(
-                                    selectedCategory = selectedCategory,
-                                    onCategorySelected = {
-                                        selectedCategory = it
-                                        filterOnlyFavorites = false
-                                    }
-                                )
-                            }
-                        }
-
-                        // Section header for Doa list
-                        item {
-                            val headerTitle = when {
-                                searchQuery.isNotEmpty() -> "Hasil Pencarian (${displayedDoas.size})"
-                                filterOnlyFavorites -> "Doa Favorit Tersimpan (${displayedDoas.size})"
-                                selectedCategory != DoaCategory.SEMUA -> "${selectedCategory.title} (${displayedDoas.size})"
-                                currentNavTab == BottomNavTab.DOA -> "Koleksi Lengkap Doa (${displayedDoas.size})"
-                                else -> "Daftar Doa Pilihan (${displayedDoas.size})"
-                            }
-
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = headerTitle,
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onBackground
-                                )
-
-                                if (filterOnlyFavorites) {
-                                    TextButton(onClick = { filterOnlyFavorites = false }) {
-                                        Text("Lihat Semua", color = MaterialTheme.colorScheme.primary, fontSize = 12.sp)
-                                    }
+                        // ==================== KHUSUS TAB DOA ATAU KETIKA SEARCH AKTIF ====================
+                        if (currentNavTab == BottomNavTab.DOA || searchQuery.isNotEmpty()) {
+                            // Category Chips di tab Doa
+                            if (searchQuery.isEmpty()) {
+                                item {
+                                    CategoryChips(
+                                        selectedCategory = selectedCategory,
+                                        onCategorySelected = {
+                                            selectedCategory = it
+                                            filterOnlyFavorites = false
+                                        }
+                                    )
                                 }
                             }
-                        }
 
-                        // Empty State
-                        if (displayedDoas.isEmpty()) {
+                            // Section header
                             item {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 40.dp),
-                                    contentAlignment = Alignment.Center
+                                val headerTitle = when {
+                                    searchQuery.isNotEmpty() -> "Hasil Pencarian (${displayedDoas.size})"
+                                    filterOnlyFavorites -> "Doa Favorit Tersimpan (${displayedDoas.size})"
+                                    selectedCategory != DoaCategory.SEMUA -> "${selectedCategory.title} (${displayedDoas.size})"
+                                    else -> "Koleksi Lengkap Doa (${displayedDoas.size})"
+                                }
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                        Icon(
-                                            imageVector = if (filterOnlyFavorites) Icons.Default.BookmarkBorder else Icons.Default.SearchOff,
-                                            contentDescription = null,
-                                            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
-                                            modifier = Modifier.size(64.dp)
-                                        )
-                                        Spacer(modifier = Modifier.height(12.dp))
-                                        Text(
-                                            text = if (filterOnlyFavorites)
-                                                "Belum ada doa yang difavoritkan"
-                                            else
-                                                "Doa tidak ditemukan",
-                                            fontWeight = FontWeight.SemiBold,
-                                            color = MaterialTheme.colorScheme.onSurface
-                                        )
-                                        Spacer(modifier = Modifier.height(4.dp))
-                                        Text(
-                                            text = if (filterOnlyFavorites)
-                                                "Tandai doa dengan ikon penanda agar muncul di sini dan menjadi Doa Hari Ini"
-                                            else
-                                                "Coba gunakan kata kunci pencarian yang lain",
-                                            fontSize = 12.sp,
-                                            textAlign = TextAlign.Center,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
+                                    Text(
+                                        text = headerTitle,
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onBackground
+                                    )
+
+                                    if (filterOnlyFavorites) {
+                                        TextButton(onClick = { filterOnlyFavorites = false }) {
+                                            Text("Lihat Semua", color = MaterialTheme.colorScheme.primary, fontSize = 12.sp)
+                                        }
                                     }
                                 }
                             }
-                        } else {
-                            // Doa Cards
-                            items(displayedDoas, key = { it.id }) { doa ->
-                                DoaCard(
-                                    doa = doa,
-                                    isFavorite = favoriteIds.contains(doa.id),
-                                    onFavoriteToggle = { toggleFavorite(doa.id) },
-                                    onCopy = { copyDoaToClipboard(doa) },
-                                    onShare = { shareDoa(doa) },
-                                    onClick = { selectedDoaForDetail = doa }
-                                )
+
+                            // Empty State
+                            if (displayedDoas.isEmpty()) {
+                                item {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 40.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                            Icon(
+                                                imageVector = if (filterOnlyFavorites) Icons.Default.BookmarkBorder else Icons.Default.SearchOff,
+                                                contentDescription = null,
+                                                tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+                                                modifier = Modifier.size(64.dp)
+                                            )
+                                            Spacer(modifier = Modifier.height(12.dp))
+                                            Text(
+                                                text = if (filterOnlyFavorites)
+                                                    "Belum ada doa yang difavoritkan"
+                                                else
+                                                    "Doa tidak ditemukan",
+                                                fontWeight = FontWeight.SemiBold,
+                                                color = MaterialTheme.colorScheme.onSurface
+                                            )
+                                            Spacer(modifier = Modifier.height(4.dp))
+                                            Text(
+                                                text = if (filterOnlyFavorites)
+                                                    "Tandai doa dengan ikon penanda agar muncul di sini dan menjadi Doa Hari Ini"
+                                                else
+                                                    "Coba gunakan kata kunci pencarian yang lain",
+                                                fontSize = 12.sp,
+                                                textAlign = TextAlign.Center,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
+                                }
+                            } else {
+                                // Doa Cards
+                                items(displayedDoas, key = { it.id }) { doa ->
+                                    DoaCard(
+                                        doa = doa,
+                                        isFavorite = favoriteIds.contains(doa.id),
+                                        onFavoriteToggle = { toggleFavorite(doa.id) },
+                                        onCopy = { copyDoaToClipboard(doa) },
+                                        onShare = { shareDoa(doa) },
+                                        onClick = { selectedDoaForDetail = doa }
+                                    )
+                                }
                             }
                         }
                     }
@@ -629,7 +634,7 @@ fun HomeScreen(
             }
         }
 
-        // Create Prayer Sheet (from Arrow button in Amiinkan Doa)
+        // Create Prayer Sheet (from + button in Aamiinkan Doa)
         if (showCreatePrayerSheet) {
             CreatePrayerBottomSheet(
                 onDismiss = { showCreatePrayerSheet = false },

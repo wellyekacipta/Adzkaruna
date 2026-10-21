@@ -6,7 +6,6 @@ import android.os.VibrationEffect
 import android.os.Vibrator
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
@@ -14,7 +13,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.PanTool
@@ -33,7 +32,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.doaharianmuslimin.data.model.CommunityPrayer
-import com.example.doaharianmuslimin.ui.theme.AccentGold
 
 @Composable
 fun AmiinkanDoaSection(
@@ -64,7 +62,7 @@ fun AmiinkanDoaSection(
     }
 
     Column(modifier = modifier.fillMaxWidth()) {
-        // Header with Arrow Button
+        // Header with + Button (Aamiinkan Doa Saudaramu)
         Surface(
             modifier = Modifier.fillMaxWidth(),
             color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
@@ -87,7 +85,7 @@ fun AmiinkanDoaSection(
                         ) {}
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = "Amiinkan Doa Muslimin",
+                            text = "Aamiinkan Doa Saudaramu",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
@@ -95,37 +93,29 @@ fun AmiinkanDoaSection(
                     }
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = "Saling mendoakan dalam kebaikan. Klik panah untuk kirim doa.",
+                        text = "Saling mendoakan dalam kebaikan. Ketuk + untuk kirim doa.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 11.sp
                     )
                 }
 
-                // Tombol Panah untuk menulis doa
+                // Tombol + untuk menulis doa
                 Surface(
                     modifier = Modifier
+                        .size(38.dp)
                         .clip(CircleShape)
                         .clickable { onArrowClick() },
                     color = MaterialTheme.colorScheme.primary,
-                    shape = CircleShape
+                    shape = CircleShape,
+                    shadowElevation = 2.dp
                 ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "Kirim Doa",
-                            color = Color.White,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
+                    Box(contentAlignment = Alignment.Center) {
                         Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                            imageVector = Icons.Default.Add,
                             contentDescription = "Tulis Doa Baru",
                             tint = Color.White,
-                            modifier = Modifier.size(16.dp)
+                            modifier = Modifier.size(24.dp)
                         )
                     }
                 }
@@ -134,14 +124,14 @@ fun AmiinkanDoaSection(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Horizontal scrollable list of community prayer cards
+        // Horizontal scrollable list of community prayer cards with uniform size
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            prayers.take(6).forEach { prayer ->
+            prayers.forEach { prayer ->
                 CommunityPrayerCard(
                     prayer = prayer,
                     onAamiinClick = {
@@ -152,7 +142,9 @@ fun AmiinkanDoaSection(
                         vibrate()
                         onToggleLike(prayer.id)
                     },
-                    modifier = Modifier.width(280.dp)
+                    modifier = Modifier
+                        .width(285.dp)
+                        .height(190.dp) // Ukuran kotak dibuat sama seragam
                 )
             }
         }
@@ -180,10 +172,11 @@ fun CommunityPrayerCard(
     ) {
         Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(14.dp)
+                .fillMaxSize()
+                .padding(14.dp),
+            verticalArrangement = Arrangement.SpaceBetween
         ) {
-            // Sender info
+            // Top: Sender info
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -210,33 +203,41 @@ fun CommunityPrayerCard(
                             text = prayer.senderName,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
+                            color = MaterialTheme.colorScheme.onSurface,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                         Text(
                             text = "${prayer.location} • ${prayer.timestamp}",
                             fontSize = 10.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
+            // Middle: Prayer text (Flexible space)
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                contentAlignment = Alignment.CenterStart
+            ) {
+                Text(
+                    text = "\"${prayer.prayerText}\"",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontSize = 13.sp,
+                    lineHeight = 18.sp,
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f)
+                )
+            }
 
-            // Prayer text
-            Text(
-                text = "\"${prayer.prayerText}\"",
-                style = MaterialTheme.typography.bodyMedium,
-                fontSize = 13.sp,
-                lineHeight = 18.sp,
-                maxLines = 4,
-                overflow = TextOverflow.Ellipsis,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f)
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Action row: Aamiin & Like
+            // Bottom: Action row (Aamiin & Like)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -256,7 +257,7 @@ fun CommunityPrayerCard(
                     Icon(
                         imageVector = Icons.Default.PanTool,
                         contentDescription = "Aamiin",
-                        modifier = Modifier.size(14.dp)
+                        modifier = Modifier.size(13.dp)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
@@ -271,14 +272,12 @@ fun CommunityPrayerCard(
                     onClick = onLikeClick,
                     modifier = Modifier.size(32.dp)
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = if (prayer.isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                            contentDescription = "Like",
-                            tint = if (prayer.isLiked) Color(0xFFE91E63) else MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
+                    Icon(
+                        imageVector = if (prayer.isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                        contentDescription = "Like",
+                        tint = if (prayer.isLiked) Color(0xFFE91E63) else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(18.dp)
+                    )
                 }
             }
         }
