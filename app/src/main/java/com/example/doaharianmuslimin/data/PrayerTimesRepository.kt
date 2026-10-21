@@ -19,10 +19,10 @@ import java.util.Locale
 data class CityOption(val id: String, val name: String)
 
 enum class AdhanVoiceOption(val displayName: String, val audioUrl: String) {
-    MAKKAH("Adzan Makkah (Syaikh Ali Mullah)", "https://cdn.islamic.network/audio/adhan/1.mp3"),
-    MADINAH("Adzan Madinah (Masjid Nabawi)", "https://cdn.islamic.network/audio/adhan/2.mp3"),
-    MISYARI("Adzan Misyari Rasyid Al-Afasy", "https://cdn.islamic.network/audio/adhan/mishary.mp3"),
-    STANDAR("Nada Pengingat Lembut (Bip)", "")
+    MAKKAH("Adzan Makkah (Syaikh Ali Mullah)", "https://raw.githubusercontent.com/achaudhry/adhan/master/Adhan-Makkah.mp3"),
+    MADINAH("Adzan Madinah (Masjid Nabawi)", "https://raw.githubusercontent.com/achaudhry/adhan/master/Adhan-Madinah.mp3"),
+    MISYARI("Adzan Misyari Rasyid Al-Afasy", "https://raw.githubusercontent.com/achaudhry/adhan/master/Adhan-Mishary-Rashid-Al-Afasy.mp3"),
+    STANDAR("Adzan Subuh Makkah (As-Shalatu Khairun Minan Naum)", "https://raw.githubusercontent.com/achaudhry/adhan/master/Adhan-fajr.mp3")
 }
 
 object PrayerTimesRepository {

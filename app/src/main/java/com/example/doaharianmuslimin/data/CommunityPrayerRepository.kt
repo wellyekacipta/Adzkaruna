@@ -2,6 +2,8 @@ package com.example.doaharianmuslimin.data
 
 import android.content.Context
 import com.example.doaharianmuslimin.data.model.CommunityPrayer
+import com.example.doaharianmuslimin.data.remote.CloudConfig
+import com.example.doaharianmuslimin.data.remote.CloudPrayerSync
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -57,6 +59,18 @@ class CommunityPrayerRepository(context: Context) {
         val loaded = loadPrayersFromStorage()
         _prayersFlow.value = loaded
         startRealtimeSimulation()
+        syncWithCloud()
+    }
+
+    private fun syncWithCloud() {
+        scope.launch {
+            if (CloudConfig.isCloudEnabled) {
+                val remote = CloudPrayerSync.fetchPrayersFromCloud()
+                if (!remote.isNullOrEmpty()) {
+                    savePrayers(remote)
+                }
+            }
+        }
     }
 
     private fun loadPrayersFromStorage(): List<CommunityPrayer> {
@@ -129,6 +143,9 @@ class CommunityPrayerRepository(context: Context) {
         // Masukkan langsung ke urutan paling atas secara realtime
         current.add(0, newPrayer)
         savePrayers(current)
+        scope.launch {
+            CloudPrayerSync.postPrayerToCloud(newPrayer)
+        }
         return newPrayer
     }
 
@@ -141,6 +158,11 @@ class CommunityPrayerRepository(context: Context) {
             } else it
         }
         savePrayers(current)
+        current.find { it.id == prayerId }?.let { updatedItem ->
+            scope.launch {
+                CloudPrayerSync.incrementAamiinInCloud(updatedItem.id, updatedItem.aamiinCount)
+            }
+        }
         return current
     }
 

@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.media.AudioAttributes
 import android.media.MediaPlayer
+import android.media.RingtoneManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
@@ -71,7 +72,7 @@ fun PrayerTimesScreen(
     // Adhan Reminders & Voice Settings
     var isAdhanEnabled by remember { mutableStateOf(true) }
     var selectedAdhanVoice by remember { mutableStateOf(AdhanVoiceOption.MAKKAH) }
-    var isPlayingAudioPreview by remember { mutableStateOf(false) }
+    var currentlyPlayingVoice by remember { mutableStateOf<AdhanVoiceOption?>(null) }
     var mediaPlayer by remember { mutableStateOf<MediaPlayer?>(null) }
     var prayerReminderToggles by remember {
         mutableStateOf(
@@ -105,30 +106,40 @@ fun PrayerTimesScreen(
     // Cleanup MediaPlayer on exit
     DisposableEffect(Unit) {
         onDispose {
-            mediaPlayer?.release()
+            try {
+                mediaPlayer?.stop()
+                mediaPlayer?.release()
+            } catch (_: Exception) {}
             mediaPlayer = null
         }
     }
 
     fun playAudioPreview(option: AdhanVoiceOption) {
-        if (isPlayingAudioPreview) {
-            mediaPlayer?.stop()
-            mediaPlayer?.release()
+        if (currentlyPlayingVoice == option) {
+            // Hentikan jika sedang memutar opsi yang sama
+            try {
+                mediaPlayer?.stop()
+                mediaPlayer?.release()
+            } catch (_: Exception) {}
             mediaPlayer = null
-            isPlayingAudioPreview = false
+            currentlyPlayingVoice = null
             return
         }
 
-        if (option.audioUrl.isBlank()) {
-            coroutineScope.launch {
-                snackbarHostState.showSnackbar("Mode Bip standar terpilih.")
-            }
-            return
+        // Hentikan pemutaran sebelumnya
+        try {
+            mediaPlayer?.stop()
+            mediaPlayer?.release()
+        } catch (_: Exception) {}
+        mediaPlayer = null
+        currentlyPlayingVoice = option
+        selectedAdhanVoice = option
+
+        coroutineScope.launch {
+            snackbarHostState.showSnackbar("Memutar: ${option.displayName}...")
         }
 
         try {
-            isPlayingAudioPreview = true
-            mediaPlayer?.release()
             mediaPlayer = MediaPlayer().apply {
                 setAudioAttributes(
                     AudioAttributes.Builder()
@@ -137,22 +148,38 @@ fun PrayerTimesScreen(
                         .build()
                 )
                 setDataSource(option.audioUrl)
-                setOnPreparedListener { start() }
+                setOnPreparedListener {
+                    try {
+                        start()
+                    } catch (_: Exception) {}
+                }
                 setOnCompletionListener {
-                    isPlayingAudioPreview = false
-                    release()
+                    currentlyPlayingVoice = null
+                    try { release() } catch (_: Exception) {}
                     mediaPlayer = null
                 }
                 setOnErrorListener { _, _, _ ->
-                    isPlayingAudioPreview = false
-                    release()
+                    currentlyPlayingVoice = null
+                    try { release() } catch (_: Exception) {}
                     mediaPlayer = null
+                    // Fallback ke nada sistem jika jaringan lambat
+                    try {
+                        val alertUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
+                            ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+                        val r = RingtoneManager.getRingtone(context, alertUri)
+                        r?.play()
+                    } catch (_: Exception) {}
                     true
                 }
                 prepareAsync()
             }
         } catch (_: Exception) {
-            isPlayingAudioPreview = false
+            currentlyPlayingVoice = null
+            try {
+                val alertUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+                val r = RingtoneManager.getRingtone(context, alertUri)
+                r?.play()
+            } catch (_: Exception) {}
         }
     }
 
@@ -645,27 +672,53 @@ fun PrayerTimesScreen(
                                             )
                                         }
 
-                                        if (option.audioUrl.isNotBlank()) {
-                                            FilledTonalButton(
-                                                onClick = { playAudioPreview(option) },
-                                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
-                                                shape = RoundedCornerShape(6.dp)
-                                            ) {
-                                                Icon(
-                                                    imageVector = if (isPlayingAudioPreview && selectedAdhanVoice == option) Icons.Default.Stop else Icons.Default.PlayArrow,
-                                                    contentDescription = null,
-                                                    modifier = Modifier.size(14.dp)
-                                                )
-                                                Spacer(modifier = Modifier.width(4.dp))
-                                                Text(
-                                                    text = if (isPlayingAudioPreview && selectedAdhanVoice == option) "Stop" else "Dengar",
-                                                    fontSize = 11.sp
-                                                )
-                                            }
+                                        FilledTonalButton(
+                                            onClick = { playAudioPreview(option) },
+                                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                                            shape = RoundedCornerShape(8.dp),
+                                            colors = ButtonDefaults.filledTonalButtonColors(
+                                                containerColor = if (currentlyPlayingVoice == option) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.primaryContainer,
+                                                contentColor = if (currentlyPlayingVoice == option) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+                                            )
+                                        ) {
+                                            Icon(
+                                                imageVector = if (currentlyPlayingVoice == option) Icons.Default.Stop else Icons.Default.PlayArrow,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Text(
+                                                text = if (currentlyPlayingVoice == option) "Stop" else "Dengar",
+                                                fontSize = 11.5.sp,
+                                                fontWeight = FontWeight.Bold
+                                            )
                                         }
                                     }
                                 }
                             }
+                        }
+
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        // Tombol Tes Azan Langsung
+                        Button(
+                            onClick = { playAudioPreview(selectedAdhanVoice) },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (currentlyPlayingVoice != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+                            )
+                        ) {
+                            Icon(
+                                imageVector = if (currentlyPlayingVoice != null) Icons.Default.Stop else Icons.Default.VolumeUp,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = if (currentlyPlayingVoice != null) "Hentikan Suara Azan" else "Tes Bunyikan Azan Sekarang",
+                                fontWeight = FontWeight.Bold
+                            )
                         }
                     }
                 }
