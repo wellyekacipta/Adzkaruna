@@ -143,7 +143,7 @@ fun HomeScreen(
             appendLine()
             appendLine("📌 Sumber: ${doa.source}")
             appendLine()
-            append("Dibagikan melalui Doa Harian Muslimin")
+            append("Dibagikan melalui Adzkaruna")
         }
         val sendIntent = Intent().apply {
             action = Intent.ACTION_SEND
@@ -231,13 +231,13 @@ fun HomeScreen(
                         Spacer(modifier = Modifier.width(10.dp))
                         Column {
                             Text(
-                                text = "Doa Harian Muslimin",
+                                text = "Adzkaruna",
                                 fontSize = 18.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White
                             )
                             Text(
-                                text = "Nuansa Tosca & Putih",
+                                text = "Doa & Dzikir Harian Muslimin v.1",
                                 fontSize = 11.sp,
                                 color = Color.White.copy(alpha = 0.85f)
                             )

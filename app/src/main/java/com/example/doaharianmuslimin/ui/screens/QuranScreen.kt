@@ -111,7 +111,7 @@ fun QuranScreen(
 
     fun copyAyat(ayat: QuranAyat, surahName: String) {
         val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-        val text = "QS. $surahName Ayat ${ayat.number}:\n\n${ayat.arabic}\n\n${ayat.latin}\n\n\"${ayat.translation}\"\n\n(Doa Harian Muslimin)"
+        val text = "QS. $surahName Ayat ${ayat.number}:\n\n${ayat.arabic}\n\n${ayat.latin}\n\n\"${ayat.translation}\"\n\n(Adzkaruna)"
         clipboard.setPrimaryClip(ClipData.newPlainText("Ayat Al-Qur'an", text))
         coroutineScope.launch {
             snackbarHostState.showSnackbar("Ayat disalin ke papan klip")
@@ -119,7 +119,7 @@ fun QuranScreen(
     }
 
     fun shareAyat(ayat: QuranAyat, surahName: String) {
-        val text = "QS. $surahName Ayat ${ayat.number}:\n\n${ayat.arabic}\n\n${ayat.latin}\n\n\"${ayat.translation}\"\n\n(Doa Harian Muslimin)"
+        val text = "QS. $surahName Ayat ${ayat.number}:\n\n${ayat.arabic}\n\n${ayat.latin}\n\n\"${ayat.translation}\"\n\n(Adzkaruna)"
         val intent = Intent(Intent.ACTION_SEND).apply {
             type = "text/plain"
             putExtra(Intent.EXTRA_TEXT, text)
