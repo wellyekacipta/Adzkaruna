@@ -297,12 +297,18 @@ object QuranRepository {
                     val ayatsArray = data.getJSONArray("ayat")
                     for (i in 0 until ayatsArray.length()) {
                         val item = ayatsArray.getJSONObject(i)
+                        val audioObj = item.optJSONObject("audio")
+                        val audioUrl = audioObj?.optString("05", "")
+                            ?: audioObj?.optString("01", "")
+                            ?: ""
+
                         ayatsList.add(
                             QuranAyat(
                                 number = item.getInt("nomorAyat"),
                                 arabic = item.getString("teksArab"),
                                 latin = item.optString("teksLatin", ""),
-                                translation = item.getString("teksIndonesia")
+                                translation = item.getString("teksIndonesia"),
+                                audioUrl = audioUrl
                             )
                         )
                     }
@@ -328,6 +334,48 @@ object QuranRepository {
                 // If offline and bundled exists, return it, else fallback
                 bundledSurahs[surahNumber] ?: allSurahMeta.find { it.number == surahNumber }
             }
+        }
+    }
+
+    // In-memory cache for loaded Tafsir Kemenag RI
+    private val tafsirCache = mutableMapOf<Int, Map<Int, String>>()
+
+    /**
+     * Fetch complete Tafsir Kemenag RI for a specific surah and ayat
+     */
+    suspend fun getTafsir(surahNumber: Int, ayatNumber: Int): String {
+        // 1. Check in-memory cache
+        val cachedMap = tafsirCache[surahNumber]
+        if (cachedMap != null && cachedMap.containsKey(ayatNumber)) {
+            return cachedMap[ayatNumber] ?: "Tafsir Kemenag tidak ditemukan."
+        }
+
+        // 2. Fetch from Kemenag API asynchronously
+        return withContext(Dispatchers.IO) {
+            try {
+                val url = URL("https://equran.id/api/v2/tafsir/$surahNumber")
+                val connection = url.openConnection() as HttpURLConnection
+                connection.requestMethod = "GET"
+                connection.connectTimeout = 7000
+                connection.readTimeout = 7000
+
+                if (connection.responseCode == 200) {
+                    val responseStr = connection.inputStream.bufferedReader().use { it.readText() }
+                    val json = JSONObject(responseStr)
+                    val data = json.getJSONObject("data")
+                    val tafsirArray = data.getJSONArray("tafsir")
+
+                    val map = mutableMapOf<Int, String>()
+                    for (i in 0 until tafsirArray.length()) {
+                        val tObj = tafsirArray.getJSONObject(i)
+                        map[tObj.getInt("ayat")] = tObj.getString("teks")
+                    }
+                    tafsirCache[surahNumber] = map
+                    return@withContext map[ayatNumber] ?: "Tafsir ayat ini sedang dalam penyusunan Kemenag RI."
+                }
+            } catch (_: Exception) {}
+
+            "Tafsir resmi Kementerian Agama RI (Kemenag) memerlukan koneksi internet untuk unduhan pertama. Silakan periksa koneksi internet Anda."
         }
     }
 }
