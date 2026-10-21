@@ -6,6 +6,8 @@ import android.content.Context
 import android.content.Intent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -24,7 +26,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -131,7 +136,6 @@ fun QuranScreen(
         Column(modifier = Modifier.fillMaxSize()) {
             if (selectedSurah == null) {
                 // ==================== LIST OF ALL 114 SURAHS ====================
-                // Sub-header for Al-Qur'an
                 Surface(
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.fillMaxWidth()
@@ -148,7 +152,7 @@ fun QuranScreen(
                             color = Color.White
                         )
                         Text(
-                            text = "Mushaf Madinah & Terjemahan Resmi Kemenag RI",
+                            text = "Mushaf Madinah Asli & Terjemahan Resmi Kemenag RI",
                             fontSize = 11.sp,
                             color = Color.White.copy(alpha = 0.85f)
                         )
@@ -319,7 +323,7 @@ fun QuranScreen(
                 // ==================== SURAH DETAIL READER ====================
                 val surah = selectedSurah!!
 
-                // Compact, responsive Sub-Header Bar (Directly beneath "Nuansa Tosca & Putih")
+                // Compact, responsive Sub-Header Bar (Directly beneath "Doa & Dzikir Harian Muslimin v.1")
                 Surface(
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.fillMaxWidth()
@@ -452,7 +456,7 @@ fun QuranScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = if (viewMode == QuranViewMode.PER_BARIS) "Mode Ayat (Per Baris)" else "Mode Halaman (Mushaf Madinah)",
+                                text = if (viewMode == QuranViewMode.PER_BARIS) "Mode Ayat (Per Baris)" else "Mode Mushaf Madinah (Per Halaman)",
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.SemiBold,
                                 color = MaterialTheme.colorScheme.primary
@@ -617,164 +621,252 @@ fun QuranScreen(
                             }
                         }
                     } else {
-                        // ==================== MODE 2: PER HALAMAN (MUSHAF MADINAH ASLI) ====================
-                        // Paginate surah verses into actual pages instead of infinite scrolling
+                        // ==================== MODE 2: PER HALAMAN (MUSHAF MADINAH ASLI DENGAN BINGKAI EMAS TOSCA) ====================
                         val pages = remember(surah.ayats) { paginateAyats(surah.ayats) }
                         val safePageIndex = currentPageIndex.coerceIn(0, (pages.size - 1).coerceAtLeast(0))
                         val currentAyats = pages.getOrElse(safePageIndex) { emptyList() }
+                        val isEvenPage = (safePageIndex + 1) % 2 == 0
 
                         Column(
                             modifier = Modifier
                                 .weight(1f)
                                 .fillMaxWidth()
-                                .padding(horizontal = 14.dp, vertical = 8.dp),
+                                .padding(horizontal = 10.dp, vertical = 6.dp),
                             verticalArrangement = Arrangement.SpaceBetween
                         ) {
-                            // Authentic Mushaf Madinah Page Frame
-                            Card(
+                            // Authentic Mushaf Madinah Illuminated Page Frame (Corak Hijau & Aksen Emas Tosca)
+                            Surface(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .weight(1f),
-                                shape = RoundedCornerShape(16.dp),
-                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                                border = BorderStroke(2.dp, AccentGold),
-                                elevation = CardDefaults.cardElevation(3.dp)
+                                shape = RoundedCornerShape(12.dp),
+                                color = Color(0xFFFFFDF7), // Warna kertas krem Mushaf Madinah asli
+                                border = BorderStroke(2.5.dp, AccentGold),
+                                shadowElevation = 4.dp
                             ) {
-                                Column(
+                                Box(
                                     modifier = Modifier
                                         .fillMaxSize()
-                                        .padding(14.dp),
-                                    verticalArrangement = Arrangement.SpaceBetween
+                                        .padding(4.dp)
                                 ) {
-                                    // Top Frame Header
-                                    Column {
+                                    // Decorative inner border in Tosca Green
+                                    Surface(
+                                        modifier = Modifier.fillMaxSize(),
+                                        shape = RoundedCornerShape(8.dp),
+                                        color = Color.Transparent,
+                                        border = BorderStroke(1.2.dp, PrimaryTosca.copy(alpha = 0.65f))
+                                    ) {}
+
+                                    // Outer Margin Medallion (Ruku' indicator 'ع' or 'وقف' in margin as in photo)
+                                    Box(
+                                        modifier = Modifier
+                                            .align(if (isEvenPage) Alignment.CenterStart else Alignment.CenterEnd)
+                                            .padding(if (isEvenPage) PaddingValues(start = 2.dp) else PaddingValues(end = 2.dp))
+                                    ) {
+                                        Surface(
+                                            shape = CircleShape,
+                                            color = AccentGold.copy(alpha = 0.2f),
+                                            border = BorderStroke(1.dp, AccentGold),
+                                            modifier = Modifier.size(20.dp)
+                                        ) {
+                                            Box(contentAlignment = Alignment.Center) {
+                                                Text(
+                                                    text = "ع",
+                                                    fontSize = 11.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    fontFamily = UthmanicFontFamily,
+                                                    color = PrimaryTosca
+                                                )
+                                            }
+                                        }
+                                    }
+
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .padding(horizontal = 14.dp, vertical = 10.dp),
+                                        verticalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        // ================= TOP HEADER TABLETS (Sesuai Gambar Mushaf Madinah) =================
                                         Row(
                                             modifier = Modifier.fillMaxWidth(),
                                             horizontalArrangement = Arrangement.SpaceBetween,
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
-                                            Text(
-                                                text = "الجزء",
-                                                fontFamily = UthmanicFontFamily,
-                                                fontSize = 13.sp,
-                                                color = MaterialTheme.colorScheme.primary
-                                            )
-                                            Text(
-                                                text = "سورة ${surah.arabicName}",
-                                                fontFamily = UthmanicFontFamily,
-                                                fontSize = 15.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                color = MaterialTheme.colorScheme.primary
-                                            )
+                                            // Left Tablet: Symmetrical alternating between Surah and Juz
+                                            Surface(
+                                                color = Color.White,
+                                                shape = RoundedCornerShape(6.dp),
+                                                border = BorderStroke(1.dp, AccentGold),
+                                                shadowElevation = 1.dp
+                                            ) {
+                                                Text(
+                                                    text = if (isEvenPage) "${surah.number}. ${surah.name}" else "Juz 1",
+                                                    fontSize = 11.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = PrimaryTosca,
+                                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                                )
+                                            }
+
+                                            // Center Tablet: Arched Dome Page Number Tablet
+                                            Surface(
+                                                color = Color(0xFFF9F6EB),
+                                                shape = RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp, bottomStart = 4.dp, bottomEnd = 4.dp),
+                                                border = BorderStroke(1.dp, AccentGold),
+                                                shadowElevation = 1.dp
+                                            ) {
+                                                Text(
+                                                    text = "${safePageIndex + 1}",
+                                                    fontSize = 12.sp,
+                                                    fontWeight = FontWeight.ExtraBold,
+                                                    color = Color(0xFF795548),
+                                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp)
+                                                )
+                                            }
+
+                                            // Right Tablet: Symmetrical alternating
+                                            Surface(
+                                                color = Color.White,
+                                                shape = RoundedCornerShape(6.dp),
+                                                border = BorderStroke(1.dp, AccentGold),
+                                                shadowElevation = 1.dp
+                                            ) {
+                                                Text(
+                                                    text = if (isEvenPage) "Juz 1" else "${surah.number}. ${surah.name}",
+                                                    fontSize = 11.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = PrimaryTosca,
+                                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                                )
+                                            }
                                         }
 
                                         HorizontalDivider(
-                                            color = AccentGold.copy(alpha = 0.5f),
+                                            color = AccentGold.copy(alpha = 0.6f),
                                             thickness = 1.dp,
-                                            modifier = Modifier.padding(vertical = 6.dp)
+                                            modifier = Modifier.padding(vertical = 4.dp)
                                         )
 
-                                        // Show surah title banner on the first page
+                                        // ================= KUBAH UKIRAN HIASAN KEPALA SURAT (HALAMAN PERTAMA) =================
                                         if (safePageIndex == 0) {
                                             Surface(
                                                 modifier = Modifier.fillMaxWidth(),
-                                                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f),
-                                                shape = RoundedCornerShape(8.dp),
-                                                border = BorderStroke(1.dp, AccentGold.copy(alpha = 0.5f))
+                                                color = Color(0xFFF4F9F6),
+                                                shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomStart = 8.dp, bottomEnd = 8.dp),
+                                                border = BorderStroke(1.5.dp, AccentGold),
+                                                shadowElevation = 2.dp
                                             ) {
                                                 Column(
-                                                    modifier = Modifier.padding(vertical = 4.dp),
+                                                    modifier = Modifier.padding(vertical = 6.dp),
                                                     horizontalAlignment = Alignment.CenterHorizontally
                                                 ) {
-                                                    Text(
-                                                        text = "سُورَةُ ${surah.arabicName}",
-                                                        fontFamily = UthmanicFontFamily,
-                                                        fontSize = 20.sp,
-                                                        fontWeight = FontWeight.Bold,
-                                                        color = MaterialTheme.colorScheme.primary
-                                                    )
-                                                    if (surah.number != 9) {
+                                                    // Arch ornament header
+                                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                                        Text("❖ ", color = AccentGold, fontSize = 12.sp)
                                                         Text(
-                                                            text = "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ",
+                                                            text = "سُورَةُ ${surah.arabicName}",
                                                             fontFamily = UthmanicFontFamily,
-                                                            fontSize = 18.sp,
-                                                            color = MaterialTheme.colorScheme.onSurface
+                                                            fontSize = 22.sp,
+                                                            fontWeight = FontWeight.Bold,
+                                                            color = PrimaryTosca
                                                         )
+                                                        Text(" ❖", color = AccentGold, fontSize = 12.sp)
+                                                    }
+
+                                                    if (surah.number != 9) {
+                                                        Surface(
+                                                            color = Color.White,
+                                                            shape = RoundedCornerShape(6.dp),
+                                                            border = BorderStroke(0.8.dp, AccentGold.copy(alpha = 0.5f)),
+                                                            modifier = Modifier.padding(top = 4.dp, start = 14.dp, end = 14.dp)
+                                                        ) {
+                                                            Text(
+                                                                text = "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ",
+                                                                fontFamily = UthmanicFontFamily,
+                                                                fontSize = 19.sp,
+                                                                color = Color(0xFF1B5E20),
+                                                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 2.dp)
+                                                            )
+                                                        }
                                                     }
                                                 }
                                             }
-                                            Spacer(modifier = Modifier.height(10.dp))
+                                            Spacer(modifier = Modifier.height(6.dp))
                                         }
-                                    }
 
-                                    // Continuous Flowing Arabic Page Text (Mushaf Madinah Style for this Page)
-                                    val pageArabicText = remember(currentAyats) {
-                                        buildString {
-                                            currentAyats.forEach { ayat ->
-                                                append(ayat.arabic)
-                                                append(" ۝${toArabicDigits(ayat.number)} ")
+                                        // ================= TEKS AYAT MUSHAF MADINAH PERSIS GAMBAR =================
+                                        val pageArabicText = remember(currentAyats) {
+                                            buildString {
+                                                currentAyats.forEach { ayat ->
+                                                    append(ayat.arabic)
+                                                    append(" ۝${toArabicDigits(ayat.number)} ")
+                                                }
                                             }
                                         }
-                                    }
 
-                                    Box(
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .fillMaxWidth(),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Text(
-                                            text = pageArabicText,
-                                            color = MaterialTheme.colorScheme.onSurface,
-                                            fontFamily = UthmanicFontFamily,
-                                            fontSize = if (safePageIndex == 0 && surah.totalAyat <= 7) 24.sp else 22.sp,
-                                            lineHeight = if (safePageIndex == 0 && surah.totalAyat <= 7) 48.sp else 44.sp,
-                                            textAlign = TextAlign.Justify,
-                                            modifier = Modifier.fillMaxWidth()
-                                        )
-                                    }
-
-                                    // Bottom Frame Footer
-                                    Column {
-                                        HorizontalDivider(
-                                            color = AccentGold.copy(alpha = 0.5f),
-                                            thickness = 1.dp,
-                                            modifier = Modifier.padding(vertical = 6.dp)
-                                        )
-
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.SpaceBetween,
-                                            verticalAlignment = Alignment.CenterVertically
+                                        Box(
+                                            modifier = Modifier
+                                                .weight(1f)
+                                                .fillMaxWidth(),
+                                            contentAlignment = Alignment.Center
                                         ) {
                                             Text(
-                                                text = if (currentAyats.isNotEmpty()) "Ayat ${currentAyats.first().number}-${currentAyats.last().number}" else "",
-                                                fontSize = 11.sp,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                text = pageArabicText,
+                                                color = Color(0xFF1A1A1A),
+                                                fontFamily = UthmanicFontFamily,
+                                                fontSize = if (safePageIndex == 0 && surah.totalAyat <= 7) 24.sp else 21.5.sp,
+                                                lineHeight = if (safePageIndex == 0 && surah.totalAyat <= 7) 48.sp else 41.sp,
+                                                textAlign = TextAlign.Justify,
+                                                modifier = Modifier.fillMaxWidth()
+                                            )
+                                        }
+
+                                        // ================= FOOTER BINGKAI =================
+                                        Column {
+                                            HorizontalDivider(
+                                                color = AccentGold.copy(alpha = 0.6f),
+                                                thickness = 1.dp,
+                                                modifier = Modifier.padding(vertical = 4.dp)
                                             )
 
-                                            FilledTonalButton(
-                                                onClick = { showTranslationSheet = true },
-                                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 2.dp),
-                                                shape = RoundedCornerShape(8.dp)
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
                                             ) {
-                                                Icon(Icons.Default.Translate, contentDescription = null, modifier = Modifier.size(13.dp))
-                                                Spacer(modifier = Modifier.width(4.dp))
-                                                Text("Terjemahan Kemenag", fontSize = 11.sp)
-                                            }
+                                                Text(
+                                                    text = if (currentAyats.isNotEmpty()) "Ayat ${currentAyats.first().number}-${currentAyats.last().number}" else "",
+                                                    fontSize = 11.sp,
+                                                    fontWeight = FontWeight.Medium,
+                                                    color = Color(0xFF555555)
+                                                )
 
-                                            Text(
-                                                text = "Hal. ${safePageIndex + 1}/${pages.size}",
-                                                fontSize = 11.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                color = MaterialTheme.colorScheme.primary
-                                            )
+                                                FilledTonalButton(
+                                                    onClick = { showTranslationSheet = true },
+                                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 2.dp),
+                                                    shape = RoundedCornerShape(8.dp)
+                                                ) {
+                                                    Icon(Icons.Default.Translate, contentDescription = null, modifier = Modifier.size(13.dp))
+                                                    Spacer(modifier = Modifier.width(4.dp))
+                                                    Text("Terjemahan Kemenag", fontSize = 11.sp)
+                                                }
+
+                                                Text(
+                                                    text = "Hal. ${safePageIndex + 1} / ${pages.size}",
+                                                    fontSize = 11.5.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = PrimaryTosca
+                                                )
+                                            }
                                         }
                                     }
                                 }
                             }
 
-                            // Page Turning Controls (Prev / Next Page buttons like flipping real mushaf)
+                            // ================= NAVIGASI HALAMAN MUSHAF (ARAH ARAB DARI KIRI KE KANAN) =================
+                            // Sesuai permintaan user: Posisi membaca Al-Qur'an dimulai dari kanan ke kiri,
+                            // sehingga tombol Halaman Selanjutnya berada di KIRI, dan Halaman Sebelumnya di KANAN!
                             if (pages.size > 1) {
                                 Row(
                                     modifier = Modifier
@@ -783,17 +875,19 @@ fun QuranScreen(
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    OutlinedButton(
-                                        onClick = { if (safePageIndex > 0) currentPageIndex-- },
-                                        enabled = safePageIndex > 0,
+                                    // KIRI: Halaman Selanjutnya (Maju dalam bacaan mushaf Arab)
+                                    Button(
+                                        onClick = { if (safePageIndex < pages.size - 1) currentPageIndex++ },
+                                        enabled = safePageIndex < pages.size - 1,
                                         shape = RoundedCornerShape(10.dp),
-                                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp)
                                     ) {
                                         Icon(Icons.Default.ChevronLeft, contentDescription = null, modifier = Modifier.size(18.dp))
                                         Spacer(modifier = Modifier.width(4.dp))
-                                        Text("Hal. Sebelumnya", fontSize = 11.5.sp)
+                                        Text("Hal. Selanjutnya", fontSize = 11.5.sp)
                                     }
 
+                                    // TENGAH: Indikator Halaman
                                     Surface(
                                         color = MaterialTheme.colorScheme.primaryContainer,
                                         shape = RoundedCornerShape(12.dp)
@@ -803,17 +897,18 @@ fun QuranScreen(
                                             fontSize = 12.sp,
                                             fontWeight = FontWeight.Bold,
                                             color = MaterialTheme.colorScheme.primary,
-                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 5.dp)
                                         )
                                     }
 
-                                    Button(
-                                        onClick = { if (safePageIndex < pages.size - 1) currentPageIndex++ },
-                                        enabled = safePageIndex < pages.size - 1,
+                                    // KANAN: Halaman Sebelumnya (Mundur ke halaman kanan mushaf)
+                                    OutlinedButton(
+                                        onClick = { if (safePageIndex > 0) currentPageIndex-- },
+                                        enabled = safePageIndex > 0,
                                         shape = RoundedCornerShape(10.dp),
-                                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp)
                                     ) {
-                                        Text("Hal. Selanjutnya", fontSize = 11.5.sp)
+                                        Text("Hal. Sebelumnya", fontSize = 11.5.sp)
                                         Spacer(modifier = Modifier.width(4.dp))
                                         Icon(Icons.Default.ChevronRight, contentDescription = null, modifier = Modifier.size(18.dp))
                                     }
