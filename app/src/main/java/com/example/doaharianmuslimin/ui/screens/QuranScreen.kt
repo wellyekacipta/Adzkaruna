@@ -41,7 +41,7 @@ import kotlinx.coroutines.launch
 
 enum class QuranViewMode {
     PER_BARIS,    // Mode Ayat demi ayat + Terjemahan Kemenag
-    PER_HALAMAN   // Mode Lembaran Mushaf Madinah Asli
+    PER_HALAMAN   // Mode Lembaran Halaman Mushaf Madinah Asli (Per Halaman)
 }
 
 enum class QuranFilterCategory(val label: String) {
@@ -66,6 +66,7 @@ fun QuranScreen(
 
     var viewMode by remember { mutableStateOf(QuranViewMode.PER_BARIS) }
     var showTranslationSheet by remember { mutableStateOf(false) }
+    var currentPageIndex by remember(selectedSurah) { mutableIntStateOf(0) }
 
     var searchQuery by remember { mutableStateOf("") }
     var selectedFilter by remember { mutableStateOf(QuranFilterCategory.SEMUA) }
@@ -95,6 +96,7 @@ fun QuranScreen(
         coroutineScope.launch {
             isLoadingSurah = true
             loadError = null
+            currentPageIndex = 0
             selectedSurah = surah
 
             val fullSurah = QuranRepository.getSurahDetail(surah.number)
@@ -125,46 +127,250 @@ fun QuranScreen(
         context.startActivity(Intent.createChooser(intent, "Bagikan Ayat Al-Qur'an"))
     }
 
-    Scaffold(
-        modifier = modifier.fillMaxSize(),
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        topBar = {
-            TopAppBar(
-                title = {
-                    Column {
+    Box(modifier = modifier.fillMaxSize()) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            if (selectedSurah == null) {
+                // ==================== LIST OF ALL 114 SURAHS ====================
+                // Sub-header for Al-Qur'an
+                Surface(
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                    ) {
                         Text(
-                            text = selectedSurah?.name ?: "Al-Qur'an Mushaf Madinah",
-                            fontSize = 18.sp,
+                            text = "Al-Qur'anul Karim (114 Surat)",
+                            fontSize = 17.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.White
                         )
                         Text(
-                            text = if (selectedSurah == null) "114 Surat • Terjemahan Kemenag RI" else "${selectedSurah!!.revelation} • ${selectedSurah!!.totalAyat} Ayat",
+                            text = "Mushaf Madinah & Terjemahan Resmi Kemenag RI",
                             fontSize = 11.sp,
                             color = Color.White.copy(alpha = 0.85f)
                         )
                     }
-                },
-                navigationIcon = {
-                    if (selectedSurah != null) {
-                        IconButton(onClick = {
-                            selectedSurah = null
-                            loadError = null
-                        }) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "Kembali",
-                                tint = Color.White
-                            )
+                }
+
+                LazyColumn(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth(),
+                    contentPadding = PaddingValues(start = 14.dp, end = 14.dp, top = 10.dp, bottom = 12.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    // Header Banner Info
+                    item {
+                        Surface(
+                            color = MaterialTheme.colorScheme.primaryContainer,
+                            shape = RoundedCornerShape(14.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(14.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Verified,
+                                    contentDescription = null,
+                                    tint = PrimaryTosca,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Column {
+                                    Text(
+                                        text = "Lengkap 114 Surat Al-Qur'anul Karim",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 13.sp,
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                                    )
+                                    Text(
+                                        text = "Tersedia Mode Per Baris & Mode Mushaf Madinah Per Halaman",
+                                        fontSize = 11.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
                         }
                     }
-                },
-                actions = {
-                    if (selectedSurah != null && !isLoadingSurah) {
-                        // Switcher mode: Per Baris vs Per Halaman
-                        IconButton(onClick = {
-                            viewMode = if (viewMode == QuranViewMode.PER_BARIS) QuranViewMode.PER_HALAMAN else QuranViewMode.PER_BARIS
-                        }) {
+
+                    // Search Bar
+                    item {
+                        OutlinedTextField(
+                            value = searchQuery,
+                            onValueChange = { searchQuery = it },
+                            modifier = Modifier.fillMaxWidth(),
+                            placeholder = { Text("Cari surat (contoh: Al-Baqarah, 36, Yasin)...", fontSize = 13.sp) },
+                            leadingIcon = {
+                                Icon(Icons.Default.Search, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                            },
+                            trailingIcon = {
+                                if (searchQuery.isNotEmpty()) {
+                                    IconButton(onClick = { searchQuery = "" }) {
+                                        Icon(Icons.Default.Clear, contentDescription = "Hapus")
+                                    }
+                                }
+                            },
+                            shape = RoundedCornerShape(14.dp),
+                            singleLine = true,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+                            )
+                        )
+                    }
+
+                    // Category Filter Chips
+                    item {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            QuranFilterCategory.entries.forEach { category ->
+                                val isSelected = category == selectedFilter
+                                FilterChip(
+                                    selected = isSelected,
+                                    onClick = { selectedFilter = category },
+                                    label = { Text(category.label, fontSize = 11.5.sp) },
+                                    shape = RoundedCornerShape(18.dp),
+                                    colors = FilterChipDefaults.filterChipColors(
+                                        selectedContainerColor = MaterialTheme.colorScheme.primary,
+                                        selectedLabelColor = Color.White
+                                    )
+                                )
+                            }
+                        }
+                    }
+
+                    // Surahs list items with stable key
+                    items(displayedSurahs, key = { it.number }) { surah ->
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(16.dp))
+                                .clickable { openSurah(surah) },
+                            shape = RoundedCornerShape(16.dp),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f))
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(14.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Surface(
+                                        color = MaterialTheme.colorScheme.primaryContainer,
+                                        shape = CircleShape,
+                                        modifier = Modifier.size(38.dp)
+                                    ) {
+                                        Box(contentAlignment = Alignment.Center) {
+                                            Text(
+                                                text = "${surah.number}",
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 12.sp,
+                                                color = MaterialTheme.colorScheme.primary
+                                            )
+                                        }
+                                    }
+
+                                    Spacer(modifier = Modifier.width(12.dp))
+
+                                    Column {
+                                        Text(
+                                            text = surah.name,
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                        Text(
+                                            text = "${surah.englishMeaning} • ${surah.revelation} (${surah.totalAyat} Ayat)",
+                                            fontSize = 11.sp,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(
+                                        text = surah.arabicName,
+                                        fontFamily = UthmanicFontFamily,
+                                        fontSize = 20.sp,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.padding(end = 6.dp)
+                                    )
+                                    Icon(
+                                        imageVector = Icons.Default.ChevronRight,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            } else {
+                // ==================== SURAH DETAIL READER ====================
+                val surah = selectedSurah!!
+
+                // Compact, responsive Sub-Header Bar (Directly beneath "Nuansa Tosca & Putih")
+                Surface(
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = 6.dp, end = 12.dp, top = 2.dp, bottom = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            IconButton(
+                                onClick = {
+                                    selectedSurah = null
+                                    loadError = null
+                                },
+                                modifier = Modifier.size(40.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                    contentDescription = "Kembali ke Daftar Surat",
+                                    tint = Color.White
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Column {
+                                Text(
+                                    text = surah.name,
+                                    fontSize = 17.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
+                                )
+                                Text(
+                                    text = "${surah.revelation} • ${surah.totalAyat} Ayat",
+                                    fontSize = 11.sp,
+                                    color = Color.White.copy(alpha = 0.85f)
+                                )
+                            }
+                        }
+
+                        // Toggle Mode Icon
+                        IconButton(
+                            onClick = {
+                                viewMode = if (viewMode == QuranViewMode.PER_BARIS) QuranViewMode.PER_HALAMAN else QuranViewMode.PER_BARIS
+                            },
+                            modifier = Modifier.size(38.dp)
+                        ) {
                             Icon(
                                 imageVector = if (viewMode == QuranViewMode.PER_BARIS) Icons.AutoMirrored.Filled.MenuBook else Icons.AutoMirrored.Filled.ViewList,
                                 contentDescription = "Ganti Mode",
@@ -172,252 +378,76 @@ fun QuranScreen(
                             )
                         }
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary
-                )
-            )
-        }
-    ) { innerPadding ->
-        if (selectedSurah == null) {
-            // ==================== LIST OF ALL 114 SURAHS ====================
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                // Header Banner
-                item {
-                    Surface(
-                        color = MaterialTheme.colorScheme.primaryContainer,
-                        shape = RoundedCornerShape(14.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(14.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Verified,
-                                contentDescription = null,
-                                tint = PrimaryTosca,
-                                modifier = Modifier.size(24.dp)
-                            )
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Column {
-                                Text(
-                                    text = "Lengkap 114 Surat Al-Qur'anul Karim",
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 13.sp,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                                )
-                                Text(
-                                    text = "Mushaf Madinah & Terjemahan Kemenag • Mode Baris & Halaman",
-                                    fontSize = 11.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-                    }
                 }
 
-                // Search Bar
-                item {
-                    OutlinedTextField(
-                        value = searchQuery,
-                        onValueChange = { searchQuery = it },
-                        modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text("Cari surat (contoh: Al-Baqarah, 36, Yasin)...", fontSize = 13.sp) },
-                        leadingIcon = {
-                            Icon(Icons.Default.Search, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                        },
-                        trailingIcon = {
-                            if (searchQuery.isNotEmpty()) {
-                                IconButton(onClick = { searchQuery = "" }) {
-                                    Icon(Icons.Default.Clear, contentDescription = "Hapus")
-                                }
-                            }
-                        },
-                        shape = RoundedCornerShape(14.dp),
-                        singleLine = true,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = MaterialTheme.colorScheme.primary,
-                            unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
-                        )
-                    )
-                }
-
-                // Category Filter Chips
-                item {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        QuranFilterCategory.entries.forEach { category ->
-                            val isSelected = category == selectedFilter
-                            FilterChip(
-                                selected = isSelected,
-                                onClick = { selectedFilter = category },
-                                label = { Text(category.label, fontSize = 11.5.sp) },
-                                shape = RoundedCornerShape(18.dp),
-                                colors = FilterChipDefaults.filterChipColors(
-                                    selectedContainerColor = MaterialTheme.colorScheme.primary,
-                                    selectedLabelColor = Color.White
-                                )
-                            )
-                        }
-                    }
-                }
-
-                // Surahs list items with stable key
-                items(displayedSurahs, key = { it.number }) { surah ->
-                    Card(
+                if (isLoadingSurah) {
+                    Box(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(16.dp))
-                            .clickable { openSurah(surah) },
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f))
+                            .weight(1f)
+                            .fillMaxWidth(),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(14.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Surface(
-                                    color = MaterialTheme.colorScheme.primaryContainer,
-                                    shape = CircleShape,
-                                    modifier = Modifier.size(38.dp)
-                                ) {
-                                    Box(contentAlignment = Alignment.Center) {
-                                        Text(
-                                            text = "${surah.number}",
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = 12.sp,
-                                            color = MaterialTheme.colorScheme.primary
-                                        )
-                                    }
-                                }
-
-                                Spacer(modifier = Modifier.width(12.dp))
-
-                                Column {
-                                    Text(
-                                        text = surah.name,
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
-                                    Text(
-                                        text = "${surah.englishMeaning} • ${surah.revelation} (${surah.totalAyat} Ayat)",
-                                        fontSize = 11.sp,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                            }
-
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    text = surah.arabicName,
-                                    fontFamily = UthmanicFontFamily,
-                                    fontSize = 20.sp,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.padding(end = 6.dp)
-                                )
-                                Icon(
-                                    imageVector = Icons.Default.ChevronRight,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-                                )
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            CircularProgressIndicator(color = PrimaryTosca)
+                            Spacer(modifier = Modifier.height(14.dp))
+                            Text(
+                                text = "Memuat Surat ${surah.name}...",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Text(
+                                text = "Mengambil lafadz Uthmanic & terjemahan Kemenag RI",
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                } else if (loadError != null && surah.ayats.isEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth()
+                            .padding(24.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(
+                                imageVector = Icons.Default.CloudOff,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.size(48.dp)
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Text(
+                                text = "Gagal Memuat Surat",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(
+                                text = loadError ?: "",
+                                fontSize = 12.sp,
+                                textAlign = TextAlign.Center,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Button(onClick = { openSurah(surah) }) {
+                                Icon(Icons.Default.Refresh, contentDescription = null)
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Coba Lagi")
                             }
                         }
                     }
-                }
-            }
-        } else {
-            // ==================== SURAH DETAIL READER ====================
-            val surah = selectedSurah!!
-
-            if (isLoadingSurah) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        CircularProgressIndicator(color = PrimaryTosca)
-                        Spacer(modifier = Modifier.height(14.dp))
-                        Text(
-                            text = "Memuat Surat ${surah.name}...",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                        Text(
-                            text = "Mengambil lafadz Uthmanic & terjemahan Kemenag RI",
-                            fontSize = 11.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-            } else if (loadError != null && surah.ayats.isEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding)
-                        .padding(24.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(
-                            imageVector = Icons.Default.CloudOff,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.size(48.dp)
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Text(
-                            text = "Gagal Memuat Surat",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 16.sp
-                        )
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Text(
-                            text = loadError ?: "",
-                            fontSize = 12.sp,
-                            textAlign = TextAlign.Center,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Button(onClick = { openSurah(surah) }) {
-                            Icon(Icons.Default.Refresh, contentDescription = null)
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("Coba Lagi")
-                        }
-                    }
-                }
-            } else {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding)
-                ) {
-                    // Mode Toggle Bar (Per Baris vs Per Halaman)
+                } else {
+                    // Mode Toggle Chip Bar
                     Surface(
-                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 6.dp),
+                                .padding(horizontal = 14.dp, vertical = 6.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
@@ -451,11 +481,13 @@ fun QuranScreen(
                     }
 
                     if (viewMode == QuranViewMode.PER_BARIS) {
-                        // ==================== MODE 1: PER BARIS ====================
+                        // ==================== MODE 1: PER BARIS (Fills down to footer) ====================
                         LazyColumn(
-                            modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(14.dp)
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxWidth(),
+                            contentPadding = PaddingValues(start = 14.dp, end = 14.dp, top = 8.dp, bottom = 10.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
                             // Basmalah Header (kecuali At-Taubah)
                             if (surah.number != 9) {
@@ -585,16 +617,24 @@ fun QuranScreen(
                             }
                         }
                     } else {
-                        // ==================== MODE 2: PER HALAMAN (MUSHAF MADINAH) ====================
+                        // ==================== MODE 2: PER HALAMAN (MUSHAF MADINAH ASLI) ====================
+                        // Paginate surah verses into actual pages instead of infinite scrolling
+                        val pages = remember(surah.ayats) { paginateAyats(surah.ayats) }
+                        val safePageIndex = currentPageIndex.coerceIn(0, (pages.size - 1).coerceAtLeast(0))
+                        val currentAyats = pages.getOrElse(safePageIndex) { emptyList() }
+
                         Column(
                             modifier = Modifier
-                                .fillMaxSize()
-                                .verticalScroll(rememberScrollState())
-                                .padding(16.dp)
+                                .weight(1f)
+                                .fillMaxWidth()
+                                .padding(horizontal = 14.dp, vertical = 8.dp),
+                            verticalArrangement = Arrangement.SpaceBetween
                         ) {
-                            // Ornate Madinah Page Frame
+                            // Authentic Mushaf Madinah Page Frame
                             Card(
-                                modifier = Modifier.fillMaxWidth(),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .weight(1f),
                                 shape = RoundedCornerShape(16.dp),
                                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                 border = BorderStroke(2.dp, AccentGold),
@@ -602,188 +642,279 @@ fun QuranScreen(
                             ) {
                                 Column(
                                     modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(18.dp)
-                                    ) {
-                                    // Frame top header
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Text(
-                                            text = "الجزء",
-                                            fontFamily = UthmanicFontFamily,
-                                            fontSize = 14.sp,
-                                            color = MaterialTheme.colorScheme.primary
-                                        )
-                                        Text(
-                                            text = "سورة ${surah.arabicName}",
-                                            fontFamily = UthmanicFontFamily,
-                                            fontSize = 16.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = MaterialTheme.colorScheme.primary
-                                        )
-                                    }
-
-                                    HorizontalDivider(
-                                        color = AccentGold.copy(alpha = 0.5f),
-                                        thickness = 1.dp,
-                                        modifier = Modifier.padding(vertical = 10.dp)
-                                    )
-
-                                    // Ornate Surah Title Banner
-                                    Surface(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
-                                        shape = RoundedCornerShape(8.dp),
-                                        border = BorderStroke(1.dp, AccentGold.copy(alpha = 0.6f))
-                                    ) {
-                                        Column(
-                                            modifier = Modifier.padding(vertical = 8.dp),
-                                            horizontalAlignment = Alignment.CenterHorizontally
+                                        .fillMaxSize()
+                                        .padding(14.dp),
+                                    verticalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    // Top Frame Header
+                                    Column {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
                                         ) {
                                             Text(
-                                                text = "سُورَةُ ${surah.arabicName}",
+                                                text = "الجزء",
                                                 fontFamily = UthmanicFontFamily,
-                                                fontSize = 22.sp,
+                                                fontSize = 13.sp,
+                                                color = MaterialTheme.colorScheme.primary
+                                            )
+                                            Text(
+                                                text = "سورة ${surah.arabicName}",
+                                                fontFamily = UthmanicFontFamily,
+                                                fontSize = 15.sp,
                                                 fontWeight = FontWeight.Bold,
                                                 color = MaterialTheme.colorScheme.primary
                                             )
-                                            if (surah.number != 9) {
-                                                Text(
-                                                    text = "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ",
-                                                    fontFamily = UthmanicFontFamily,
-                                                    fontSize = 20.sp,
-                                                    color = MaterialTheme.colorScheme.onSurface
-                                                )
+                                        }
+
+                                        HorizontalDivider(
+                                            color = AccentGold.copy(alpha = 0.5f),
+                                            thickness = 1.dp,
+                                            modifier = Modifier.padding(vertical = 6.dp)
+                                        )
+
+                                        // Show surah title banner on the first page
+                                        if (safePageIndex == 0) {
+                                            Surface(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f),
+                                                shape = RoundedCornerShape(8.dp),
+                                                border = BorderStroke(1.dp, AccentGold.copy(alpha = 0.5f))
+                                            ) {
+                                                Column(
+                                                    modifier = Modifier.padding(vertical = 4.dp),
+                                                    horizontalAlignment = Alignment.CenterHorizontally
+                                                ) {
+                                                    Text(
+                                                        text = "سُورَةُ ${surah.arabicName}",
+                                                        fontFamily = UthmanicFontFamily,
+                                                        fontSize = 20.sp,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = MaterialTheme.colorScheme.primary
+                                                    )
+                                                    if (surah.number != 9) {
+                                                        Text(
+                                                            text = "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ",
+                                                            fontFamily = UthmanicFontFamily,
+                                                            fontSize = 18.sp,
+                                                            color = MaterialTheme.colorScheme.onSurface
+                                                        )
+                                                    }
+                                                }
                                             }
+                                            Spacer(modifier = Modifier.height(10.dp))
                                         }
                                     }
 
-                                    Spacer(modifier = Modifier.height(18.dp))
-
-                                    // Continuous Flowing Arabic Page Text (Mushaf Madinah Style)
-                                    val combinedArabic = remember(surah.ayats) {
+                                    // Continuous Flowing Arabic Page Text (Mushaf Madinah Style for this Page)
+                                    val pageArabicText = remember(currentAyats) {
                                         buildString {
-                                            surah.ayats.forEach { ayat ->
+                                            currentAyats.forEach { ayat ->
                                                 append(ayat.arabic)
                                                 append(" ۝${toArabicDigits(ayat.number)} ")
                                             }
                                         }
                                     }
 
-                                    Text(
-                                        text = combinedArabic,
-                                        color = MaterialTheme.colorScheme.onSurface,
-                                        fontFamily = UthmanicFontFamily,
-                                        fontSize = 23.sp,
-                                        lineHeight = 46.sp,
-                                        textAlign = TextAlign.Justify,
-                                        modifier = Modifier.fillMaxWidth()
-                                    )
+                                    Box(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .fillMaxWidth(),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = pageArabicText,
+                                            color = MaterialTheme.colorScheme.onSurface,
+                                            fontFamily = UthmanicFontFamily,
+                                            fontSize = if (safePageIndex == 0 && surah.totalAyat <= 7) 24.sp else 22.sp,
+                                            lineHeight = if (safePageIndex == 0 && surah.totalAyat <= 7) 48.sp else 44.sp,
+                                            textAlign = TextAlign.Justify,
+                                            modifier = Modifier.fillMaxWidth()
+                                        )
+                                    }
 
-                                    Spacer(modifier = Modifier.height(18.dp))
+                                    // Bottom Frame Footer
+                                    Column {
+                                        HorizontalDivider(
+                                            color = AccentGold.copy(alpha = 0.5f),
+                                            thickness = 1.dp,
+                                            modifier = Modifier.padding(vertical = 6.dp)
+                                        )
 
-                                    HorizontalDivider(
-                                        color = AccentGold.copy(alpha = 0.5f),
-                                        thickness = 1.dp,
-                                        modifier = Modifier.padding(vertical = 8.dp)
-                                    )
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text(
+                                                text = if (currentAyats.isNotEmpty()) "Ayat ${currentAyats.first().number}-${currentAyats.last().number}" else "",
+                                                fontSize = 11.sp,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
 
-                                    // Page Footer
+                                            FilledTonalButton(
+                                                onClick = { showTranslationSheet = true },
+                                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 2.dp),
+                                                shape = RoundedCornerShape(8.dp)
+                                            ) {
+                                                Icon(Icons.Default.Translate, contentDescription = null, modifier = Modifier.size(13.dp))
+                                                Spacer(modifier = Modifier.width(4.dp))
+                                                Text("Terjemahan Kemenag", fontSize = 11.sp)
+                                            }
+
+                                            Text(
+                                                text = "Hal. ${safePageIndex + 1}/${pages.size}",
+                                                fontSize = 11.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = MaterialTheme.colorScheme.primary
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+
+                            // Page Turning Controls (Prev / Next Page buttons like flipping real mushaf)
+                            if (pages.size > 1) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(top = 8.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    OutlinedButton(
+                                        onClick = { if (safePageIndex > 0) currentPageIndex-- },
+                                        enabled = safePageIndex > 0,
+                                        shape = RoundedCornerShape(10.dp),
+                                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                                    ) {
+                                        Icon(Icons.Default.ChevronLeft, contentDescription = null, modifier = Modifier.size(18.dp))
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text("Hal. Sebelumnya", fontSize = 11.5.sp)
+                                    }
+
+                                    Surface(
+                                        color = MaterialTheme.colorScheme.primaryContainer,
+                                        shape = RoundedCornerShape(12.dp)
+                                    ) {
+                                        Text(
+                                            text = "${safePageIndex + 1} / ${pages.size}",
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                                        )
+                                    }
+
+                                    Button(
+                                        onClick = { if (safePageIndex < pages.size - 1) currentPageIndex++ },
+                                        enabled = safePageIndex < pages.size - 1,
+                                        shape = RoundedCornerShape(10.dp),
+                                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                                    ) {
+                                        Text("Hal. Selanjutnya", fontSize = 11.5.sp)
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Icon(Icons.Default.ChevronRight, contentDescription = null, modifier = Modifier.size(18.dp))
+                                    }
+                                }
+                            }
+                        }
+
+                        // Kemenag Translation BottomSheet for Page View
+                        if (showTranslationSheet) {
+                            ModalBottomSheet(
+                                onDismissRequest = { showTranslationSheet = false },
+                                sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+                            ) {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .fillMaxHeight(0.8f)
+                                        .padding(horizontal = 20.dp)
+                                        .verticalScroll(rememberScrollState())
+                                ) {
                                     Row(
                                         modifier = Modifier.fillMaxWidth(),
                                         horizontalArrangement = Arrangement.SpaceBetween,
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Text(
-                                            text = "${surah.revelation} • ${surah.totalAyat} Ayat",
-                                            fontSize = 11.sp,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-
-                                        FilledTonalButton(
-                                            onClick = { showTranslationSheet = true },
-                                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
-                                            shape = RoundedCornerShape(8.dp)
-                                        ) {
-                                            Icon(Icons.Default.Translate, contentDescription = null, modifier = Modifier.size(14.dp))
-                                            Spacer(modifier = Modifier.width(4.dp))
-                                            Text("Terjemahan Kemenag", fontSize = 11.sp)
-                                        }
-
-                                        Text(
-                                            text = "Surat ${surah.number}",
-                                            fontSize = 12.sp,
+                                            text = "Terjemahan Kemenag RI (${surah.name})",
+                                            style = MaterialTheme.typography.titleMedium,
                                             fontWeight = FontWeight.Bold,
                                             color = MaterialTheme.colorScheme.primary
                                         )
+                                        IconButton(onClick = { showTranslationSheet = false }) {
+                                            Icon(Icons.Default.Close, contentDescription = "Tutup")
+                                        }
                                     }
+
+                                    Spacer(modifier = Modifier.height(10.dp))
+
+                                    currentAyats.forEach { ayat ->
+                                        Column(modifier = Modifier.padding(vertical = 8.dp)) {
+                                            Text(
+                                                text = "Ayat ${ayat.number}:",
+                                                fontSize = 12.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = PrimaryTosca
+                                            )
+                                            Text(
+                                                text = ayat.translation,
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                color = MaterialTheme.colorScheme.onSurface
+                                            )
+                                            HorizontalDivider(
+                                                modifier = Modifier.padding(top = 8.dp),
+                                                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+                                            )
+                                        }
+                                    }
+
+                                    Spacer(modifier = Modifier.height(24.dp))
                                 }
                             }
-                        }
-                    }
-                }
-
-                // Kemenag Translation BottomSheet for Page View
-                if (showTranslationSheet) {
-                    ModalBottomSheet(
-                        onDismissRequest = { showTranslationSheet = false },
-                        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .fillMaxHeight(0.8f)
-                                .padding(horizontal = 20.dp)
-                                .verticalScroll(rememberScrollState())
-                        ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = "Terjemahan Kemenag RI (${surah.name})",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
-                                IconButton(onClick = { showTranslationSheet = false }) {
-                                    Icon(Icons.Default.Close, contentDescription = "Tutup")
-                                }
-                            }
-
-                            Spacer(modifier = Modifier.height(10.dp))
-
-                            surah.ayats.forEach { ayat ->
-                                Column(modifier = Modifier.padding(vertical = 8.dp)) {
-                                    Text(
-                                        text = "Ayat ${ayat.number}:",
-                                        fontSize = 12.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = PrimaryTosca
-                                    )
-                                    Text(
-                                        text = ayat.translation,
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
-                                    HorizontalDivider(
-                                        modifier = Modifier.padding(top = 8.dp),
-                                        color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
-                                    )
-                                }
-                            }
-
-                            Spacer(modifier = Modifier.height(24.dp))
                         }
                     }
                 }
             }
         }
+
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier.align(Alignment.BottomCenter)
+        )
     }
+}
+
+/**
+ * Paginates verses into fixed pages for true Mushaf Madinah reading.
+ * Short surahs (<= 7 verses) fit on 1 single page without any scroll.
+ */
+fun paginateAyats(ayats: List<QuranAyat>): List<List<QuranAyat>> {
+    if (ayats.isEmpty()) return emptyList()
+    if (ayats.size <= 7) return listOf(ayats)
+
+    val pages = mutableListOf<List<QuranAyat>>()
+    var currentChunk = mutableListOf<QuranAyat>()
+    var currentLength = 0
+    val maxCharsPerPage = 360
+
+    for (ayat in ayats) {
+        val ayatLen = ayat.arabic.length + 15
+        if (currentChunk.isNotEmpty() && (currentLength + ayatLen > maxCharsPerPage || currentChunk.size >= 8)) {
+            pages.add(currentChunk.toList())
+            currentChunk = mutableListOf()
+            currentLength = 0
+        }
+        currentChunk.add(ayat)
+        currentLength += ayatLen
+    }
+    if (currentChunk.isNotEmpty()) {
+        pages.add(currentChunk.toList())
+    }
+    return pages
 }
 
 // Convert numbers to Arabic numeral digits (١, ٢, ٣...)
