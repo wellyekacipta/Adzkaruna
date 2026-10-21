@@ -4,6 +4,7 @@ import android.content.Context
 import com.example.doaharianmuslimin.data.model.CommunityPrayer
 import com.example.doaharianmuslimin.data.remote.CloudConfig
 import com.example.doaharianmuslimin.data.remote.CloudPrayerSync
+import com.example.doaharianmuslimin.data.remote.FirebasePrayerService
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -60,6 +61,18 @@ class CommunityPrayerRepository(context: Context) {
         _prayersFlow.value = loaded
         startRealtimeSimulation()
         syncWithCloud()
+        initFirebaseRealtime()
+    }
+
+    private fun initFirebaseRealtime() {
+        try {
+            FirebasePrayerService.ensureAnonymousAuth()
+            FirebasePrayerService.listenToPrayersRealtime { remotePrayers ->
+                if (remotePrayers.isNotEmpty()) {
+                    savePrayers(remotePrayers)
+                }
+            }
+        } catch (_: Exception) {}
     }
 
     private fun syncWithCloud() {
@@ -143,6 +156,9 @@ class CommunityPrayerRepository(context: Context) {
         // Masukkan langsung ke urutan paling atas secara realtime
         current.add(0, newPrayer)
         savePrayers(current)
+        try {
+            FirebasePrayerService.sendPrayer(newPrayer)
+        } catch (_: Exception) {}
         scope.launch {
             CloudPrayerSync.postPrayerToCloud(newPrayer)
         }
@@ -159,6 +175,13 @@ class CommunityPrayerRepository(context: Context) {
         }
         savePrayers(current)
         current.find { it.id == prayerId }?.let { updatedItem ->
+            try {
+                if (updatedItem.isAamiined) {
+                    FirebasePrayerService.incrementAamiin(prayerId)
+                } else {
+                    FirebasePrayerService.decrementAamiin(prayerId)
+                }
+            } catch (_: Exception) {}
             scope.launch {
                 CloudPrayerSync.incrementAamiinInCloud(updatedItem.id, updatedItem.aamiinCount)
             }

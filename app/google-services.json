@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "225241391583",
+    "project_id": "adzkaruna",
+    "storage_bucket": "adzkaruna.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:225241391583:android:bbc3900805e369e2d1a46a",
+        "android_client_info": {
+          "package_name": "com.example.doaharianmuslimin"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCRbt-FT_oA-u6y1MgaJOZsVQ1WtdNYrhQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
