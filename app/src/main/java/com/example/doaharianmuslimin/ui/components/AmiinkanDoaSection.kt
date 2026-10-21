@@ -7,9 +7,9 @@ import android.os.Vibrator
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -124,14 +124,12 @@ fun AmiinkanDoaSection(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Horizontal scrollable list of community prayer cards with uniform size
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .horizontalScroll(rememberScrollState()),
+        // High-performance LazyRow with unique keys for smooth scrolling
+        LazyRow(
+            modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            prayers.forEach { prayer ->
+            items(prayers, key = { it.id }) { prayer ->
                 CommunityPrayerCard(
                     prayer = prayer,
                     onAamiinClick = {

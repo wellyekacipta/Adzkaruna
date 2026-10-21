@@ -10,9 +10,9 @@ import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -31,14 +31,13 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.doaharianmuslimin.ui.theme.AccentGold
@@ -59,7 +58,7 @@ fun QiblaScreen(
     var sensorAvailable by remember { mutableStateOf(true) }
     var hasVibratedOnAligned by remember { mutableStateOf(false) }
 
-    // Register sensor listener for smooth orientation
+    // Register sensor listener for ultra-smooth orientation
     DisposableEffect(Unit) {
         val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as? SensorManager
         val rotationSensor = sensorManager?.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)
@@ -73,30 +72,49 @@ fun QiblaScreen(
             private val rotationMatrix = FloatArray(9)
             private val orientationAngles = FloatArray(3)
             private var lastHeading = 0f
+            private var isInitialized = false
 
             override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
 
             override fun onSensorChanged(event: SensorEvent?) {
                 if (event == null) return
+                var azimuth = 0f
+
                 if (event.sensor.type == Sensor.TYPE_ROTATION_VECTOR) {
                     SensorManager.getRotationMatrixFromVector(rotationMatrix, event.values)
                     SensorManager.getOrientation(rotationMatrix, orientationAngles)
-                    var azimuth = Math.toDegrees(orientationAngles[0].toDouble()).toFloat()
+                    azimuth = Math.toDegrees(orientationAngles[0].toDouble()).toFloat()
                     if (azimuth < 0) azimuth += 360f
-
-                    // Low-pass filter for smooth motion
-                    val alpha = 0.2f
-                    val smoothed = lastHeading + alpha * (azimuth - lastHeading)
-                    lastHeading = smoothed
-                    deviceHeading = smoothed
                 } else if (event.sensor.type == Sensor.TYPE_ORIENTATION) {
-                    deviceHeading = event.values[0]
+                    azimuth = event.values[0]
+                }
+
+                if (!isInitialized) {
+                    lastHeading = azimuth
+                    isInitialized = true
+                    deviceHeading = azimuth
+                    return
+                }
+
+                // Shortest angular difference (-180° to +180°) to prevent 360° flip across North
+                var diff = azimuth - lastHeading
+                while (diff < -180f) diff += 360f
+                while (diff > 180f) diff -= 360f
+
+                // Low-pass filter for butter-smooth movement
+                val alpha = 0.18f
+                val smoothed = (lastHeading + alpha * diff + 360f) % 360f
+                lastHeading = smoothed
+
+                // Only trigger state update when change is visible (reduces recomposition workload)
+                if (abs(diff) > 0.35f) {
+                    deviceHeading = smoothed
                 }
             }
         }
 
         if (rotationSensor != null) {
-            sensorManager?.registerListener(listener, rotationSensor, SensorManager.SENSOR_DELAY_UI)
+            sensorManager?.registerListener(listener, rotationSensor, SensorManager.SENSOR_DELAY_GAME)
         }
 
         onDispose {
@@ -106,7 +124,6 @@ fun QiblaScreen(
 
     // Relative angle to Ka'bah from current phone heading
     val relativeAngle = (kaabaAzimuth - deviceHeading + 360f) % 360f
-    // Is aligned if within ±4 degrees
     val isAligned = relativeAngle <= 4f || relativeAngle >= 356f
 
     // Haptic feedback when accurately facing Kaaba
@@ -117,13 +134,13 @@ fun QiblaScreen(
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                     val vibratorManager = context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as? VibratorManager
                     vibratorManager?.defaultVibrator?.vibrate(
-                        VibrationEffect.createOneShot(50, VibrationEffect.DEFAULT_AMPLITUDE)
+                        VibrationEffect.createOneShot(40, VibrationEffect.DEFAULT_AMPLITUDE)
                     )
                 } else {
                     @Suppress("DEPRECATION")
                     val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
                     @Suppress("DEPRECATION")
-                    vibrator?.vibrate(50)
+                    vibrator?.vibrate(40)
                 }
             } catch (_: Exception) {}
         } else if (!isAligned) {
@@ -131,13 +148,10 @@ fun QiblaScreen(
         }
     }
 
-    // Animated compass rotation for ultra-smooth rendering
-    val animatedCompassRotation by animateFloatAsState(
+    // Smooth animation with tween interpolation
+    val animatedRotation by animateFloatAsState(
         targetValue = -deviceHeading,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessLow
-        ),
+        animationSpec = tween(durationMillis = 100, easing = FastOutSlowInEasing),
         label = "compassRotation"
     )
 
@@ -159,7 +173,7 @@ fun QiblaScreen(
                             color = Color.White
                         )
                         Text(
-                            text = "Akurasi Tinggi • Sensor Magnetik",
+                            text = "Akurasi Tinggi • Sensor Magnetik Halus",
                             fontSize = 11.sp,
                             color = Color.White.copy(alpha = 0.85f)
                         )
@@ -289,7 +303,7 @@ fun QiblaScreen(
                 }
             }
 
-            // Smooth Compass Graphic
+            // GPU Hardware-Accelerated Smooth Compass Graphic (using graphicsLayer to prevent relayout jank)
             Box(
                 modifier = Modifier
                     .size(280.dp)
@@ -300,7 +314,6 @@ fun QiblaScreen(
                 // Outer Ring Canvas
                 Canvas(modifier = Modifier.fillMaxSize()) {
                     val radius = size.minDimension / 2
-                    val center = Offset(size.width / 2, size.height / 2)
 
                     // Background outer circle
                     drawCircle(
@@ -310,11 +323,13 @@ fun QiblaScreen(
                     )
                 }
 
-                // Rotating Dial with Compass Points & Ka'bah Marker
+                // Rotating Dial with GPU GraphicsLayer (zero composition & zero relayout cost)
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .rotate(animatedCompassRotation)
+                        .graphicsLayer {
+                            rotationZ = animatedRotation
+                        }
                 ) {
                     // Cardinal Points
                     Text(
@@ -358,7 +373,9 @@ fun QiblaScreen(
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .rotate(kaabaAzimuth),
+                            .graphicsLayer {
+                                rotationZ = kaabaAzimuth
+                            },
                         contentAlignment = Alignment.TopCenter
                     ) {
                         Column(
