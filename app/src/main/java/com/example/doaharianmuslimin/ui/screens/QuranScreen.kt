@@ -956,10 +956,11 @@ fun QuranScreen(
                                                                 Text(
                                                                     text = buildTajweedAnnotatedString(ayat.arabic, isDark),
                                                                     fontFamily = UthmanicFontFamily,
-                                                                    fontSize = 21.sp,
-                                                                    lineHeight = 46.sp,
+                                                                    fontSize = 26.sp,
+                                                                    lineHeight = 52.sp,
+                                                                    fontWeight = FontWeight.Medium,
                                                                     textAlign = TextAlign.End,
-                                                                    color = Color(0xFF1A1A1A),
+                                                                    color = Color(0xFF0D0D0D),
                                                                     modifier = Modifier.weight(1f)
                                                                 )
 
@@ -1357,7 +1358,7 @@ fun QuranScreen(
  */
 fun buildTajweedAnnotatedString(text: String, isDark: Boolean): AnnotatedString {
     return buildAnnotatedString {
-        val baseColor = if (isDark) Color(0xFFE8E8E8) else Color(0xFF1A1A1A)
+        val baseColor = if (isDark) Color(0xFFEEEEEE) else Color(0xFF0D0D0D)  // Hitam tinta pekat
         val madColor = Color(0xFF0091EA)       // Cyan / Biru Langit (Mad Panjang 4-6 harakat)
         val ghunnahColor = Color(0xFFE91E63)   // Magenta / Pink (Ghunnah)
         val ikhfaColor = Color(0xFF2E7D32)     // Hijau (Ikhfa & Idgham)
