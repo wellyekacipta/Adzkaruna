@@ -13,6 +13,11 @@ val UthmanicFontFamily = FontFamily(
     Font(R.font.uthmanic, FontWeight.Normal)
 )
 
+// Font Resmi Al-Qur'an Standar Indonesia (LPMQ Kemenag RI - Isep Misbah)
+val LpmqFontFamily = FontFamily(
+    Font(R.font.lpmq, FontWeight.Normal)
+)
+
 val Typography = Typography(
     headlineLarge = TextStyle(
         fontFamily = FontFamily.Default,

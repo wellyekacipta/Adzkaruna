@@ -48,6 +48,7 @@ import com.example.doaharianmuslimin.data.model.QuranSurah
 import com.example.doaharianmuslimin.ui.theme.AccentGold
 import com.example.doaharianmuslimin.ui.theme.PrimaryTosca
 import com.example.doaharianmuslimin.ui.theme.UthmanicFontFamily
+import com.example.doaharianmuslimin.ui.theme.LpmqFontFamily
 import kotlinx.coroutines.launch
 
 enum class QuranViewMode {
@@ -84,6 +85,7 @@ fun QuranScreen(
 
     // State for Selected Verse Tafsir BottomSheet (Kemenag API)
     var selectedAyatForTafsir by remember { mutableStateOf<QuranAyat?>(null) }
+    var blockedAyat by remember { mutableStateOf<QuranAyat?>(null) }
     var tafsirContent by remember { mutableStateOf<String?>(null) }
     var isLoadingTafsir by remember { mutableStateOf(false) }
 
@@ -391,7 +393,7 @@ fun QuranScreen(
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Text(
                                         text = surah.arabicName,
-                                        fontFamily = UthmanicFontFamily,
+                                        fontFamily = LpmqFontFamily,
                                         fontSize = 20.sp,
                                         color = MaterialTheme.colorScheme.primary,
                                         modifier = Modifier.padding(end = 6.dp)
@@ -596,7 +598,7 @@ fun QuranScreen(
                                         ) {
                                             Text(
                                                 text = "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ",
-                                                fontFamily = UthmanicFontFamily,
+                                                fontFamily = LpmqFontFamily,
                                                 fontSize = 24.sp,
                                                 color = MaterialTheme.colorScheme.primary
                                             )
@@ -701,7 +703,7 @@ fun QuranScreen(
                                         // Arabic Text with Tajweed Colors
                                         Text(
                                             text = buildTajweedAnnotatedString(ayat.arabic, isDark),
-                                            fontFamily = UthmanicFontFamily,
+                                            fontFamily = LpmqFontFamily,
                                             fontSize = 25.sp,
                                             lineHeight = 46.sp,
                                             textAlign = TextAlign.End,
@@ -805,7 +807,7 @@ fun QuranScreen(
                                                 text = "\u0639",
                                                 fontSize = 12.sp,
                                                 fontWeight = FontWeight.Bold,
-                                                fontFamily = UthmanicFontFamily,
+                                                fontFamily = LpmqFontFamily,
                                                 color = greenDark
                                             )
                                         }
@@ -890,7 +892,7 @@ fun QuranScreen(
                                             ) {
                                                 Text(
                                                     text = "\u0633\u064f\u0648\u0631\u064e\u0629\u064f ${surah.arabicName}",
-                                                    fontFamily = UthmanicFontFamily,
+                                                    fontFamily = LpmqFontFamily,
                                                     fontSize = 19.sp,
                                                     fontWeight = FontWeight.Bold,
                                                     color = greenDark,
@@ -912,7 +914,7 @@ fun QuranScreen(
                                                     Spacer(modifier = Modifier.height(4.dp))
                                                     Text(
                                                         text = "\u0628\u0650\u0633\u0652\u0645\u0650 \u0627\u0644\u0644\u0651\u064e\u0647\u0650 \u0627\u0644\u0631\u0651\u064e\u062d\u0652\u0645\u064e\u0670\u0646\u0650 \u0627\u0644\u0631\u0651\u064e\u062d\u0650\u064a\u0645\u0650",
-                                                        fontFamily = UthmanicFontFamily,
+                                                        fontFamily = LpmqFontFamily,
                                                         fontSize = 16.sp,
                                                         color = Color(0xFF1B5E20),
                                                         textAlign = TextAlign.Center,
@@ -934,20 +936,20 @@ fun QuranScreen(
                                             contentPadding = PaddingValues(vertical = 2.dp)
                                         ) {
                                             items(currentAyats, key = { it.number }) { ayat ->
-                                                val isSelected = selectedAyatForTafsir?.number == ayat.number
+                                                val isBlocked = blockedAyat?.number == ayat.number
 
                                                 Column {
-                                                    Box(
+                                                    Surface(
                                                         modifier = Modifier
                                                             .fillMaxWidth()
-                                                            .background(
-                                                                if (isSelected) goldColor.copy(alpha = 0.17f)
-                                                                else Color.Transparent
-                                                            )
-                                                            .clickable { selectedAyatForTafsir = ayat }
-                                                            .padding(horizontal = 1.dp, vertical = 2.dp)
+                                                            .clickable {
+                                                                blockedAyat = if (blockedAyat?.number == ayat.number) null else ayat
+                                                            },
+                                                        color = if (isBlocked) Color(0xFFFFF8E1) else Color.Transparent,
+                                                        shape = RoundedCornerShape(8.dp),
+                                                        border = if (isBlocked) BorderStroke(1.2.dp, goldColor) else null
                                                     ) {
-                                                        Column {
+                                                        Column(modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp)) {
                                                             Row(
                                                                 modifier = Modifier.fillMaxWidth(),
                                                                 horizontalArrangement = Arrangement.End,
@@ -955,7 +957,7 @@ fun QuranScreen(
                                                             ) {
                                                                 Text(
                                                                     text = buildTajweedAnnotatedString(ayat.arabic, isDark),
-                                                                    fontFamily = UthmanicFontFamily,
+                                                                    fontFamily = LpmqFontFamily,
                                                                     fontSize = 26.sp,
                                                                     lineHeight = 52.sp,
                                                                     fontWeight = FontWeight.Medium,
@@ -964,11 +966,11 @@ fun QuranScreen(
                                                                     modifier = Modifier.weight(1f)
                                                                 )
 
-                                                                Spacer(modifier = Modifier.width(4.dp))
+                                                                Spacer(modifier = Modifier.width(6.dp))
 
                                                                 Box(
                                                                     modifier = Modifier
-                                                                        .padding(top = 5.dp)
+                                                                        .padding(top = 6.dp)
                                                                         .size(26.dp),
                                                                     contentAlignment = Alignment.Center
                                                                 ) {
@@ -992,45 +994,111 @@ fun QuranScreen(
                                                                 }
                                                             }
 
-                                                            if (isSelected) {
-                                                                Spacer(modifier = Modifier.height(3.dp))
+                                                            // ================= MENU AKSI BLOK AYAT (QUR'AN KEMENAG RI) =================
+                                                            if (isBlocked) {
+                                                                Spacer(modifier = Modifier.height(6.dp))
                                                                 Surface(
                                                                     modifier = Modifier.fillMaxWidth(),
-                                                                    color = Color(0xFFF1F8E9),
-                                                                    shape = RoundedCornerShape(6.dp),
-                                                                    border = BorderStroke(0.5.dp, greenLight.copy(alpha = 0.4f))
+                                                                    color = Color.White,
+                                                                    shape = RoundedCornerShape(8.dp),
+                                                                    border = BorderStroke(1.dp, greenLight.copy(alpha = 0.4f)),
+                                                                    shadowElevation = 2.dp
                                                                 ) {
-                                                                    Row(
-                                                                        modifier = Modifier
-                                                                            .fillMaxWidth()
-                                                                            .padding(horizontal = 8.dp, vertical = 5.dp),
-                                                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                                                        verticalAlignment = Alignment.Top
-                                                                    ) {
-                                                                        Text(
-                                                                            text = ayat.translation,
-                                                                            fontSize = 10.sp,
-                                                                            lineHeight = 15.sp,
-                                                                            color = Color(0xFF1B5E20),
-                                                                            modifier = Modifier.weight(1f)
-                                                                        )
-                                                                        Spacer(modifier = Modifier.width(6.dp))
-                                                                        Surface(
-                                                                            shape = RoundedCornerShape(5.dp),
-                                                                            color = greenDark,
-                                                                            modifier = Modifier.clickable { }
-                                                                        ) {
+                                                                    Column(modifier = Modifier.padding(8.dp)) {
+                                                                        // Terjemahan Kemenag RI
+                                                                        Row(verticalAlignment = Alignment.Top) {
+                                                                            Surface(
+                                                                                color = greenDark,
+                                                                                shape = RoundedCornerShape(4.dp),
+                                                                                modifier = Modifier.padding(top = 2.dp)
+                                                                            ) {
+                                                                                Text(
+                                                                                    text = "Ayat ${ayat.number}",
+                                                                                    fontSize = 8.5.sp,
+                                                                                    fontWeight = FontWeight.Bold,
+                                                                                    color = Color.White,
+                                                                                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                                                                                )
+                                                                            }
+                                                                            Spacer(modifier = Modifier.width(6.dp))
                                                                             Text(
-                                                                                text = "Tafsir",
-                                                                                fontSize = 9.sp,
-                                                                                fontWeight = FontWeight.Bold,
-                                                                                color = Color.White,
-                                                                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                                                                text = ayat.translation,
+                                                                                fontSize = 11.sp,
+                                                                                lineHeight = 16.sp,
+                                                                                color = Color(0xFF1B5E20),
+                                                                                modifier = Modifier.weight(1f)
                                                                             )
+                                                                        }
+
+                                                                        Spacer(modifier = Modifier.height(8.dp))
+                                                                        HorizontalDivider(color = Color(0xFFE0E0E0), thickness = 0.5.dp)
+                                                                        Spacer(modifier = Modifier.height(6.dp))
+
+                                                                        // Toolbar Tombol Aksi Kemenag
+                                                                        Row(
+                                                                            modifier = Modifier.fillMaxWidth(),
+                                                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                                                            verticalAlignment = Alignment.CenterVertically
+                                                                        ) {
+                                                                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                                                                // Tombol Buka Tafsir Kemenag RI
+                                                                                FilledTonalButton(
+                                                                                    onClick = { selectedAyatForTafsir = ayat },
+                                                                                    shape = RoundedCornerShape(6.dp),
+                                                                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                                                                                    modifier = Modifier.height(28.dp),
+                                                                                    colors = ButtonDefaults.filledTonalButtonColors(
+                                                                                        containerColor = PrimaryTosca,
+                                                                                        contentColor = Color.White
+                                                                                    )
+                                                                                ) {
+                                                                                    Icon(Icons.Default.MenuBook, contentDescription = null, modifier = Modifier.size(13.dp))
+                                                                                    Spacer(modifier = Modifier.width(4.dp))
+                                                                                    Text("Tafsir", fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                                                                }
+
+                                                                                // Tombol Putar Murottal Ayat
+                                                                                OutlinedButton(
+                                                                                    onClick = { playAyatAudio(ayat.audioUrl) },
+                                                                                    shape = RoundedCornerShape(6.dp),
+                                                                                    contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
+                                                                                    modifier = Modifier.height(28.dp)
+                                                                                ) {
+                                                                                    Icon(
+                                                                                        if (isPlayingAyatAudio) Icons.Default.Stop else Icons.Default.PlayArrow,
+                                                                                        contentDescription = null,
+                                                                                        modifier = Modifier.size(13.dp),
+                                                                                        tint = greenDark
+                                                                                    )
+                                                                                    Spacer(modifier = Modifier.width(3.dp))
+                                                                                    Text(if (isPlayingAyatAudio) "Stop" else "Putar", fontSize = 9.5.sp, color = greenDark)
+                                                                                }
+                                                                            }
+
+                                                                            Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                                                                                IconButton(
+                                                                                    onClick = { copyAyat(ayat, surah.name) },
+                                                                                    modifier = Modifier.size(28.dp)
+                                                                                ) {
+                                                                                    Icon(Icons.Default.ContentCopy, contentDescription = "Salin", tint = greenDark, modifier = Modifier.size(14.dp))
+                                                                                }
+                                                                                IconButton(
+                                                                                    onClick = { shareAyat(ayat, surah.name) },
+                                                                                    modifier = Modifier.size(28.dp)
+                                                                                ) {
+                                                                                    Icon(Icons.Default.Share, contentDescription = "Bagikan", tint = greenDark, modifier = Modifier.size(14.dp))
+                                                                                }
+                                                                                IconButton(
+                                                                                    onClick = { blockedAyat = null },
+                                                                                    modifier = Modifier.size(28.dp)
+                                                                                ) {
+                                                                                    Icon(Icons.Default.Close, contentDescription = "Tutup", tint = Color.Gray, modifier = Modifier.size(14.dp))
+                                                                                }
+                                                                            }
                                                                         }
                                                                     }
                                                                 }
-                                                                Spacer(modifier = Modifier.height(3.dp))
+                                                                Spacer(modifier = Modifier.height(4.dp))
                                                             }
                                                         }
                                                     }
@@ -1252,7 +1320,7 @@ fun QuranScreen(
                     // Lafadz Ayat Arab dengan Tajwid
                     Text(
                         text = buildTajweedAnnotatedString(ayat.arabic, isDark),
-                        fontFamily = UthmanicFontFamily,
+                        fontFamily = LpmqFontFamily,
                         fontSize = 26.sp,
                         lineHeight = 48.sp,
                         textAlign = TextAlign.End,
