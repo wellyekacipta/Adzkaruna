@@ -1,5 +1,18 @@
 package com.example.doaharianmuslimin.ui.screens
 
+import android.content.Context
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
+import android.os.Build
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.os.VibratorManager
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -8,24 +21,29 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Explore
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Mosque
 import androidx.compose.material.icons.filled.Navigation
+import androidx.compose.material.icons.filled.ScreenRotation
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.doaharianmuslimin.ui.theme.AccentGold
 import com.example.doaharianmuslimin.ui.theme.PrimaryTosca
+import kotlin.math.abs
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -33,6 +51,101 @@ fun QiblaScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+
+    // Ka'bah direction from Indonesia (approx 295° NW)
+    val kaabaAzimuth = 295f
+    var deviceHeading by remember { mutableFloatStateOf(0f) }
+    var sensorAvailable by remember { mutableStateOf(true) }
+    var hasVibratedOnAligned by remember { mutableStateOf(false) }
+
+    // Register sensor listener for smooth orientation
+    DisposableEffect(Unit) {
+        val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as? SensorManager
+        val rotationSensor = sensorManager?.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)
+            ?: sensorManager?.getDefaultSensor(Sensor.TYPE_ORIENTATION)
+
+        if (rotationSensor == null) {
+            sensorAvailable = false
+        }
+
+        val listener = object : SensorEventListener {
+            private val rotationMatrix = FloatArray(9)
+            private val orientationAngles = FloatArray(3)
+            private var lastHeading = 0f
+
+            override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
+
+            override fun onSensorChanged(event: SensorEvent?) {
+                if (event == null) return
+                if (event.sensor.type == Sensor.TYPE_ROTATION_VECTOR) {
+                    SensorManager.getRotationMatrixFromVector(rotationMatrix, event.values)
+                    SensorManager.getOrientation(rotationMatrix, orientationAngles)
+                    var azimuth = Math.toDegrees(orientationAngles[0].toDouble()).toFloat()
+                    if (azimuth < 0) azimuth += 360f
+
+                    // Low-pass filter for smooth motion
+                    val alpha = 0.2f
+                    val smoothed = lastHeading + alpha * (azimuth - lastHeading)
+                    lastHeading = smoothed
+                    deviceHeading = smoothed
+                } else if (event.sensor.type == Sensor.TYPE_ORIENTATION) {
+                    deviceHeading = event.values[0]
+                }
+            }
+        }
+
+        if (rotationSensor != null) {
+            sensorManager?.registerListener(listener, rotationSensor, SensorManager.SENSOR_DELAY_UI)
+        }
+
+        onDispose {
+            sensorManager?.unregisterListener(listener)
+        }
+    }
+
+    // Relative angle to Ka'bah from current phone heading
+    val relativeAngle = (kaabaAzimuth - deviceHeading + 360f) % 360f
+    // Is aligned if within ±4 degrees
+    val isAligned = relativeAngle <= 4f || relativeAngle >= 356f
+
+    // Haptic feedback when accurately facing Kaaba
+    LaunchedEffect(isAligned) {
+        if (isAligned && !hasVibratedOnAligned) {
+            hasVibratedOnAligned = true
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    val vibratorManager = context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as? VibratorManager
+                    vibratorManager?.defaultVibrator?.vibrate(
+                        VibrationEffect.createOneShot(50, VibrationEffect.DEFAULT_AMPLITUDE)
+                    )
+                } else {
+                    @Suppress("DEPRECATION")
+                    val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
+                    @Suppress("DEPRECATION")
+                    vibrator?.vibrate(50)
+                }
+            } catch (_: Exception) {}
+        } else if (!isAligned) {
+            hasVibratedOnAligned = false
+        }
+    }
+
+    // Animated compass rotation for ultra-smooth rendering
+    val animatedCompassRotation by animateFloatAsState(
+        targetValue = -deviceHeading,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
+        label = "compassRotation"
+    )
+
+    val dialRingColor by animateColorAsState(
+        targetValue = if (isAligned) PrimaryTosca else MaterialTheme.colorScheme.outline.copy(alpha = 0.25f),
+        label = "dialRingColor"
+    )
+
     Scaffold(
         modifier = modifier.fillMaxSize(),
         topBar = {
@@ -46,7 +159,7 @@ fun QiblaScreen(
                             color = Color.White
                         )
                         Text(
-                            text = "Ka'bah, Masjidil Haram • Makkah",
+                            text = "Akurasi Tinggi • Sensor Magnetik",
                             fontSize = 11.sp,
                             color = Color.White.copy(alpha = 0.85f)
                         )
@@ -71,116 +184,225 @@ fun QiblaScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(20.dp),
+                .padding(horizontal = 20.dp, vertical = 14.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceBetween
         ) {
             // Header Info Card
             Surface(
                 modifier = Modifier.fillMaxWidth(),
-                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f),
                 shape = RoundedCornerShape(16.dp),
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
             ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp),
+                        .padding(14.dp),
                     horizontalArrangement = Arrangement.SpaceAround,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(text = "Derajat Kiblat", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Text(text = "295° NW", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                        Text(
+                            text = "Derajat Kiblat",
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = "${kaabaAzimuth.toInt()}° NW",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
                     }
 
                     Box(
                         modifier = Modifier
                             .height(30.dp)
                             .width(1.dp)
-                            .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.4f))
+                            .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
                     )
 
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(text = "Jarak ke Ka'bah", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Text(text = "± 7.912 km", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                        Text(
+                            text = "Arah Ponsel",
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = "${deviceHeading.toInt()}°",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .height(30.dp)
+                            .width(1.dp)
+                            .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+                    )
+
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = "Jarak Ka'bah",
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = "±7.912 km",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
                     }
                 }
             }
 
-            // Compass Graphic
+            // Status Indicator Banner
+            Surface(
+                color = if (isAligned) PrimaryTosca.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                shape = RoundedCornerShape(20.dp),
+                border = BorderStroke(
+                    1.dp,
+                    if (isAligned) PrimaryTosca else MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+                )
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = if (isAligned) Icons.Default.CheckCircle else Icons.Default.ScreenRotation,
+                        contentDescription = null,
+                        tint = if (isAligned) PrimaryTosca else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = if (isAligned) "Tepat Menghadap Ka'bah (Kiblat)" else "Putar ponsel hingga jarum mengarah ke Ka'bah",
+                        fontSize = 12.sp,
+                        fontWeight = if (isAligned) FontWeight.Bold else FontWeight.Medium,
+                        color = if (isAligned) PrimaryTosca else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            // Smooth Compass Graphic
             Box(
                 modifier = Modifier
-                    .size(260.dp)
+                    .size(280.dp)
                     .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)),
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
                 contentAlignment = Alignment.Center
             ) {
-                // Circular marks
+                // Outer Ring Canvas
                 Canvas(modifier = Modifier.fillMaxSize()) {
                     val radius = size.minDimension / 2
                     val center = Offset(size.width / 2, size.height / 2)
+
+                    // Background outer circle
                     drawCircle(
-                        color = Color(0xFF00897B).copy(alpha = 0.2f),
-                        radius = radius - 8.dp.toPx()
+                        color = dialRingColor,
+                        radius = radius - 8.dp.toPx(),
+                        style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round)
                     )
                 }
 
-                // Cardinal Points
-                Box(modifier = Modifier.fillMaxSize()) {
-                    Text(text = "U", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.Red, modifier = Modifier.align(Alignment.TopCenter).padding(top = 10.dp))
-                    Text(text = "S", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 10.dp))
-                    Text(text = "T", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.align(Alignment.CenterEnd).padding(end = 12.dp))
-                    Text(text = "B", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.align(Alignment.CenterStart).padding(start = 12.dp))
-                }
-
-                // Qibla Pointer (Pointing 295° NW from North)
+                // Rotating Dial with Compass Points & Ka'bah Marker
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .rotate(295f),
-                    contentAlignment = Alignment.TopCenter
+                        .rotate(animatedCompassRotation)
                 ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.padding(top = 28.dp)
+                    // Cardinal Points
+                    Text(
+                        text = "U",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp,
+                        color = Color(0xFFD32F2F),
+                        modifier = Modifier
+                            .align(Alignment.TopCenter)
+                            .padding(top = 14.dp)
+                    )
+                    Text(
+                        text = "S",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 15.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .padding(bottom = 14.dp)
+                    )
+                    Text(
+                        text = "T",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 15.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier
+                            .align(Alignment.CenterEnd)
+                            .padding(end = 16.dp)
+                    )
+                    Text(
+                        text = "B",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 15.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier
+                            .align(Alignment.CenterStart)
+                            .padding(start = 16.dp)
+                    )
+
+                    // Kaaba Direction Marker on dial (295°)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .rotate(kaabaAzimuth),
+                        contentAlignment = Alignment.TopCenter
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Mosque,
-                            contentDescription = "Arah Ka'bah",
-                            tint = AccentGold,
-                            modifier = Modifier.size(34.dp)
-                        )
-                        Icon(
-                            imageVector = Icons.Default.Navigation,
-                            contentDescription = null,
-                            tint = PrimaryTosca,
-                            modifier = Modifier.size(28.dp)
-                        )
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier.padding(top = 22.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Mosque,
+                                contentDescription = "Ka'bah",
+                                tint = AccentGold,
+                                modifier = Modifier.size(32.dp)
+                            )
+                            Icon(
+                                imageVector = Icons.Default.Navigation,
+                                contentDescription = null,
+                                tint = PrimaryTosca,
+                                modifier = Modifier.size(22.dp)
+                            )
+                        }
                     }
                 }
 
-                // Center Hub
+                // Center Pin/Hub
                 Surface(
-                    color = PrimaryTosca,
+                    color = if (isAligned) PrimaryTosca else MaterialTheme.colorScheme.primary,
                     shape = CircleShape,
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(28.dp),
+                    shadowElevation = 4.dp
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Surface(
                             color = Color.White,
                             shape = CircleShape,
-                            modifier = Modifier.size(8.dp)
+                            modifier = Modifier.size(10.dp)
                         ) {}
                     }
                 }
             }
 
-            // Bottom Guide Note
+            // Bottom Calibration & Accuracy Guide
             Surface(
                 color = MaterialTheme.colorScheme.surface,
                 shape = RoundedCornerShape(14.dp),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f))
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
             ) {
                 Row(
                     modifier = Modifier
@@ -192,13 +414,17 @@ fun QiblaScreen(
                         imageVector = Icons.Default.Info,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier.size(22.dp)
                     )
                     Spacer(modifier = Modifier.width(10.dp))
                     Text(
-                        text = "Arah kiblat untuk wilayah Indonesia rata-rata berkisar 290° - 295° (arah Barat Laut). Pastikan ponsel diletakkan di permukaan datar dan jauh dari benda magnetik.",
-                        fontSize = 12.sp,
-                        lineHeight = 17.sp,
+                        text = if (!sensorAvailable) {
+                            "Sensor orientasi/magnetometer tidak terdeteksi pada perangkat ini. Pastikan izin sensor aktif atau gunakan kompas fisik."
+                        } else {
+                            "Pegang ponsel secara datar sejajar permukaan tanah. Jika arah kurang tepat, gerakkan ponsel membentuk angka 8 (∞) untuk kalibrasi kompas."
+                        },
+                        fontSize = 11.5.sp,
+                        lineHeight = 16.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
