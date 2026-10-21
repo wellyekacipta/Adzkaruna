@@ -533,43 +533,76 @@ fun QuranScreen(
                         }
                     }
                 } else {
-                    // Mode Toggle Chip Bar
+                    // Mode Toggle Tab Bar (Presisi, Rapi & Tidak Tumpang Tindih)
                     Surface(
-                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
-                        modifier = Modifier.fillMaxWidth()
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 14.dp, vertical = 6.dp),
+                        shape = RoundedCornerShape(10.dp)
                     ) {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 14.dp, vertical = 6.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
+                                .padding(3.dp),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
-                            Text(
-                                text = if (viewMode == QuranViewMode.PER_BARIS) "Mode Ayat (Per Baris)" else "Mode Mushaf Kemenag RI (Tajwid)",
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.primary
-                            )
+                            Surface(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(36.dp)
+                                    .clickable { viewMode = QuranViewMode.PER_BARIS },
+                                color = if (viewMode == QuranViewMode.PER_BARIS) PrimaryTosca else Color.Transparent,
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxSize(),
+                                    horizontalArrangement = Arrangement.Center,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        Icons.AutoMirrored.Filled.ViewList,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(16.dp),
+                                        tint = if (viewMode == QuranViewMode.PER_BARIS) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        "Mode Per Baris",
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = if (viewMode == QuranViewMode.PER_BARIS) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
 
-                            Row {
-                                FilterChip(
-                                    selected = viewMode == QuranViewMode.PER_BARIS,
-                                    onClick = { viewMode = QuranViewMode.PER_BARIS },
-                                    label = { Text("Per Baris", fontSize = 11.sp) },
-                                    leadingIcon = {
-                                        Icon(Icons.AutoMirrored.Filled.ViewList, contentDescription = null, modifier = Modifier.size(14.dp))
-                                    }
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                FilterChip(
-                                    selected = viewMode == QuranViewMode.PER_HALAMAN,
-                                    onClick = { viewMode = QuranViewMode.PER_HALAMAN },
-                                    label = { Text("Mushaf Kemenag", fontSize = 11.sp) },
-                                    leadingIcon = {
-                                        Icon(Icons.AutoMirrored.Filled.MenuBook, contentDescription = null, modifier = Modifier.size(14.dp))
-                                    }
-                                )
+                            Surface(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(36.dp)
+                                    .clickable { viewMode = QuranViewMode.PER_HALAMAN },
+                                color = if (viewMode == QuranViewMode.PER_HALAMAN) PrimaryTosca else Color.Transparent,
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxSize(),
+                                    horizontalArrangement = Arrangement.Center,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        Icons.AutoMirrored.Filled.MenuBook,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(16.dp),
+                                        tint = if (viewMode == QuranViewMode.PER_HALAMAN) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        "Mushaf Kemenag",
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = if (viewMode == QuranViewMode.PER_HALAMAN) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
                             }
                         }
                     }
@@ -952,25 +985,13 @@ fun QuranScreen(
                                                         Column(modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp)) {
                                                             Row(
                                                                 modifier = Modifier.fillMaxWidth(),
-                                                                horizontalArrangement = Arrangement.End,
+                                                                horizontalArrangement = Arrangement.SpaceBetween,
                                                                 verticalAlignment = Alignment.Top
                                                             ) {
-                                                                Text(
-                                                                    text = buildTajweedAnnotatedString(ayat.arabic, isDark),
-                                                                    fontFamily = LpmqFontFamily,
-                                                                    fontSize = 26.sp,
-                                                                    lineHeight = 52.sp,
-                                                                    fontWeight = FontWeight.Medium,
-                                                                    textAlign = TextAlign.End,
-                                                                    color = Color(0xFF0D0D0D),
-                                                                    modifier = Modifier.weight(1f)
-                                                                )
-
-                                                                Spacer(modifier = Modifier.width(6.dp))
-
+                                                                // Roset Nomor Ayat di Kiri (Akhir Bacaan Arab RTL)
                                                                 Box(
                                                                     modifier = Modifier
-                                                                        .padding(top = 6.dp)
+                                                                        .padding(top = 8.dp)
                                                                         .size(26.dp),
                                                                     contentAlignment = Alignment.Center
                                                                 ) {
@@ -987,11 +1008,25 @@ fun QuranScreen(
                                                                     }
                                                                     Text(
                                                                         text = toArabicDigits(ayat.number),
-                                                                        fontSize = 8.sp,
+                                                                        fontSize = 8.5.sp,
                                                                         fontWeight = FontWeight.Bold,
                                                                         color = rosetteTxt
                                                                     )
                                                                 }
+
+                                                                Spacer(modifier = Modifier.width(10.dp))
+
+                                                                // Teks Arab Mushaf Standar Indonesia Kemenag RI
+                                                                Text(
+                                                                    text = ayat.arabic,
+                                                                    fontFamily = LpmqFontFamily,
+                                                                    fontSize = 24.sp,
+                                                                    lineHeight = 48.sp,
+                                                                    fontWeight = FontWeight.Normal,
+                                                                    textAlign = TextAlign.End,
+                                                                    color = Color(0xFF0F172A),
+                                                                    modifier = Modifier.weight(1f)
+                                                                )
                                                             }
 
                                                             // ================= MENU AKSI BLOK AYAT (QUR'AN KEMENAG RI) =================
@@ -1426,64 +1461,15 @@ fun QuranScreen(
  */
 fun buildTajweedAnnotatedString(text: String, isDark: Boolean): AnnotatedString {
     return buildAnnotatedString {
-        val baseColor = if (isDark) Color(0xFFEEEEEE) else Color(0xFF0D0D0D)  // Hitam tinta pekat
-        val madColor = Color(0xFF0091EA)       // Cyan / Biru Langit (Mad Panjang 4-6 harakat)
-        val ghunnahColor = Color(0xFFE91E63)   // Magenta / Pink (Ghunnah)
-        val ikhfaColor = Color(0xFF2E7D32)     // Hijau (Ikhfa & Idgham)
-        val qalqalahColor = Color(0xFFD84315)  // Oranye Kemerahan (Qalqalah)
-
-        var i = 0
-        while (i < text.length) {
-            val char = text[i]
-            if (char == '\u0653') { // Maddah ٓ
-                withStyle(SpanStyle(color = madColor, fontWeight = FontWeight.Bold)) {
-                    append(char)
-                }
-                i++
-            } else if (char == 'ن' || char == 'م') {
-                if (i + 1 < text.length && text[i + 1] == '\u0651') { // Shaddah ّ
-                    withStyle(SpanStyle(color = ghunnahColor, fontWeight = FontWeight.Bold)) {
-                        append(char)
-                        append(text[i + 1])
-                    }
-                    i += 2
-                } else {
-                    withStyle(SpanStyle(color = baseColor)) {
-                        append(char)
-                    }
-                    i++
-                }
-            } else if (listOf('ق', 'ط', 'ب', 'ج', 'د').contains(char)) {
-                if (i + 1 < text.length && (text[i + 1] == '\u0652' || text[i + 1] == '\u06E1')) {
-                    withStyle(SpanStyle(color = qalqalahColor, fontWeight = FontWeight.Bold)) {
-                        append(char)
-                        append(text[i + 1])
-                    }
-                    i += 2
-                } else {
-                    withStyle(SpanStyle(color = baseColor)) {
-                        append(char)
-                    }
-                    i++
-                }
-            } else if (char == '\u064B' || char == '\u064C' || char == '\u064D') { // Tanwin
-                withStyle(SpanStyle(color = ikhfaColor, fontWeight = FontWeight.Bold)) {
-                    append(char)
-                }
-                i++
-            } else {
-                withStyle(SpanStyle(color = baseColor)) {
-                    append(char)
-                }
-                i++
-            }
+        val textColor = if (isDark) Color(0xFFF1F5F9) else Color(0xFF0F172A)
+        withStyle(SpanStyle(color = textColor, fontWeight = FontWeight.Normal)) {
+            append(text)
         }
     }
 }
 
 /**
  * Paginates verses into fixed pages for true Mushaf Madinah / Kemenag reading.
- * Short surahs (<= 7 verses) fit on 1 single page without any scroll.
  */
 fun paginateAyats(ayats: List<QuranAyat>): List<List<QuranAyat>> {
     if (ayats.isEmpty()) return emptyList()
