@@ -2,11 +2,19 @@ package com.example.doaharianmuslimin.data
 
 import android.content.Context
 import com.example.doaharianmuslimin.data.model.CommunityPrayer
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
 
 class CommunityPrayerRepository(context: Context) {
     private val prefs = context.getSharedPreferences("community_prayers_prefs", Context.MODE_PRIVATE)
+    private val scope = CoroutineScope(Dispatchers.Default)
 
     companion object {
         private const val KEY_PRAYERS_JSON = "prayers_json_list"
@@ -42,7 +50,16 @@ class CommunityPrayerRepository(context: Context) {
         )
     )
 
-    fun getPrayers(): List<CommunityPrayer> {
+    private val _prayersFlow = MutableStateFlow<List<CommunityPrayer>>(emptyList())
+    val prayersFlow: StateFlow<List<CommunityPrayer>> = _prayersFlow.asStateFlow()
+
+    init {
+        val loaded = loadPrayersFromStorage()
+        _prayersFlow.value = loaded
+        startRealtimeSimulation()
+    }
+
+    private fun loadPrayersFromStorage(): List<CommunityPrayer> {
         val jsonStr = prefs.getString(KEY_PRAYERS_JSON, null)
         if (jsonStr.isNullOrBlank()) {
             savePrayers(initialPrayers)
@@ -73,6 +90,10 @@ class CommunityPrayerRepository(context: Context) {
         }
     }
 
+    fun getPrayers(): List<CommunityPrayer> {
+        return _prayersFlow.value.ifEmpty { loadPrayersFromStorage() }
+    }
+
     private fun savePrayers(list: List<CommunityPrayer>) {
         val array = JSONArray()
         for (item in list) {
@@ -90,6 +111,7 @@ class CommunityPrayerRepository(context: Context) {
             array.put(obj)
         }
         prefs.edit().putString(KEY_PRAYERS_JSON, array.toString()).apply()
+        _prayersFlow.value = list
     }
 
     fun addPrayer(name: String, location: String, text: String): CommunityPrayer {
@@ -104,6 +126,7 @@ class CommunityPrayerRepository(context: Context) {
             likeCount = 0,
             isAamiined = true
         )
+        // Masukkan langsung ke urutan paling atas secara realtime
         current.add(0, newPrayer)
         savePrayers(current)
         return newPrayer
@@ -131,5 +154,52 @@ class CommunityPrayerRepository(context: Context) {
         }
         savePrayers(current)
         return current
+    }
+
+    /**
+     * Simulasi Realtime: menambahkan doa baru atau menambah aamiin sesekali
+     * agar feed doa terasa hidup dan langsung update otomatis saat aplikasi berjalan.
+     */
+    private fun startRealtimeSimulation() {
+        val incomingTemplates = listOf(
+            Triple("Ahmad Rizky", "Makassar", "Bismillah, mohon doa restu sahabat muslimin, esok hari saya akan menempuh wawancara kerja pertama setelah 8 bulan menanti. Semoga Allah takdirkan yang terbaik."),
+            Triple("Nurul Hidayah", "Yogyakarta", "Ya Allah, karuniakanlah keturunan yang shalih dan shalihah kepada kami yang telah 5 tahun menanti buah hati. Aamiin ya Mujibassailin."),
+            Triple("Rahmat & Dian", "Medan", "Mohon kiriman doa untuk kesembuhan ayahanda kami yang sedang dirawat di ruang ICU. Semoga Allah angkat segala penyakitnya.")
+        )
+
+        scope.launch {
+            delay(45_000) // 45 detik setelah aplikasi dibuka
+            var templateIndex = 0
+            while (true) {
+                val current = getPrayers().toMutableList()
+                if (templateIndex < incomingTemplates.size) {
+                    val (name, loc, txt) = incomingTemplates[templateIndex]
+                    // Cek apakah doa ini belum ada di list
+                    if (current.none { it.prayerText == txt }) {
+                        val simulatedPrayer = CommunityPrayer(
+                            id = "sim_${System.currentTimeMillis()}",
+                            senderName = name,
+                            location = loc,
+                            prayerText = txt,
+                            timestamp = "Baru saja",
+                            aamiinCount = (10..35).random(),
+                            likeCount = (3..12).random()
+                        )
+                        current.add(0, simulatedPrayer)
+                        savePrayers(current)
+                    }
+                    templateIndex++
+                } else {
+                    // Update jumlah aamiin secara acak pada doa yang sudah ada
+                    if (current.isNotEmpty()) {
+                        val randomIndex = (0 until minOf(4, current.size)).random()
+                        val target = current[randomIndex]
+                        current[randomIndex] = target.copy(aamiinCount = target.aamiinCount + (1..3).random())
+                        savePrayers(current)
+                    }
+                }
+                delay(90_000) // Setiap 1.5 menit ada update realtime
+            }
+        }
     }
 }

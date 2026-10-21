@@ -78,7 +78,7 @@ fun HomeScreen(
     var favoriteIds by remember { mutableStateOf(prefs.getFavoriteIds()) }
     var arabicFontSize by remember { mutableFloatStateOf(prefs.getArabicFontSize()) }
     var showLatin by remember { mutableStateOf(prefs.isShowLatin()) }
-    var communityPrayers by remember { mutableStateOf(communityRepo.getPrayers()) }
+    val communityPrayers by communityRepo.prayersFlow.collectAsState()
 
     var selectedDoaForDetail by remember { mutableStateOf<Doa?>(null) }
 
@@ -473,33 +473,7 @@ fun HomeScreen(
                                 }
                             }
 
-                            // 2. Category Chips Row (Klik chip langsung mengarah ke tab Doa sesuai kategori)
-                            item {
-                                CategoryChips(
-                                    selectedCategory = selectedCategory,
-                                    onCategorySelected = {
-                                        selectedCategory = it
-                                        currentNavTab = BottomNavTab.DOA
-                                        filterOnlyFavorites = false
-                                    }
-                                )
-                            }
-
-                            // 3. Aamiinkan Doa Saudaramu (dengan tombol + dan kartu kotak seragam)
-                            item {
-                                AmiinkanDoaSection(
-                                    prayers = communityPrayers,
-                                    onArrowClick = { showCreatePrayerSheet = true },
-                                    onToggleAamiin = { prayerId ->
-                                        communityPrayers = communityRepo.toggleAamiin(prayerId)
-                                    },
-                                    onToggleLike = { prayerId ->
-                                        communityPrayers = communityRepo.toggleLike(prayerId)
-                                    }
-                                )
-                            }
-
-                            // 4. Menu Utama (6 Kotak Menu Sesuai Gambar)
+                            // 2. Menu Utama (6 Kotak Menu Sesuai Gambar)
                             item {
                                 Text(
                                     text = "Menu Utama",
@@ -527,6 +501,20 @@ fun HomeScreen(
                                                 filterOnlyFavorites = true
                                             }
                                         }
+                                    }
+                                )
+                            }
+
+                            // 3. Aamiinkan Doa Saudaramu (Dipindah ke bawah Menu Utama)
+                            item {
+                                AmiinkanDoaSection(
+                                    prayers = communityPrayers,
+                                    onArrowClick = { showCreatePrayerSheet = true },
+                                    onToggleAamiin = { prayerId ->
+                                        communityRepo.toggleAamiin(prayerId)
+                                    },
+                                    onToggleLike = { prayerId ->
+                                        communityRepo.toggleLike(prayerId)
                                     }
                                 )
                             }
@@ -640,7 +628,6 @@ fun HomeScreen(
                 onDismiss = { showCreatePrayerSheet = false },
                 onSubmit = { name, location, text ->
                     communityRepo.addPrayer(name, location, text)
-                    communityPrayers = communityRepo.getPrayers()
                     coroutineScope.launch {
                         snackbarHostState.showSnackbar("Doa berhasil dikirim dan kini dapat diaminkan sesama!")
                     }
