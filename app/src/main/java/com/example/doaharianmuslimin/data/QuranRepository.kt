@@ -1,5 +1,8 @@
 package com.example.doaharianmuslimin.data
 
+import com.example.doaharianmuslimin.data.model.MushafLine
+import com.example.doaharianmuslimin.data.model.MushafPageData
+import com.example.doaharianmuslimin.data.model.MushafWord
 import com.example.doaharianmuslimin.data.model.QuranAyat
 import com.example.doaharianmuslimin.data.model.QuranSurah
 import kotlinx.coroutines.Dispatchers
@@ -376,6 +379,143 @@ object QuranRepository {
             } catch (_: Exception) {}
 
             "Tafsir resmi Kementerian Agama RI (Kemenag) memerlukan koneksi internet untuk unduhan pertama. Silakan periksa koneksi internet Anda."
+        }
+    }
+
+    // Mapping 114 Surah to Starting Page (Standard 604 Pages Mushaf)
+    val surahStartPages: IntArray = intArrayOf(
+        1, 2, 50, 77, 106, 128, 151, 177, 187, 208, 221, 235, 249, 255, 262, 267, 282, 293, 305, 312,
+        322, 332, 342, 350, 359, 367, 377, 385, 396, 404, 411, 415, 418, 428, 434, 440, 446, 453, 458, 467,
+        477, 483, 489, 496, 499, 502, 507, 511, 515, 518, 520, 523, 526, 528, 531, 534, 537, 542, 545, 549,
+        551, 553, 554, 556, 558, 560, 562, 564, 566, 568, 570, 572, 574, 575, 577, 578, 580, 582, 583, 585,
+        586, 587, 587, 589, 590, 591, 591, 592, 593, 594, 595, 595, 596, 596, 597, 597, 598, 598, 599, 599,
+        600, 600, 601, 601, 601, 602, 602, 602, 603, 603, 603, 604, 604, 604
+    )
+
+    fun getStartPageForSurah(surahNumber: Int): Int {
+        val idx = (surahNumber - 1).coerceIn(0, surahStartPages.size - 1)
+        return surahStartPages[idx]
+    }
+
+    private val juzStartPages = intArrayOf(
+        1, 22, 42, 62, 82, 102, 121, 142, 162, 182,
+        201, 222, 242, 262, 282, 302, 322, 342, 362, 382,
+        402, 422, 442, 462, 482, 502, 522, 542, 562, 582
+    )
+
+    fun getJuzForPage(pageNumber: Int): Int {
+        for (i in juzStartPages.indices.reversed()) {
+            if (pageNumber >= juzStartPages[i]) return i + 1
+        }
+        return 1
+    }
+
+    private val mushafPageCache = mutableMapOf<Int, MushafPageData>()
+
+    /**
+     * Retrieve standard 15-lines Mushaf page layout with exact words and line numbers (1-604)
+     */
+    suspend fun getMushafPage(pageNumber: Int): MushafPageData? {
+        val safePage = pageNumber.coerceIn(1, 604)
+        mushafPageCache[safePage]?.let { return it }
+
+        return withContext(Dispatchers.IO) {
+            try {
+                val url = URL("https://api.quran.com/api/v4/verses/by_page/$safePage?words=true&word_fields=line_number,text_uthmani")
+                val connection = url.openConnection() as HttpURLConnection
+                connection.requestMethod = "GET"
+                connection.connectTimeout = 8000
+                connection.readTimeout = 8000
+
+                if (connection.responseCode == 200) {
+                    val responseStr = connection.inputStream.bufferedReader().use { it.readText() }
+                    val json = JSONObject(responseStr)
+                    val versesArray = json.getJSONArray("verses")
+
+                    val wordsByLine = mutableMapOf<Int, MutableList<MushafWord>>()
+                    val surahNumbersOnPage = mutableSetOf<Int>()
+
+                    for (i in 0 until versesArray.length()) {
+                        val vObj = versesArray.getJSONObject(i)
+                        val vKey = vObj.getString("verse_key")
+                        val parts = vKey.split(":")
+                        val sNum = parts[0].toIntOrNull() ?: 1
+                        val aNum = parts[1].toIntOrNull() ?: 1
+
+                        surahNumbersOnPage.add(sNum)
+
+                        val wordsArr = vObj.getJSONArray("words")
+                        for (w in 0 until wordsArr.length()) {
+                            val wObj = wordsArr.getJSONObject(w)
+                            val line = wObj.getInt("line_number")
+                            val word = MushafWord(
+                                id = wObj.getInt("id"),
+                                position = wObj.getInt("position"),
+                                lineNumber = line,
+                                charTypeName = wObj.getString("char_type_name"),
+                                textUthmani = wObj.getString("text_uthmani"),
+                                verseKey = vKey,
+                                surahNumber = sNum,
+                                verseNumber = aNum
+                            )
+                            wordsByLine.getOrPut(line) { mutableListOf() }.add(word)
+                        }
+                    }
+
+                    val primarySurah = surahNumbersOnPage.firstOrNull() ?: 1
+                    val surahMeta = allSurahMeta.find { it.number == primarySurah } ?: allSurahMeta[0]
+
+                    val lines = mutableListOf<MushafLine>()
+                    for (lNum in 1..15) {
+                        val lineWords = wordsByLine[lNum] ?: emptyList()
+                        val firstWord = lineWords.firstOrNull()
+                        val isStartOfSurah = firstWord != null && firstWord.verseNumber == 1 && firstWord.position == 1
+
+                        if (isStartOfSurah && lNum > 1 && safePage > 1) {
+                            val sInfo = allSurahMeta.find { it.number == firstWord.surahNumber } ?: surahMeta
+                            lines.add(
+                                MushafLine(
+                                    lineNumber = lNum - 1,
+                                    isSurahHeader = true,
+                                    surahNumber = sInfo.number,
+                                    surahNameArabic = sInfo.arabicName,
+                                    surahNameLatin = sInfo.name
+                                )
+                            )
+                        }
+
+                        lines.add(
+                            MushafLine(
+                                lineNumber = lNum,
+                                words = lineWords
+                            )
+                        )
+                    }
+
+                    // Preload translations for verses on this page
+                    val versesMap = mutableMapOf<String, QuranAyat>()
+                    for (sNum in surahNumbersOnPage) {
+                        val sDetail = getSurahDetail(sNum)
+                        sDetail?.ayats?.forEach { ayat ->
+                            val key = "$sNum:${ayat.number}"
+                            versesMap[key] = ayat
+                        }
+                    }
+
+                    val pageData = MushafPageData(
+                        pageNumber = safePage,
+                        juzNumber = getJuzForPage(safePage),
+                        mainSurahName = surahMeta.name,
+                        mainSurahNumber = surahMeta.number,
+                        lines = lines,
+                        versesMap = versesMap
+                    )
+
+                    mushafPageCache[safePage] = pageData
+                    return@withContext pageData
+                }
+            } catch (_: Exception) {}
+            null
         }
     }
 }
