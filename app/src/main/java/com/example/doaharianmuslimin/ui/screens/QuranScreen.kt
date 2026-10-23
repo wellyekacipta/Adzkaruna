@@ -98,6 +98,23 @@ fun QuranScreen(
     var mediaPlayer by remember { mutableStateOf<MediaPlayer?>(null) }
     var isPlayingAyatAudio by remember { mutableStateOf(false) }
 
+    // Bookmark & Last Read Handler (Adzkaruna QUL Engine)
+    val sharedPrefs = remember { context.getSharedPreferences("adzkaruna_quran_prefs", Context.MODE_PRIVATE) }
+    var lastReadPage by remember { mutableIntStateOf(sharedPrefs.getInt("last_read_page", 1)) }
+    var lastReadSurah by remember { mutableStateOf(sharedPrefs.getString("last_read_surah", "Al-Fatihah") ?: "Al-Fatihah") }
+
+    fun saveBookmark(page: Int, surahName: String) {
+        sharedPrefs.edit()
+            .putInt("last_read_page", page)
+            .putString("last_read_surah", surahName)
+            .apply()
+        lastReadPage = page
+        lastReadSurah = surahName
+        coroutineScope.launch {
+            snackbarHostState.showSnackbar("Halaman  () ditandai sebagai Terakhir Dibaca ðŸ”–")
+        }
+    }
+
     DisposableEffect(Unit) {
         onDispose {
             mediaPlayer?.release()
@@ -1087,6 +1104,17 @@ fun QuranScreen(
                                                     }
 
                                                     Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                                                        IconButton(
+                                                            onClick = { saveBookmark(currentMushafPage, pageData?.mainSurahName ?: surah.name) },
+                                                            modifier = Modifier.size(26.dp)
+                                                        ) {
+                                                            Icon(
+                                                                imageVector = if (currentMushafPage == lastReadPage) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
+                                                                contentDescription = "Tandai Terakhir Baca",
+                                                                tint = if (currentMushafPage == lastReadPage) AccentGold else greenDark,
+                                                                modifier = Modifier.size(14.dp)
+                                                            )
+                                                        }
                                                         if (ayatInfo != null) {
                                                             IconButton(
                                                                 onClick = { copyAyat(ayatInfo, surah.name) },
