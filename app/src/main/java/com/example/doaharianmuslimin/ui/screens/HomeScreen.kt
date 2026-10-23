@@ -81,6 +81,7 @@ fun HomeScreen(
     val communityPrayers by communityRepo.prayersFlow.collectAsState()
 
     var selectedDoaForDetail by remember { mutableStateOf<Doa?>(null) }
+    var isQuranImmersive by remember { mutableStateOf(false) }
 
     // Intercept Back Press if inside a subscreen
     BackHandler(enabled = activeSubScreen != ActiveSubScreen.NONE) {
@@ -211,7 +212,8 @@ fun HomeScreen(
         modifier = modifier.fillMaxSize(),
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
-            TopAppBar(
+            if (!isQuranImmersive || currentNavTab != BottomNavTab.QURAN) {
+                TopAppBar(
                 title = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Surface(
@@ -269,8 +271,10 @@ fun HomeScreen(
                     containerColor = MaterialTheme.colorScheme.primary
                 )
             )
+            }
         },
         bottomBar = {
+            if (!isQuranImmersive || currentNavTab != BottomNavTab.QURAN) {
             // Footer Navigation with 5 tabs as requested: Quran, Explore, Home, Doa, Profil
             NavigationBar(
                 containerColor = MaterialTheme.colorScheme.surface,
@@ -381,16 +385,22 @@ fun HomeScreen(
                     )
                 )
             }
+            }
         }
     ) { innerPadding ->
+        val contentPadding = if (isQuranImmersive && currentNavTab == BottomNavTab.QURAN) PaddingValues(0.dp) else innerPadding
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
+                .padding(contentPadding)
         ) {
             when (currentNavTab) {
                 BottomNavTab.QURAN -> {
-                    QuranScreen()
+                    QuranScreen(
+                        onImmersiveModeChanged = { immersive ->
+                            isQuranImmersive = immersive
+                        }
+                    )
                 }
 
                 BottomNavTab.EXPLORE -> {
