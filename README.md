@@ -1,4 +1,4 @@
-# 🕌 Doa Harian Muslimin (Android App)
+# 🕌 Adzkaruna (Android App)
 
 Aplikasi Kumpulan Doa Harian Muslimin modern berbasis **Android (Jetpack Compose & Material 3)** dengan nuansa visual **Hijau Tosca & Putih Bersih**, tipografi teks Arab **Uthmanic Naskh** asli, serta fitur interaktif untuk sesama muslim.
 
