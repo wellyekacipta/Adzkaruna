@@ -422,20 +422,42 @@ object QuranRepository {
     /**
      * Retrieve standard 15-lines Mushaf page layout with exact words and line numbers (1-604)
      */
-    suspend fun getMushafPage(pageNumber: Int): MushafPageData? {
+    suspend fun getMushafPage(pageNumber: Int, context: Context? = null): MushafPageData? {
         val safePage = pageNumber.coerceIn(1, 604)
         mushafPageCache[safePage]?.let { return it }
 
         return withContext(Dispatchers.IO) {
             try {
-                val url = URL("https://api.quran.com/api/v4/verses/by_page/$safePage?words=true&word_fields=line_number,text_uthmani")
-                val connection = url.openConnection() as HttpURLConnection
-                connection.requestMethod = "GET"
-                connection.connectTimeout = 8000
-                connection.readTimeout = 8000
+                var responseStr: String? = null
 
-                if (connection.responseCode == 200) {
-                    val responseStr = connection.inputStream.bufferedReader().use { it.readText() }
+                val cacheFile = if (context != null) {
+                    val dir = File(context.cacheDir, "mushaf_json")
+                    if (!dir.exists()) dir.mkdirs()
+                    File(dir, "page_${safePage}.json")
+                } else null
+
+                if (cacheFile != null && cacheFile.exists() && cacheFile.length() > 500) {
+                    try {
+                        responseStr = cacheFile.readText()
+                    } catch (_: Exception) {}
+                }
+
+                if (responseStr == null) {
+                    val url = URL("https://api.quran.com/api/v4/verses/by_page/$safePage?words=true&word_fields=line_number,text_uthmani")
+                    val connection = url.openConnection() as HttpURLConnection
+                    connection.requestMethod = "GET"
+                    connection.connectTimeout = 8000
+                    connection.readTimeout = 8000
+
+                    if (connection.responseCode == 200) {
+                        responseStr = connection.inputStream.bufferedReader().use { it.readText() }
+                        try {
+                            cacheFile?.writeText(responseStr)
+                        } catch (_: Exception) {}
+                    }
+                }
+
+                if (responseStr != null) {
                     val json = JSONObject(responseStr)
                     val versesArray = json.getJSONArray("verses")
 
@@ -474,29 +496,74 @@ object QuranRepository {
 
                     val lines = mutableListOf<MushafLine>()
                     for (lNum in 1..15) {
-                        val lineWords = wordsByLine[lNum] ?: emptyList()
-                        val firstWord = lineWords.firstOrNull()
-                        val isStartOfSurah = firstWord != null && firstWord.verseNumber == 1 && firstWord.position == 1
-
-                        if (isStartOfSurah && lNum > 1 && safePage > 1) {
-                            val sInfo = allSurahMeta.find { it.number == firstWord.surahNumber } ?: surahMeta
+                        val lineWords = wordsByLine[lNum]
+                        if (!lineWords.isNullOrEmpty()) {
                             lines.add(
                                 MushafLine(
-                                    lineNumber = lNum - 1,
-                                    isSurahHeader = true,
-                                    surahNumber = sInfo.number,
-                                    surahNameArabic = sInfo.arabicName,
-                                    surahNameLatin = sInfo.name
+                                    lineNumber = lNum,
+                                    words = lineWords
                                 )
                             )
-                        }
+                        } else {
+                            // Find the next line with words to determine header vs bismillah
+                            var nextNonEmpty = -1
+                            for (nxt in (lNum + 1)..15) {
+                                if (!wordsByLine[nxt].isNullOrEmpty()) {
+                                    nextNonEmpty = nxt
+                                    break
+                                }
+                            }
 
-                        lines.add(
-                            MushafLine(
-                                lineNumber = lNum,
-                                words = lineWords
-                            )
-                        )
+                            if (nextNonEmpty != -1) {
+                                val firstWord = wordsByLine[nextNonEmpty]!!.first()
+                                val diff = nextNonEmpty - lNum
+                                val targetSurah = firstWord.surahNumber
+                                val sInfo = allSurahMeta.find { it.number == targetSurah } ?: surahMeta
+
+                                if (firstWord.verseNumber == 1) {
+                                    if (diff == 2) {
+                                        // 2 lines before verse 1: Surah Header
+                                        lines.add(
+                                            MushafLine(
+                                                lineNumber = lNum,
+                                                isSurahHeader = true,
+                                                surahNumber = sInfo.number,
+                                                surahNameArabic = sInfo.arabicName,
+                                                surahNameLatin = sInfo.name
+                                            )
+                                        )
+                                    } else if (diff == 1) {
+                                        if (targetSurah == 9 || (safePage == 1 && targetSurah == 1)) {
+                                            // At-Taubah (no bismillah) or Al-Fatihah
+                                            lines.add(
+                                                MushafLine(
+                                                    lineNumber = lNum,
+                                                    isSurahHeader = true,
+                                                    surahNumber = sInfo.number,
+                                                    surahNameArabic = sInfo.arabicName,
+                                                    surahNameLatin = sInfo.name
+                                                )
+                                            )
+                                        } else {
+                                            // Bismillah line
+                                            lines.add(
+                                                MushafLine(
+                                                    lineNumber = lNum,
+                                                    isBismillah = true,
+                                                    surahNumber = targetSurah
+                                                )
+                                            )
+                                        }
+                                    } else {
+                                        lines.add(MushafLine(lineNumber = lNum))
+                                    }
+                                } else {
+                                    lines.add(MushafLine(lineNumber = lNum))
+                                }
+                            } else {
+                                lines.add(MushafLine(lineNumber = lNum))
+                            }
+                        }
                     }
 
                     // Preload translations for verses on this page
@@ -591,11 +658,17 @@ object QuranRepository {
         val next = (currentPage + 1).coerceAtMost(604)
         val prev = (currentPage - 1).coerceAtLeast(1)
         CoroutineScope(Dispatchers.IO).launch {
-            if (next != currentPage && !pageBitmapCache.containsKey(next)) {
-                getMushafPageBitmap(context, next)
+            if (next != currentPage) {
+                getMushafPage(next, context)
+                if (!pageBitmapCache.containsKey(next)) {
+                    getMushafPageBitmap(context, next)
+                }
             }
-            if (prev != currentPage && !pageBitmapCache.containsKey(prev)) {
-                getMushafPageBitmap(context, prev)
+            if (prev != currentPage) {
+                getMushafPage(prev, context)
+                if (!pageBitmapCache.containsKey(prev)) {
+                    getMushafPageBitmap(context, prev)
+                }
             }
         }
     }
