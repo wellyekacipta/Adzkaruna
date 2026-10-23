@@ -121,6 +121,7 @@ fun QuranScreen(
     var blockedAyat by remember { mutableStateOf<QuranAyat?>(null) }
     var currentMushafPage by remember(selectedSurah) { mutableIntStateOf(selectedSurah?.let { QuranRepository.getStartPageForSurah(it.number) } ?: 1) }
     var blockedVerseKey by remember { mutableStateOf<String?>(null) }
+    var showPageVersesSheet by remember { mutableStateOf(false) }
     var tafsirContent by remember { mutableStateOf<String?>(null) }
     var isLoadingTafsir by remember { mutableStateOf(false) }
 
@@ -948,161 +949,28 @@ fun QuranScreen(
                                     }
                                 }
 
-                                // 2. KONTEN MUSHAF RENDER PER BARIS (15 Baris Teks Uthmani Madinah / Kemenag)
+                                // 2. KONTEN MUSHAF 15 BARIS ASLI (Full Width, rapat kiri-kanan sesuai format mushaf resmi)
                                 Box(
                                     modifier = Modifier
                                         .weight(1f)
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 6.dp),
+                                        .fillMaxWidth(),
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    val lines = pageData?.lines
-                                    if (!lines.isNullOrEmpty()) {
-                                        Column(
-                                            modifier = Modifier
-                                                .fillMaxSize()
-                                                .padding(vertical = 2.dp),
-                                            verticalArrangement = Arrangement.SpaceEvenly
-                                        ) {
-                                            lines.forEach { line ->
-                                                if (line.isSurahHeader) {
-                                                    // Header Surat Mushaf
-                                                    Box(
-                                                        modifier = Modifier
-                                                            .fillMaxWidth()
-                                                            .height(34.dp)
-                                                            .clip(RoundedCornerShape(6.dp))
-                                                            .background(
-                                                                Brush.horizontalGradient(
-                                                                    listOf(
-                                                                        Color(0xFFFFF8E1),
-                                                                        Color(0xFFFFECB3),
-                                                                        Color(0xFFFFF8E1)
-                                                                    )
-                                                                )
-                                                            )
-                                                            .border(1.2.dp, goldColor, RoundedCornerShape(6.dp)),
-                                                        contentAlignment = Alignment.Center
-                                                    ) {
-                                                        Row(
-                                                            modifier = Modifier
-                                                                .fillMaxWidth()
-                                                                .padding(horizontal = 10.dp),
-                                                            horizontalArrangement = Arrangement.SpaceBetween,
-                                                            verticalAlignment = Alignment.CenterVertically
-                                                        ) {
-                                                            Text("۞", color = goldColor, fontSize = 14.sp)
-                                                            Text(
-                                                                text = "سُورَةُ ${line.surahNameArabic}",
-                                                                fontFamily = LpmqFontFamily,
-                                                                fontSize = 18.sp,
-                                                                fontWeight = FontWeight.Bold,
-                                                                color = greenDark
-                                                            )
-                                                            Text("۞", color = goldColor, fontSize = 14.sp)
-                                                        }
-                                                    }
-                                                } else if (line.isBismillah) {
-                                                    // Bismillah di tengah baris
-                                                    Box(
-                                                        modifier = Modifier
-                                                            .fillMaxWidth()
-                                                            .height(30.dp),
-                                                        contentAlignment = Alignment.Center
-                                                    ) {
-                                                        Text(
-                                                            text = "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ",
-                                                            fontFamily = LpmqFontFamily,
-                                                            fontSize = 18.sp,
-                                                            fontWeight = FontWeight.Bold,
-                                                            color = Color(0xFF1B5E20)
-                                                        )
-                                                    }
-                                                } else if (line.words.isNotEmpty()) {
-                                                    // Baris Teks Ayat Mushaf (RTL)
-                                                    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
-                                                        val isShortLine = line.words.size <= 4
-                                                        Row(
-                                                            modifier = Modifier
-                                                                .fillMaxWidth()
-                                                                .heightIn(min = 26.dp),
-                                                            horizontalArrangement = if (isShortLine) Arrangement.Center else Arrangement.SpaceBetween,
-                                                            verticalAlignment = Alignment.CenterVertically
-                                                        ) {
-                                                            line.words.forEach { word ->
-                                                                val isVerseSelected = (blockedVerseKey == word.verseKey)
-
-                                                                if (word.charTypeName == "end") {
-                                                                    // Nomor Ayat Rosette / Tanda Akhir Ayat ۝
-                                                                    Box(
-                                                                        modifier = Modifier
-                                                                            .padding(horizontal = 1.dp)
-                                                                            .clip(CircleShape)
-                                                                            .background(if (isVerseSelected) Color(0xFFFFD54F) else rosetteBg)
-                                                                            .border(
-                                                                                width = if (isVerseSelected) 1.5.dp else 1.dp,
-                                                                                color = if (isVerseSelected) Color(0xFFE65100) else rosetteStroke.copy(alpha = 0.7f),
-                                                                                shape = CircleShape
-                                                                            )
-                                                                            .clickable {
-                                                                                blockedVerseKey = if (blockedVerseKey == word.verseKey) null else word.verseKey
-                                                                            }
-                                                                            .padding(horizontal = 5.dp, vertical = 2.dp),
-                                                                        contentAlignment = Alignment.Center
-                                                                    ) {
-                                                                        Text(
-                                                                            text = word.textUthmani,
-                                                                            fontFamily = LpmqFontFamily,
-                                                                            fontSize = 12.sp,
-                                                                            fontWeight = FontWeight.Bold,
-                                                                            color = rosetteTxt
-                                                                        )
-                                                                    }
-                                                                } else {
-                                                                    // Kata Arab Uthmani
-                                                                    Box(
-                                                                        modifier = Modifier
-                                                                            .clip(RoundedCornerShape(4.dp))
-                                                                            .background(
-                                                                                if (isVerseSelected) Color(0xFFFFE082).copy(alpha = 0.7f)
-                                                                                else Color.Transparent
-                                                                            )
-                                                                            .clickable {
-                                                                                blockedVerseKey = if (blockedVerseKey == word.verseKey) null else word.verseKey
-                                                                            }
-                                                                            .padding(horizontal = 2.dp, vertical = 1.dp)
-                                                                    ) {
-                                                                        Text(
-                                                                            text = word.textUthmani,
-                                                                            fontFamily = LpmqFontFamily,
-                                                                            fontSize = 18.sp,
-                                                                            fontWeight = if (isVerseSelected) FontWeight.Bold else FontWeight.Normal,
-                                                                            color = if (isVerseSelected) Color(0xFF004D40) else Color(0xFF1B5E20),
-                                                                            textAlign = TextAlign.Center
-                                                                        )
-                                                                    }
-                                                                }
-                                                            }
-                                                        }
-                                                    }
-                                                } else {
-                                                    Spacer(modifier = Modifier.weight(1f))
-                                                }
-                                            }
-                                        }
-                                    } else if (pageBitmap != null) {
+                                    if (pageBitmap != null) {
                                         Image(
                                             bitmap = pageBitmap!!.asImageBitmap(),
                                             contentDescription = "Halaman $currentMushafPage Mushaf Madinah",
                                             contentScale = ContentScale.Fit,
-                                            modifier = Modifier.fillMaxSize()
+                                            modifier = Modifier
+                                                .fillMaxSize()
+                                                .padding(horizontal = 0.dp)
                                         )
-                                    } else {
+                                    } else if (isLoadingPage) {
                                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                             CircularProgressIndicator(color = PrimaryTosca, strokeWidth = 2.5.dp, modifier = Modifier.size(34.dp))
                                             Spacer(modifier = Modifier.height(8.dp))
                                             Text(
-                                                text = "Memuat Halaman $currentMushafPage Mushaf...",
+                                                text = "Memuat Halaman $currentMushafPage Mushaf Madinah...",
                                                 fontSize = 11.5.sp,
                                                 fontWeight = FontWeight.Medium,
                                                 color = greenDark
@@ -1113,219 +981,31 @@ fun QuranScreen(
                                                 color = Color.Gray
                                             )
                                         }
-                                    }
-                                }
-
-                                // 3. FLOATING ACTION CARD SAAT AYAT DITEKAN/DIBLOK
-                                AnimatedVisibility(
-                                    visible = blockedVerseKey != null,
-                                    enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
-                                    exit = slideOutVertically(targetOffsetY = { it }) + fadeOut()
-                                ) {
-                                    val vKey = blockedVerseKey ?: ""
-                                    val parts = vKey.split(":")
-                                    val sNum = parts.getOrNull(0)?.toIntOrNull() ?: surah.number
-                                    val aNum = parts.getOrNull(1)?.toIntOrNull() ?: 1
-                                    val sInfo = QuranRepository.allSurahMeta.find { it.number == sNum } ?: surah
-
-                                    var ayatDetail by remember(vKey) {
-                                        mutableStateOf(pageData?.versesMap?.get(vKey))
-                                    }
-
-                                    LaunchedEffect(vKey) {
-                                        if (ayatDetail == null || ayatDetail?.translation.isNullOrBlank()) {
-                                            val sDetail = QuranRepository.getSurahDetail(sNum)
-                                            val found = sDetail?.ayats?.find { it.number == aNum }
-                                            if (found != null) {
-                                                ayatDetail = found
-                                            }
-                                        }
-                                    }
-
-                                    Card(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(horizontal = 8.dp, vertical = 4.dp),
-                                        shape = RoundedCornerShape(14.dp),
-                                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                                        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
-                                        border = BorderStroke(1.2.dp, AccentGold)
-                                    ) {
-                                        Column(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(10.dp)
-                                        ) {
-                                            // Header Kartu Ayat
-                                            Row(
-                                                modifier = Modifier.fillMaxWidth(),
-                                                horizontalArrangement = Arrangement.SpaceBetween,
-                                                verticalAlignment = Alignment.CenterVertically
+                                    } else {
+                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                            Icon(Icons.Default.CloudOff, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(36.dp))
+                                            Spacer(modifier = Modifier.height(6.dp))
+                                            Text("Gagal memuat gambar halaman $currentMushafPage", fontSize = 12.sp, color = Color.Gray)
+                                            Spacer(modifier = Modifier.height(8.dp))
+                                            Button(
+                                                onClick = {
+                                                    isLoadingPage = true
+                                                    coroutineScope.launch {
+                                                        pageBitmap = QuranRepository.getMushafPageBitmap(context, currentMushafPage)
+                                                        isLoadingPage = false
+                                                    }
+                                                },
+                                                colors = ButtonDefaults.buttonColors(containerColor = PrimaryTosca)
                                             ) {
-                                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                                    Surface(
-                                                        color = MaterialTheme.colorScheme.primary,
-                                                        shape = RoundedCornerShape(6.dp)
-                                                    ) {
-                                                        Text(
-                                                            text = "QS. ${sInfo.name} : $aNum",
-                                                            fontSize = 11.sp,
-                                                            fontWeight = FontWeight.Bold,
-                                                            color = Color.White,
-                                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
-                                                        )
-                                                    }
-                                                    Spacer(modifier = Modifier.width(6.dp))
-                                                    Text(
-                                                        text = "(${sInfo.revelation} • Hal. $currentMushafPage)",
-                                                        fontSize = 10.sp,
-                                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                                    )
-                                                }
-
-                                                IconButton(
-                                                    onClick = { blockedVerseKey = null },
-                                                    modifier = Modifier.size(24.dp)
-                                                ) {
-                                                    Icon(
-                                                        Icons.Default.Close,
-                                                        contentDescription = "Tutup",
-                                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                        modifier = Modifier.size(16.dp)
-                                                    )
-                                                }
-                                            }
-
-                                            Spacer(modifier = Modifier.height(6.dp))
-
-                                            // Terjemahan Kemenag RI Sesuai Ayat
-                                            Text(
-                                                text = ayatDetail?.translation ?: "Memuat terjemahan Kemenag RI...",
-                                                fontSize = 11.5.sp,
-                                                lineHeight = 16.sp,
-                                                color = MaterialTheme.colorScheme.onSurface,
-                                                maxLines = 3,
-                                                overflow = TextOverflow.Ellipsis
-                                            )
-
-                                            Spacer(modifier = Modifier.height(6.dp))
-                                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f), thickness = 0.5.dp)
-                                            Spacer(modifier = Modifier.height(6.dp))
-
-                                            // Baris Aksi: Tafsir, Terjemahan, Audio, Bagikan, Salin, Favorit
-                                            Row(
-                                                modifier = Modifier.fillMaxWidth(),
-                                                horizontalArrangement = Arrangement.SpaceBetween,
-                                                verticalAlignment = Alignment.CenterVertically
-                                            ) {
-                                                // Kiri: Tafsir & Audio
-                                                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                                    // Tombol Tafsir Kemenag
-                                                    Button(
-                                                        onClick = {
-                                                            ayatDetail?.let {
-                                                                selectedTafsirSurahNumber = sNum
-                                                                selectedTafsirSurahName = sInfo.name
-                                                                selectedAyatForTafsir = it
-                                                            }
-                                                        },
-                                                        shape = RoundedCornerShape(8.dp),
-                                                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 2.dp),
-                                                        modifier = Modifier.height(30.dp),
-                                                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryTosca)
-                                                    ) {
-                                                        Icon(Icons.AutoMirrored.Filled.MenuBook, contentDescription = null, modifier = Modifier.size(13.dp))
-                                                        Spacer(modifier = Modifier.width(4.dp))
-                                                        Text("Tafsir", fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                                                    }
-
-                                                    // Tombol Audio Murottal
-                                                    val audioUrl = ayatDetail?.audioUrl ?: ""
-                                                    OutlinedButton(
-                                                        onClick = {
-                                                            if (audioUrl.isNotBlank()) {
-                                                                playAyatAudio(audioUrl)
-                                                            } else {
-                                                                Toast.makeText(context, "Audio ayat belum tersedia", Toast.LENGTH_SHORT).show()
-                                                            }
-                                                        },
-                                                        shape = RoundedCornerShape(8.dp),
-                                                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
-                                                        modifier = Modifier.height(30.dp)
-                                                    ) {
-                                                        Icon(
-                                                            if (isPlayingAyatAudio) Icons.Default.Stop else Icons.Default.PlayArrow,
-                                                            contentDescription = null,
-                                                            modifier = Modifier.size(13.dp),
-                                                            tint = MaterialTheme.colorScheme.primary
-                                                        )
-                                                        Spacer(modifier = Modifier.width(3.dp))
-                                                        Text(
-                                                            text = if (isPlayingAyatAudio) "Stop" else "Audio",
-                                                            fontSize = 11.sp,
-                                                            color = MaterialTheme.colorScheme.primary
-                                                        )
-                                                    }
-                                                }
-
-                                                // Kanan: Salin, Bagikan, Favorit / Bookmark
-                                                Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                                                    // Salin
-                                                    IconButton(
-                                                        onClick = {
-                                                            ayatDetail?.let {
-                                                                copyAyat(it, sInfo.name)
-                                                            }
-                                                        },
-                                                        modifier = Modifier.size(30.dp)
-                                                    ) {
-                                                        Icon(
-                                                            Icons.Default.ContentCopy,
-                                                            contentDescription = "Salin",
-                                                            tint = MaterialTheme.colorScheme.primary,
-                                                            modifier = Modifier.size(15.dp)
-                                                        )
-                                                    }
-
-                                                    // Bagikan
-                                                    IconButton(
-                                                        onClick = {
-                                                            ayatDetail?.let {
-                                                                shareAyat(it, sInfo.name)
-                                                            }
-                                                        },
-                                                        modifier = Modifier.size(30.dp)
-                                                    ) {
-                                                        Icon(
-                                                            Icons.Default.Share,
-                                                            contentDescription = "Bagikan",
-                                                            tint = MaterialTheme.colorScheme.primary,
-                                                            modifier = Modifier.size(15.dp)
-                                                        )
-                                                    }
-
-                                                    // Favorit / Tandai
-                                                    IconButton(
-                                                        onClick = {
-                                                            saveBookmark(currentMushafPage, sInfo.name)
-                                                            Toast.makeText(context, "QS. ${sInfo.name}:$aNum ditandai di Hal. $currentMushafPage", Toast.LENGTH_SHORT).show()
-                                                        },
-                                                        modifier = Modifier.size(30.dp)
-                                                    ) {
-                                                        Icon(
-                                                            Icons.Default.BookmarkBorder,
-                                                            contentDescription = "Favorit / Tandai",
-                                                            tint = AccentGold,
-                                                            modifier = Modifier.size(17.dp)
-                                                        )
-                                                    }
-                                                }
+                                                Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(14.dp))
+                                                Spacer(modifier = Modifier.width(4.dp))
+                                                Text("Coba Lagi", fontSize = 11.sp)
                                             }
                                         }
                                     }
                                 }
 
-                                // 4. FOOTER NAVIGASI HALAMAN (Muncul saat bar aktif / layar disentuh)
+                                // 3. BOTTOM PANEL: TOOLBAR AKSI & NAVIGASI HALAMAN (Muncul saat bar aktif / layar disentuh)
                                 AnimatedVisibility(
                                     visible = isImmersiveBarsVisible,
                                     enter = expandVertically() + fadeIn(),
@@ -1337,10 +1017,60 @@ fun QuranScreen(
                                             .background(mushafBg)
                                             .padding(horizontal = 8.dp, vertical = 2.dp)
                                     ) {
+                                        // Tombol Aksi di Panel Bawah
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(horizontal = 4.dp, vertical = 2.dp),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            FilledTonalButton(
+                                                onClick = { showPageVersesSheet = true },
+                                                shape = RoundedCornerShape(8.dp),
+                                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 2.dp),
+                                                modifier = Modifier.height(30.dp),
+                                                colors = ButtonDefaults.filledTonalButtonColors(
+                                                    containerColor = PrimaryTosca,
+                                                    contentColor = Color.White
+                                                )
+                                            ) {
+                                                Icon(Icons.AutoMirrored.Filled.MenuBook, contentDescription = null, modifier = Modifier.size(13.dp))
+                                                Spacer(modifier = Modifier.width(4.dp))
+                                                Text("Tafsir & Terjemahan", fontSize = 10.5.sp, fontWeight = FontWeight.Bold)
+                                            }
+
+                                            OutlinedButton(
+                                                onClick = {
+                                                    saveBookmark(currentMushafPage, currentSurahName)
+                                                    Toast.makeText(context, "Halaman $currentMushafPage ($currentSurahName) ditandai 🔖", Toast.LENGTH_SHORT).show()
+                                                },
+                                                shape = RoundedCornerShape(8.dp),
+                                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 2.dp),
+                                                modifier = Modifier.height(30.dp)
+                                            ) {
+                                                Icon(
+                                                    imageVector = if (currentMushafPage == lastReadPage) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
+                                                    contentDescription = null,
+                                                    tint = if (currentMushafPage == lastReadPage) AccentGold else greenDark,
+                                                    modifier = Modifier.size(13.dp)
+                                                )
+                                                Spacer(modifier = Modifier.width(4.dp))
+                                                Text(
+                                                    text = if (currentMushafPage == lastReadPage) "Ditandai" else "Tandai Hal. $currentMushafPage",
+                                                    fontSize = 10.5.sp,
+                                                    color = greenDark,
+                                                    fontWeight = FontWeight.Medium
+                                                )
+                                            }
+                                        }
+
+                                        Spacer(modifier = Modifier.height(2.dp))
                                         Canvas(modifier = Modifier.fillMaxWidth().height(1.5.dp)) {
                                             drawLine(greenDark.copy(alpha = 0.22f), Offset(0f, size.height / 2), Offset(size.width, size.height / 2), 0.6.dp.toPx())
                                         }
 
+                                        // FOOTER NAVIGASI HALAMAN (Gaya kitab Arab)
                                         Row(
                                             modifier = Modifier
                                                 .fillMaxWidth()
@@ -1348,7 +1078,7 @@ fun QuranScreen(
                                             horizontalArrangement = Arrangement.SpaceBetween,
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
-                                            // Halaman Selanjutnya (Gaya kitab Arab: geser kiri-ke-kanan / tombol kiri maju ke hal berikutnya)
+                                            // Halaman Selanjutnya (Geser kiri-ke-kanan gaya Arab)
                                             Row(
                                                 verticalAlignment = Alignment.CenterVertically,
                                                 modifier = Modifier.clickable(enabled = currentMushafPage < 604) {
@@ -1401,10 +1131,170 @@ fun QuranScreen(
                                 }
                             }
                         }
+
+                        // ==================== BOTTOM SHEET: DAFTAR AYAT & TAFSIR HALAMAN INI ====================
+                        if (showPageVersesSheet) {
+                            val versesOnPage = remember(pageData, surah) {
+                                val mapVerses = pageData?.versesMap?.values?.sortedBy { it.number }
+                                if (!mapVerses.isNullOrEmpty()) {
+                                    mapVerses
+                                } else {
+                                    surah.ayats.take(15)
+                                }
+                            }
+
+                            ModalBottomSheet(
+                                onDismissRequest = { showPageVersesSheet = false },
+                                sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
+                            ) {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .fillMaxHeight(0.85f)
+                                        .padding(horizontal = 16.dp)
+                                ) {
+                                    // Header BottomSheet
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Column {
+                                            Text(
+                                                text = "Daftar Ayat & Tafsir Kemenag RI",
+                                                style = MaterialTheme.typography.titleMedium,
+                                                fontWeight = FontWeight.Bold,
+                                                color = MaterialTheme.colorScheme.primary
+                                            )
+                                            Text(
+                                                text = "Halaman $currentMushafPage • Juz ${pageData?.juzNumber ?: QuranRepository.getJuzForPage(currentMushafPage)}",
+                                                fontSize = 11.5.sp,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                        IconButton(onClick = { showPageVersesSheet = false }) {
+                                            Icon(Icons.Default.Close, contentDescription = "Tutup")
+                                        }
+                                    }
+
+                                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+
+                                    LazyColumn(
+                                        modifier = Modifier.fillMaxSize(),
+                                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                                        contentPadding = PaddingValues(vertical = 12.dp)
+                                    ) {
+                                        items(versesOnPage, key = { it.number }) { ayatItem ->
+                                            Card(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                shape = RoundedCornerShape(12.dp),
+                                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+                                            ) {
+                                                Column(modifier = Modifier.padding(12.dp)) {
+                                                    // Row 1: Badge Nomor Ayat & Tombol Aksi
+                                                    Row(
+                                                        modifier = Modifier.fillMaxWidth(),
+                                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                                        verticalAlignment = Alignment.CenterVertically
+                                                    ) {
+                                                        Surface(
+                                                            color = MaterialTheme.colorScheme.primary,
+                                                            shape = RoundedCornerShape(6.dp)
+                                                        ) {
+                                                            Text(
+                                                                text = "Ayat ${ayatItem.number}",
+                                                                fontSize = 11.sp,
+                                                                fontWeight = FontWeight.Bold,
+                                                                color = Color.White,
+                                                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                                                            )
+                                                        }
+
+                                                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                                            FilledTonalButton(
+                                                                onClick = {
+                                                                    selectedTafsirSurahNumber = surah.number
+                                                                    selectedTafsirSurahName = surah.name
+                                                                    selectedAyatForTafsir = ayatItem
+                                                                },
+                                                                shape = RoundedCornerShape(6.dp),
+                                                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                                                                modifier = Modifier.height(28.dp),
+                                                                colors = ButtonDefaults.filledTonalButtonColors(
+                                                                    containerColor = PrimaryTosca,
+                                                                    contentColor = Color.White
+                                                                )
+                                                            ) {
+                                                                Icon(Icons.AutoMirrored.Filled.MenuBook, contentDescription = null, modifier = Modifier.size(12.dp))
+                                                                Spacer(modifier = Modifier.width(3.dp))
+                                                                Text("Tafsir", fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                                            }
+
+                                                            if (ayatItem.audioUrl.isNotBlank()) {
+                                                                IconButton(
+                                                                    onClick = { playAyatAudio(ayatItem.audioUrl) },
+                                                                    modifier = Modifier.size(28.dp)
+                                                                ) {
+                                                                    Icon(
+                                                                        imageVector = if (isPlayingAyatAudio) Icons.Default.Stop else Icons.Default.PlayArrow,
+                                                                        contentDescription = "Murottal",
+                                                                        tint = MaterialTheme.colorScheme.primary,
+                                                                        modifier = Modifier.size(16.dp)
+                                                                    )
+                                                                }
+                                                            }
+
+                                                            IconButton(
+                                                                onClick = { copyAyat(ayatItem, surah.name) },
+                                                                modifier = Modifier.size(28.dp)
+                                                            ) {
+                                                                Icon(Icons.Default.ContentCopy, contentDescription = "Salin", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(15.dp))
+                                                            }
+
+                                                            IconButton(
+                                                                onClick = { shareAyat(ayatItem, surah.name) },
+                                                                modifier = Modifier.size(28.dp)
+                                                            ) {
+                                                                Icon(Icons.Default.Share, contentDescription = "Bagikan", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(15.dp))
+                                                            }
+                                                        }
+                                                    }
+
+                                                    Spacer(modifier = Modifier.height(8.dp))
+
+                                                    // Teks Arab
+                                                    Text(
+                                                        text = ayatItem.arabic,
+                                                        fontFamily = LpmqFontFamily,
+                                                        fontSize = 20.sp,
+                                                        lineHeight = 36.sp,
+                                                        textAlign = TextAlign.End,
+                                                        color = if (isDark) Color(0xFF4DB6AC) else Color(0xFF1B5E20),
+                                                        modifier = Modifier.fillMaxWidth()
+                                                    )
+
+                                                    Spacer(modifier = Modifier.height(6.dp))
+
+                                                    // Terjemahan Kemenag RI
+                                                    Text(
+                                                        text = ayatItem.translation,
+                                                        fontSize = 11.5.sp,
+                                                        lineHeight = 16.sp,
+                                                        color = MaterialTheme.colorScheme.onSurface
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
         }
+        
         // ==================== BOTTOM SHEET: TAFSIR LENGKAP KEMENAG RI & AUDIO MUROTTAL ====================
         if (selectedAyatForTafsir != null) {
             val ayat = selectedAyatForTafsir!!
