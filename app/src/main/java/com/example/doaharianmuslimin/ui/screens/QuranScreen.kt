@@ -63,6 +63,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.doaharianmuslimin.data.PreferencesManager
 import com.example.doaharianmuslimin.data.QuranRepository
 import com.example.doaharianmuslimin.data.model.MushafPageData
 import com.example.doaharianmuslimin.data.model.QuranAyat
@@ -71,7 +72,9 @@ import com.example.doaharianmuslimin.ui.theme.AccentGold
 import com.example.doaharianmuslimin.ui.theme.PrimaryTosca
 import com.example.doaharianmuslimin.ui.theme.UthmanicFontFamily
 import com.example.doaharianmuslimin.ui.theme.LpmqFontFamily
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 enum class QuranViewMode {
     PER_BARIS,    // Mode Ayat demi ayat + Terjemahan Kemenag
@@ -102,6 +105,23 @@ fun QuranScreen(
 
     var viewMode by remember { mutableStateOf(QuranViewMode.PER_HALAMAN) }
     var isImmersiveBarsVisible by remember { mutableStateOf(false) }
+
+    val prefs = remember { PreferencesManager(context) }
+    var showDownloadPromptDialog by remember { mutableStateOf(false) }
+    var isDownloadingAllMushaf by remember { mutableStateOf(false) }
+    var downloadProgressCount by remember { mutableIntStateOf(0) }
+    var totalMushafPages by remember { mutableIntStateOf(604) }
+    var cachedPageCount by remember { mutableIntStateOf(0) }
+
+    LaunchedEffect(viewMode) {
+        if (viewMode == QuranViewMode.PER_HALAMAN) {
+            val count = withContext(Dispatchers.IO) { QuranRepository.countCachedPages(context) }
+            cachedPageCount = count
+            if (!prefs.isMushafDownloadPrompted() && count < 600) {
+                showDownloadPromptDialog = true
+            }
+        }
+    }
 
     // Notify parent activity/home screen to enter/exit immersive fullscreen
     LaunchedEffect(selectedSurah, viewMode, isImmersiveBarsVisible) {
@@ -255,22 +275,44 @@ fun QuranScreen(
         }
     }
 
-    fun copyAyat(ayat: QuranAyat, surahName: String) {
+    fun copyAyat(ayat: QuranAyat, surahName: String, surahNumber: Int = selectedSurah?.number ?: 1, tafsirText: String? = null) {
         val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-        val text = "QS. $surahName Ayat ${ayat.number}:\n\n${ayat.arabic}\n\n${ayat.latin}\n\n\"${ayat.translation}\"\n\n(Adzkaruna - Al-Qur'an Kemenag)"
-        clipboard.setPrimaryClip(ClipData.newPlainText("Ayat Al-Qur'an", text))
         coroutineScope.launch {
-            snackbarHostState.showSnackbar("Ayat disalin ke papan klip")
+            val tafsir = tafsirText ?: QuranRepository.getTafsir(surahNumber, ayat.number)
+            val text = buildString {
+                append("QS. $surahName Ayat ${ayat.number}:\n\n")
+                append("${ayat.arabic}\n\n")
+                if (ayat.latin.isNotBlank()) append("${ayat.latin}\n\n")
+                append("Artinya:\n\"${ayat.translation}\"\n\n")
+                if (tafsir.isNotBlank() && !tafsir.startsWith("Tafsir tidak")) {
+                    append("Tafsir Kemenag RI:\n$tafsir\n\n")
+                }
+                append("(Adzkaruna - Al-Qur'an Kemenag RI)")
+            }
+            clipboard.setPrimaryClip(ClipData.newPlainText("Ayat Al-Qur'an", text))
+            snackbarHostState.showSnackbar("Ayat dan Tafsir berhasil disalin ✨")
         }
     }
 
-    fun shareAyat(ayat: QuranAyat, surahName: String) {
-        val text = "QS. $surahName Ayat ${ayat.number}:\n\n${ayat.arabic}\n\n${ayat.latin}\n\n\"${ayat.translation}\"\n\n(Adzkaruna - Al-Qur'an Kemenag)"
-        val intent = Intent(Intent.ACTION_SEND).apply {
-            type = "text/plain"
-            putExtra(Intent.EXTRA_TEXT, text)
+    fun shareAyat(ayat: QuranAyat, surahName: String, surahNumber: Int = selectedSurah?.number ?: 1, tafsirText: String? = null) {
+        coroutineScope.launch {
+            val tafsir = tafsirText ?: QuranRepository.getTafsir(surahNumber, ayat.number)
+            val text = buildString {
+                append("📖 QS. $surahName Ayat ${ayat.number}\n\n")
+                append("${ayat.arabic}\n\n")
+                if (ayat.latin.isNotBlank()) append("${ayat.latin}\n\n")
+                append("Artinya:\n\"${ayat.translation}\"\n\n")
+                if (tafsir.isNotBlank() && !tafsir.startsWith("Tafsir tidak")) {
+                    append("Tafsir Kemenag RI:\n$tafsir\n\n")
+                }
+                append("📲 Dibagikan dari Adzkaruna - Doa & Dzikir Harian Muslimin")
+            }
+            val intent = Intent(Intent.ACTION_SEND).apply {
+                type = "text/plain"
+                putExtra(Intent.EXTRA_TEXT, text)
+            }
+            context.startActivity(Intent.createChooser(intent, "Bagikan QS. $surahName:${ayat.number}"))
         }
-        context.startActivity(Intent.createChooser(intent, "Bagikan Ayat Al-Qur'an"))
     }
 
     Box(modifier = modifier.fillMaxSize()) {
@@ -410,7 +452,10 @@ fun QuranScreen(
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.weight(1f)
+                                ) {
                                     Surface(
                                         color = MaterialTheme.colorScheme.primaryContainer,
                                         shape = CircleShape,
@@ -428,22 +473,31 @@ fun QuranScreen(
 
                                     Spacer(modifier = Modifier.width(12.dp))
 
-                                    Column {
+                                    Column(modifier = Modifier.weight(1f)) {
                                         Text(
                                             text = surah.name,
                                             style = MaterialTheme.typography.titleMedium,
                                             fontWeight = FontWeight.Bold,
-                                            color = MaterialTheme.colorScheme.onSurface
+                                            color = MaterialTheme.colorScheme.onSurface,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
                                         )
                                         Text(
                                             text = "${surah.englishMeaning} • ${surah.revelation} (${surah.totalAyat} Ayat)",
                                             fontSize = 11.sp,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
                                         )
                                     }
                                 }
 
-                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                Spacer(modifier = Modifier.width(8.dp))
+
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.End
+                                ) {
                                     Text(
                                         text = surah.arabicName,
                                         fontFamily = LpmqFontFamily,
@@ -1040,28 +1094,53 @@ fun QuranScreen(
                                                 Text("Tafsir & Terjemahan", fontSize = 10.5.sp, fontWeight = FontWeight.Bold)
                                             }
 
-                                            OutlinedButton(
-                                                onClick = {
-                                                    saveBookmark(currentMushafPage, currentSurahName)
-                                                    Toast.makeText(context, "Halaman $currentMushafPage ($currentSurahName) ditandai 🔖", Toast.LENGTH_SHORT).show()
-                                                },
-                                                shape = RoundedCornerShape(8.dp),
-                                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 2.dp),
-                                                modifier = Modifier.height(30.dp)
-                                            ) {
-                                                Icon(
-                                                    imageVector = if (currentMushafPage == lastReadPage) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
-                                                    contentDescription = null,
-                                                    tint = if (currentMushafPage == lastReadPage) AccentGold else greenDark,
-                                                    modifier = Modifier.size(13.dp)
-                                                )
-                                                Spacer(modifier = Modifier.width(4.dp))
-                                                Text(
-                                                    text = if (currentMushafPage == lastReadPage) "Ditandai" else "Tandai Hal. $currentMushafPage",
-                                                    fontSize = 10.5.sp,
-                                                    color = greenDark,
-                                                    fontWeight = FontWeight.Medium
-                                                )
+                                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                                FilledTonalButton(
+                                                    onClick = { showDownloadPromptDialog = true },
+                                                    shape = RoundedCornerShape(8.dp),
+                                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                                                    modifier = Modifier.height(30.dp),
+                                                    colors = ButtonDefaults.filledTonalButtonColors(
+                                                        containerColor = if (cachedPageCount >= 600) Color(0xFFE8F5E9) else Color(0xFFFFF3E0),
+                                                        contentColor = if (cachedPageCount >= 600) Color(0xFF2E7D32) else Color(0xFFE65100)
+                                                    )
+                                                ) {
+                                                    Icon(
+                                                        imageVector = if (cachedPageCount >= 600) Icons.Default.CheckCircle else Icons.Default.CloudDownload,
+                                                        contentDescription = null,
+                                                        modifier = Modifier.size(13.dp)
+                                                    )
+                                                    Spacer(modifier = Modifier.width(3.dp))
+                                                    Text(
+                                                        text = if (cachedPageCount >= 600) "Offline" else "Unduh",
+                                                        fontSize = 10.sp,
+                                                        fontWeight = FontWeight.SemiBold
+                                                    )
+                                                }
+
+                                                OutlinedButton(
+                                                    onClick = {
+                                                        saveBookmark(currentMushafPage, currentSurahName)
+                                                        Toast.makeText(context, "Halaman $currentMushafPage ($currentSurahName) ditandai 🔖", Toast.LENGTH_SHORT).show()
+                                                    },
+                                                    shape = RoundedCornerShape(8.dp),
+                                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 2.dp),
+                                                    modifier = Modifier.height(30.dp)
+                                                ) {
+                                                    Icon(
+                                                        imageVector = if (currentMushafPage == lastReadPage) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
+                                                        contentDescription = null,
+                                                        tint = if (currentMushafPage == lastReadPage) AccentGold else greenDark,
+                                                        modifier = Modifier.size(13.dp)
+                                                    )
+                                                    Spacer(modifier = Modifier.width(4.dp))
+                                                    Text(
+                                                        text = if (currentMushafPage == lastReadPage) "Ditandai" else "Tandai Hal. $currentMushafPage",
+                                                        fontSize = 10.5.sp,
+                                                        color = greenDark,
+                                                        fontWeight = FontWeight.Medium
+                                                    )
+                                                }
                                             }
                                         }
 
@@ -1295,6 +1374,114 @@ fun QuranScreen(
             }
         }
         
+        // ==================== DIALOG 1: UNDUH MUSHAF OFFLINE (POP UP PERTAMA KALI) ====================
+        if (showDownloadPromptDialog) {
+            AlertDialog(
+                onDismissRequest = {
+                    showDownloadPromptDialog = false
+                    prefs.setMushafDownloadPrompted(true)
+                },
+                icon = {
+                    Icon(Icons.Default.CloudDownload, contentDescription = null, tint = PrimaryTosca, modifier = Modifier.size(36.dp))
+                },
+                title = {
+                    Text(
+                        text = "Unduh Seluruh Mushaf (604 Halaman)?",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 17.sp,
+                        textAlign = TextAlign.Center
+                    )
+                },
+                text = {
+                    Column {
+                        Text(
+                            text = "Unduh seluruh halaman Al-Qur'an agar Anda dapat membaca dengan sangat cepat, lancar tanpa kendala/ngelag, dan 100% offline tanpa kuota internet (±45 MB).\n\nJika memilih 'Nanti Saja', halaman akan tetap dapat dibaca secara online (diunduh otomatis satu per satu saat dibuka).",
+                            fontSize = 13.sp,
+                            lineHeight = 18.sp
+                        )
+                        if (cachedPageCount > 0) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "Sudah tersimpan di perangkat: $cachedPageCount / 604 halaman",
+                                fontSize = 11.5.sp,
+                                color = PrimaryTosca,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            showDownloadPromptDialog = false
+                            prefs.setMushafDownloadPrompted(true)
+                            isDownloadingAllMushaf = true
+                            coroutineScope.launch {
+                                QuranRepository.downloadAllMushafPages(context) { downloaded, total ->
+                                    downloadProgressCount = downloaded
+                                    totalMushafPages = total
+                                    cachedPageCount = downloaded
+                                }
+                                isDownloadingAllMushaf = false
+                                prefs.setMushafAllDownloaded(true)
+                                snackbarHostState.showSnackbar("Alhamdulillah! Seluruh 604 halaman mushaf telah tersimpan offline 📖✨")
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryTosca)
+                    ) {
+                        Text("Unduh Sekarang")
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = {
+                            showDownloadPromptDialog = false
+                            prefs.setMushafDownloadPrompted(true)
+                        }
+                    ) {
+                        Text("Nanti Saja")
+                    }
+                }
+            )
+        }
+
+        // ==================== DIALOG 2: PROGRES DOWNLOAD MUSHAF ====================
+        if (isDownloadingAllMushaf) {
+            AlertDialog(
+                onDismissRequest = { /* jangan tutup saat klik luar */ },
+                title = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        CircularProgressIndicator(modifier = Modifier.size(22.dp), strokeWidth = 2.5.dp, color = PrimaryTosca)
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Text("Mengunduh Mushaf Offline...", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    }
+                },
+                text = {
+                    Column {
+                        val percent = if (totalMushafPages > 0) (downloadProgressCount * 100 / totalMushafPages) else 0
+                        LinearProgressIndicator(
+                            progress = { if (totalMushafPages > 0) downloadProgressCount.toFloat() / totalMushafPages else 0f },
+                            modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp)),
+                            color = PrimaryTosca,
+                            trackColor = PrimaryTosca.copy(alpha = 0.2f)
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Text("$downloadProgressCount / $totalMushafPages Halaman", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text("$percent%", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = PrimaryTosca)
+                        }
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text("Halaman yang tersimpan langsung dapat dibaca tanpa internet.", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = { isDownloadingAllMushaf = false }) {
+                        Text("Lanjutkan di Latar Belakang")
+                    }
+                }
+            )
+        }
+
         // ==================== BOTTOM SHEET: TAFSIR LENGKAP KEMENAG RI & AUDIO MUROTTAL ====================
         if (selectedAyatForTafsir != null) {
             val ayat = selectedAyatForTafsir!!

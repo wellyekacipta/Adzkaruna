@@ -672,4 +672,41 @@ object QuranRepository {
             }
         }
     }
+
+    fun isPageCached(context: Context, pageNumber: Int): Boolean {
+        val padded = String.format(Locale.US, "%03d", pageNumber.coerceIn(1, 604))
+        val dir = File(context.cacheDir, "mushaf_pages")
+        val cacheFile = File(dir, "page" + padded + ".png")
+        return cacheFile.exists() && cacheFile.length() > 5000
+    }
+
+    fun countCachedPages(context: Context): Int {
+        val dir = File(context.cacheDir, "mushaf_pages")
+        if (!dir.exists()) return 0
+        return (1..604).count { page ->
+            val padded = String.format(Locale.US, "%03d", page)
+            val cacheFile = File(dir, "page" + padded + ".png")
+            cacheFile.exists() && cacheFile.length() > 5000
+        }
+    }
+
+    suspend fun downloadAllMushafPages(
+        context: Context,
+        onProgress: (downloaded: Int, total: Int) -> Unit
+    ) = withContext(Dispatchers.IO) {
+        val total = 604
+        var currentCount = countCachedPages(context)
+        onProgress(currentCount, total)
+
+        for (page in 1..total) {
+            if (!isPageCached(context, page)) {
+                getMushafPageBitmap(context, page)
+                try {
+                    getMushafPage(page, context)
+                } catch (_: Exception) {}
+                currentCount = countCachedPages(context)
+                onProgress(currentCount, total)
+            }
+        }
+    }
 }

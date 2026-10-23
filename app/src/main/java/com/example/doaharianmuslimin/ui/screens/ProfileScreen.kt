@@ -423,7 +423,7 @@ fun ProfileScreen(
                                         color = MaterialTheme.colorScheme.primary
                                     )
                                     Text(
-                                        text = "Doa & Dzikir Harian Muslimin v1.27.0",
+                                        text = "Doa & Dzikir Harian Muslimin v1.28.0",
                                         fontSize = 11.5.sp,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )

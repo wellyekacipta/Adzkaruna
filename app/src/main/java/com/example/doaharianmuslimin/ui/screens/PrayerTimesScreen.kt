@@ -35,9 +35,11 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import com.example.doaharianmuslimin.data.AdhanVoiceOption
 import com.example.doaharianmuslimin.data.CityOption
+import com.example.doaharianmuslimin.data.PreferencesManager
 import com.example.doaharianmuslimin.data.PrayerTimesRepository
 import com.example.doaharianmuslimin.data.model.PrayerSchedule
 import com.example.doaharianmuslimin.data.model.PrayerTimeItem
+import com.example.doaharianmuslimin.service.AdhanReminderHelper
 import com.example.doaharianmuslimin.ui.theme.AccentGold
 import com.example.doaharianmuslimin.ui.theme.PrimaryTosca
 import com.example.doaharianmuslimin.ui.theme.PrimaryToscaLight
@@ -54,8 +56,11 @@ fun PrayerTimesScreen(
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
+    val prefs = remember { PreferencesManager(context) }
 
-    var selectedCity by remember { mutableStateOf(PrayerTimesRepository.popularCities.first()) }
+    var selectedCity by remember {
+        mutableStateOf(CityOption(prefs.getSavedCityId(), prefs.getSavedCityName()))
+    }
     var schedule by remember { mutableStateOf<PrayerSchedule?>(null) }
     var isLoading by remember { mutableStateOf(true) }
     var isLocatingGps by remember { mutableStateOf(false) }
@@ -69,21 +74,21 @@ fun PrayerTimesScreen(
     var countdownText by remember { mutableStateOf("00:00:00") }
     var nextPrayerName by remember { mutableStateOf("Subuh") }
 
-    // Adhan Reminders & Voice Settings
-    var isAdhanEnabled by remember { mutableStateOf(true) }
-    var selectedAdhanVoice by remember { mutableStateOf(AdhanVoiceOption.MAKKAH) }
+    // Adhan Reminders & Voice Settings (Tersimpan permanen di PreferencesManager)
+    var isAdhanEnabled by remember { mutableStateOf(prefs.isAdhanEnabled()) }
+    var selectedAdhanVoice by remember {
+        mutableStateOf(
+            try {
+                AdhanVoiceOption.valueOf(prefs.getSelectedAdhanVoice())
+            } catch (_: Exception) {
+                AdhanVoiceOption.MAKKAH
+            }
+        )
+    }
     var currentlyPlayingVoice by remember { mutableStateOf<AdhanVoiceOption?>(null) }
     var mediaPlayer by remember { mutableStateOf<MediaPlayer?>(null) }
     var prayerReminderToggles by remember {
-        mutableStateOf(
-            mapOf(
-                "Subuh" to true,
-                "Dzuhur" to true,
-                "Ashar" to true,
-                "Maghrib" to true,
-                "Isya" to true
-            )
-        )
+        mutableStateOf(prefs.getPrayerReminderToggles())
     }
 
     // Auto load schedule on city change
@@ -134,6 +139,8 @@ fun PrayerTimesScreen(
         mediaPlayer = null
         currentlyPlayingVoice = option
         selectedAdhanVoice = option
+        prefs.setSelectedAdhanVoice(option.name)
+        AdhanReminderHelper.scheduleAllPrayerAlarms(context)
 
         coroutineScope.launch {
             snackbarHostState.showSnackbar("Memutar: ${option.displayName}...")
@@ -195,7 +202,9 @@ fun PrayerTimesScreen(
                 val detected = PrayerTimesRepository.detectCityFromLocation(context)
                 if (detected != null) {
                     selectedCity = detected
-                    snackbarHostState.showSnackbar("Lokasi berhasil diperbarui: ${detected.name}")
+                    prefs.setSavedCity(detected.id, detected.name)
+                    AdhanReminderHelper.scheduleAllPrayerAlarms(context)
+                    snackbarHostState.showSnackbar("Lokasi berhasil disinkronkan: ${detected.name}")
                 } else {
                     snackbarHostState.showSnackbar("Gagal mendeteksi nama kota dari GPS.")
                 }
@@ -218,6 +227,8 @@ fun PrayerTimesScreen(
                 val detected = PrayerTimesRepository.detectCityFromLocation(context)
                 if (detected != null) {
                     selectedCity = detected
+                    prefs.setSavedCity(detected.id, detected.name)
+                    AdhanReminderHelper.scheduleAllPrayerAlarms(context)
                     snackbarHostState.showSnackbar("Lokasi berhasil diperbarui: ${detected.name}")
                 } else {
                     snackbarHostState.showSnackbar("GPS aktif tapi kota belum terdeteksi. Silakan pilih dari daftar.")
@@ -231,14 +242,19 @@ fun PrayerTimesScreen(
         }
     }
 
-    // Auto detect GPS on first mount
+    // Auto detect GPS & schedule alarms on first mount
     LaunchedEffect(Unit) {
+        AdhanReminderHelper.createNotificationChannel(context)
+        AdhanReminderHelper.scheduleAllPrayerAlarms(context)
+
         val fineGranted = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
         val coarseGranted = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
         if (fineGranted || coarseGranted) {
             val detected = PrayerTimesRepository.detectCityFromLocation(context)
-            if (detected != null) {
+            if (detected != null && (detected.id != selectedCity.id || detected.name != selectedCity.name)) {
                 selectedCity = detected
+                prefs.setSavedCity(detected.id, detected.name)
+                AdhanReminderHelper.scheduleAllPrayerAlarms(context)
             }
         }
     }
@@ -555,9 +571,11 @@ fun PrayerTimesScreen(
                                                 prayerReminderToggles = prayerReminderToggles.toMutableMap().apply {
                                                     put(item.name, nextVal)
                                                 }
+                                                prefs.setPrayerReminderToggle(item.name, nextVal)
+                                                AdhanReminderHelper.scheduleAllPrayerAlarms(context)
                                                 coroutineScope.launch {
                                                     snackbarHostState.showSnackbar(
-                                                        if (nextVal) "Pengingat adzan ${item.name} diaktifkan" else "Pengingat ${item.name} dinonaktifkan"
+                                                        if (nextVal) "Pengingat adzan ${item.name} diaktifkan 🔔" else "Pengingat ${item.name} dinonaktifkan 🔕"
                                                     )
                                                 }
                                             },
@@ -616,7 +634,11 @@ fun PrayerTimesScreen(
 
                             Switch(
                                 checked = isAdhanEnabled,
-                                onCheckedChange = { isAdhanEnabled = it }
+                                onCheckedChange = {
+                                    isAdhanEnabled = it
+                                    prefs.setAdhanEnabled(it)
+                                    AdhanReminderHelper.scheduleAllPrayerAlarms(context)
+                                }
                             )
                         }
 
@@ -634,6 +656,12 @@ fun PrayerTimesScreen(
                                 modifier = Modifier.padding(bottom = 6.dp)
                             )
 
+                            val onSelectVoice = { opt: AdhanVoiceOption ->
+                                selectedAdhanVoice = opt
+                                prefs.setSelectedAdhanVoice(opt.name)
+                                AdhanReminderHelper.scheduleAllPrayerAlarms(context)
+                            }
+
                             AdhanVoiceOption.entries.forEach { option ->
                                 val isSelected = option == selectedAdhanVoice
                                 Surface(
@@ -641,7 +669,7 @@ fun PrayerTimesScreen(
                                         .fillMaxWidth()
                                         .padding(vertical = 4.dp)
                                         .clip(RoundedCornerShape(10.dp))
-                                        .clickable { selectedAdhanVoice = option },
+                                        .clickable { onSelectVoice(option) },
                                     color = if (isSelected) PrimaryTosca.copy(alpha = 0.1f) else Color.Transparent,
                                     border = BorderStroke(
                                         1.dp,
@@ -662,7 +690,7 @@ fun PrayerTimesScreen(
                                         ) {
                                             RadioButton(
                                                 selected = isSelected,
-                                                onClick = { selectedAdhanVoice = option }
+                                                onClick = { onSelectVoice(option) }
                                             )
                                             Spacer(modifier = Modifier.width(6.dp))
                                             Text(
@@ -812,6 +840,8 @@ fun PrayerTimesScreen(
                                     .clip(RoundedCornerShape(8.dp))
                                     .clickable {
                                         selectedCity = city
+                                        prefs.setSavedCity(city.id, city.name)
+                                        AdhanReminderHelper.scheduleAllPrayerAlarms(context)
                                         showCityDialog = false
                                     },
                                 color = if (isSelected) PrimaryTosca.copy(alpha = 0.15f) else Color.Transparent
