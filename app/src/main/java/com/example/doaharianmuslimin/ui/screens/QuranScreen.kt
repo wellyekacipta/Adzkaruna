@@ -362,11 +362,12 @@ fun QuranScreen(
 
                     // Category Filter Chips
                     item {
-                        Row(
+                        LazyRow(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            contentPadding = PaddingValues(horizontal = 2.dp)
                         ) {
-                            QuranFilterCategory.entries.forEach { category ->
+                            items(QuranFilterCategory.entries) { category ->
                                 val isSelected = category == selectedFilter
                                 FilterChip(
                                     selected = isSelected,
