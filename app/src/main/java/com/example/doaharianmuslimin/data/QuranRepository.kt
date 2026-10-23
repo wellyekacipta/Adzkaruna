@@ -1,15 +1,22 @@
 package com.example.doaharianmuslimin.data
 
+import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import com.example.doaharianmuslimin.data.model.MushafLine
 import com.example.doaharianmuslimin.data.model.MushafPageData
 import com.example.doaharianmuslimin.data.model.MushafWord
 import com.example.doaharianmuslimin.data.model.QuranAyat
 import com.example.doaharianmuslimin.data.model.QuranSurah
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
+import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
+import java.util.Locale
 
 object QuranRepository {
 
@@ -516,6 +523,80 @@ object QuranRepository {
                 }
             } catch (_: Exception) {}
             null
+        }
+    }
+
+    private val pageBitmapCache = mutableMapOf<Int, Bitmap>()
+
+    /**
+     * Load official high-resolution 15-line Mushaf Madinah V2 page image (KFGQPC standard)
+     * Automatically caches downloaded images to context.cacheDir/mushaf_pages/
+     */
+    suspend fun getMushafPageBitmap(context: Context, pageNumber: Int): Bitmap? {
+        val safePage = pageNumber.coerceIn(1, 604)
+        pageBitmapCache[safePage]?.let { return it }
+
+        return withContext(Dispatchers.IO) {
+            val padded = String.format(Locale.US, "%03d", safePage)
+            val dir = File(context.cacheDir, "mushaf_pages")
+            if (!dir.exists()) dir.mkdirs()
+            val cacheFile = File(dir, "page$padded.png")
+
+            // 1. Try reading from disk cache
+            if (cacheFile.exists() && cacheFile.length() > 5000) {
+                try {
+                    val bmp = BitmapFactory.decodeFile(cacheFile.absolutePath)
+                    if (bmp != null) {
+                        pageBitmapCache[safePage] = bmp
+                        return@withContext bmp
+                    }
+                } catch (_: Exception) {}
+            }
+
+            // 2. Fetch from high-speed official CDN
+            val urls = listOf(
+                "https://files.quran.app/hafs/madani/width_1024/page$padded.png",
+                "https://android.quran.com/data/width_1024/page$padded.png"
+            )
+
+            for (urlStr in urls) {
+                try {
+                    val url = URL(urlStr)
+                    val conn = url.openConnection() as HttpURLConnection
+                    conn.connectTimeout = 8000
+                    conn.readTimeout = 12000
+                    conn.instanceFollowRedirects = true
+                    if (conn.responseCode == 200) {
+                        conn.inputStream.use { input ->
+                            cacheFile.outputStream().use { output ->
+                                input.copyTo(output)
+                            }
+                        }
+                        val bmp = BitmapFactory.decodeFile(cacheFile.absolutePath)
+                        if (bmp != null) {
+                            pageBitmapCache[safePage] = bmp
+                            return@withContext bmp
+                        }
+                    }
+                } catch (_: Exception) {}
+            }
+            null
+        }
+    }
+
+    /**
+     * Asynchronously pre-fetch adjacent pages in the background for instant swiping
+     */
+    fun preloadMushafAdjacentPages(context: Context, currentPage: Int) {
+        val next = (currentPage + 1).coerceAtMost(604)
+        val prev = (currentPage - 1).coerceAtLeast(1)
+        CoroutineScope(Dispatchers.IO).launch {
+            if (next != currentPage && !pageBitmapCache.containsKey(next)) {
+                getMushafPageBitmap(context, next)
+            }
+            if (prev != currentPage && !pageBitmapCache.containsKey(prev)) {
+                getMushafPageBitmap(context, prev)
+            }
         }
     }
 }
