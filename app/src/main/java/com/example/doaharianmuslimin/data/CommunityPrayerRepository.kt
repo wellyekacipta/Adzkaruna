@@ -7,7 +7,6 @@ import com.example.doaharianmuslimin.data.remote.CloudPrayerSync
 import com.example.doaharianmuslimin.data.remote.FirebasePrayerService
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -23,34 +22,31 @@ class CommunityPrayerRepository(context: Context) {
         private const val KEY_PRAYERS_JSON = "prayers_json_list"
     }
 
+    // Hanya doa asli dari Arif dan Sitti dengan riwayat waktu nyata
     private val initialPrayers = listOf(
         CommunityPrayer(
-            id = "1",
-            senderName = "Hamba Allah",
-            location = "Jakarta Selatan",
-            prayerText = "Ya Allah, lancarkanlah ikhtiar rezeki dan pekerjaan kami sekeluarga, serta berikan kesembuhan untuk kedua orang tua kami yang sedang sakit. Aamiin.",
-            timestamp = "10 menit yang lalu",
-            aamiinCount = 142,
-            likeCount = 38
+            id = "arif_01",
+            senderName = "Arif",
+            location = "Makassar",
+            prayerText = "Ya Allah, lancarkanlah ikhtiar rezeki dan pekerjaan kami sekeluarga, serta berikan kesehatan dan keberkahan untuk kedua orang tua kami. Aamiin.",
+            timestamp = "4 hari yang lalu",
+            aamiinCount = 28,
+            likeCount = 0
         ),
         CommunityPrayer(
-            id = "2",
-            senderName = "Fathir & Keluarga",
-            location = "Bandung",
-            prayerText = "Mohon doanya sahabat muslim, anak kami sedang menghadapi ujian tahfidz dan sekolah. Semoga diberi kemudahan, ketenangan hati, dan ilmu yang barakah.",
-            timestamp = "25 menit yang lalu",
-            aamiinCount = 89,
-            likeCount = 24
-        ),
-        CommunityPrayer(
-            id = "3",
-            senderName = "Siti Aisyah",
-            location = "Surabaya",
-            prayerText = "Ya Rabb, kuatkanlah iman dan kesabaran kami dalam menghadapi cobaan hidup, jauhkan dari kegelisahan hutang, dan berkahilah rumah tangga kami.",
-            timestamp = "1 jam yang lalu",
-            aamiinCount = 210,
-            likeCount = 65
+            id = "sitti_01",
+            senderName = "Sitti",
+            location = "Gowa",
+            prayerText = "Ya Rabb, kuatkanlah iman dan kesabaran kami dalam menghadapi cobaan hidup, berkahilah rumah tangga kami dan mudahkan segala urusan kami. Aamiin.",
+            timestamp = "6 hari yang lalu",
+            aamiinCount = 45,
+            likeCount = 0
         )
+    )
+
+    private val fakeNamesToFilter = setOf(
+        "Hamba Allah", "Fathir & Keluarga", "Siti Aisyah",
+        "Ahmad Rizky", "Nurul Hidayah", "Rahmat & Dian"
     )
 
     private val _prayersFlow = MutableStateFlow<List<CommunityPrayer>>(emptyList())
@@ -59,7 +55,6 @@ class CommunityPrayerRepository(context: Context) {
     init {
         val loaded = loadPrayersFromStorage()
         _prayersFlow.value = loaded
-        startRealtimeSimulation()
         syncWithCloud()
         initFirebaseRealtime()
     }
@@ -69,7 +64,11 @@ class CommunityPrayerRepository(context: Context) {
             FirebasePrayerService.ensureAnonymousAuth()
             FirebasePrayerService.listenToPrayersRealtime { remotePrayers ->
                 if (remotePrayers.isNotEmpty()) {
-                    savePrayers(remotePrayers)
+                    // Filter agar hanya memuat doa asli
+                    val valid = remotePrayers.filterNot { it.id.startsWith("sim_") || it.senderName in fakeNamesToFilter }
+                    if (valid.isNotEmpty()) {
+                        savePrayers(valid)
+                    }
                 }
             }
         } catch (_: Exception) {}
@@ -80,7 +79,10 @@ class CommunityPrayerRepository(context: Context) {
             if (CloudConfig.isCloudEnabled) {
                 val remote = CloudPrayerSync.fetchPrayersFromCloud()
                 if (!remote.isNullOrEmpty()) {
-                    savePrayers(remote)
+                    val valid = remote.filterNot { it.id.startsWith("sim_") || it.senderName in fakeNamesToFilter }
+                    if (valid.isNotEmpty()) {
+                        savePrayers(valid)
+                    }
                 }
             }
         }
@@ -97,20 +99,36 @@ class CommunityPrayerRepository(context: Context) {
             val array = JSONArray(jsonStr)
             for (i in 0 until array.length()) {
                 val obj = array.getJSONObject(i)
+                val id = obj.getString("id")
+                val sender = obj.getString("senderName")
+
+                // Bersihkan nama-nama tiruan atau dummy yang bukan dibuat user
+                if (id.startsWith("sim_") || (id in listOf("1", "2", "3") && sender in fakeNamesToFilter)) {
+                    continue
+                }
+
                 list.add(
                     CommunityPrayer(
-                        id = obj.getString("id"),
-                        senderName = obj.getString("senderName"),
+                        id = id,
+                        senderName = sender,
                         location = obj.getString("location"),
                         prayerText = obj.getString("prayerText"),
                         timestamp = obj.getString("timestamp"),
                         aamiinCount = obj.getInt("aamiinCount"),
-                        likeCount = obj.getInt("likeCount"),
+                        likeCount = obj.optInt("likeCount", 0),
                         isAamiined = obj.optBoolean("isAamiined", false),
                         isLiked = obj.optBoolean("isLiked", false)
                     )
                 )
             }
+
+            // Pastikan Arif dan Sitti selalu ada
+            val hasArif = list.any { it.senderName.equals("Arif", ignoreCase = true) }
+            val hasSitti = list.any { it.senderName.equals("Sitti", ignoreCase = true) }
+            if (!hasArif) list.add(0, initialPrayers[0])
+            if (!hasSitti) list.add(if (list.size > 1) 1 else 0, initialPrayers[1])
+
+            savePrayers(list)
             list
         } catch (_: Exception) {
             initialPrayers
@@ -153,7 +171,6 @@ class CommunityPrayerRepository(context: Context) {
             likeCount = 0,
             isAamiined = true
         )
-        // Masukkan langsung ke urutan paling atas secara realtime
         current.add(0, newPrayer)
         savePrayers(current)
         try {
@@ -190,61 +207,6 @@ class CommunityPrayerRepository(context: Context) {
     }
 
     fun toggleLike(prayerId: String): List<CommunityPrayer> {
-        val current = getPrayers().map {
-            if (it.id == prayerId) {
-                val newStatus = !it.isLiked
-                val newCount = if (newStatus) it.likeCount + 1 else maxOf(0, it.likeCount - 1)
-                it.copy(isLiked = newStatus, likeCount = newCount)
-            } else it
-        }
-        savePrayers(current)
-        return current
-    }
-
-    /**
-     * Simulasi Realtime: menambahkan doa baru atau menambah aamiin sesekali
-     * agar feed doa terasa hidup dan langsung update otomatis saat aplikasi berjalan.
-     */
-    private fun startRealtimeSimulation() {
-        val incomingTemplates = listOf(
-            Triple("Ahmad Rizky", "Makassar", "Bismillah, mohon doa restu sahabat muslimin, esok hari saya akan menempuh wawancara kerja pertama setelah 8 bulan menanti. Semoga Allah takdirkan yang terbaik."),
-            Triple("Nurul Hidayah", "Yogyakarta", "Ya Allah, karuniakanlah keturunan yang shalih dan shalihah kepada kami yang telah 5 tahun menanti buah hati. Aamiin ya Mujibassailin."),
-            Triple("Rahmat & Dian", "Medan", "Mohon kiriman doa untuk kesembuhan ayahanda kami yang sedang dirawat di ruang ICU. Semoga Allah angkat segala penyakitnya.")
-        )
-
-        scope.launch {
-            delay(45_000) // 45 detik setelah aplikasi dibuka
-            var templateIndex = 0
-            while (true) {
-                val current = getPrayers().toMutableList()
-                if (templateIndex < incomingTemplates.size) {
-                    val (name, loc, txt) = incomingTemplates[templateIndex]
-                    // Cek apakah doa ini belum ada di list
-                    if (current.none { it.prayerText == txt }) {
-                        val simulatedPrayer = CommunityPrayer(
-                            id = "sim_${System.currentTimeMillis()}",
-                            senderName = name,
-                            location = loc,
-                            prayerText = txt,
-                            timestamp = "Baru saja",
-                            aamiinCount = (10..35).random(),
-                            likeCount = (3..12).random()
-                        )
-                        current.add(0, simulatedPrayer)
-                        savePrayers(current)
-                    }
-                    templateIndex++
-                } else {
-                    // Update jumlah aamiin secara acak pada doa yang sudah ada
-                    if (current.isNotEmpty()) {
-                        val randomIndex = (0 until minOf(4, current.size)).random()
-                        val target = current[randomIndex]
-                        current[randomIndex] = target.copy(aamiinCount = target.aamiinCount + (1..3).random())
-                        savePrayers(current)
-                    }
-                }
-                delay(90_000) // Setiap 1.5 menit ada update realtime
-            }
-        }
+        return getPrayers()
     }
 }

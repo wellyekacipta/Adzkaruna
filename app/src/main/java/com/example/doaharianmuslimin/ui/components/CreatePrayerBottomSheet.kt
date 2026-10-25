@@ -21,9 +21,10 @@ import androidx.compose.ui.unit.sp
 @Composable
 fun CreatePrayerBottomSheet(
     onDismiss: () -> Unit,
+    defaultName: String = "",
     onSubmit: (name: String, location: String, prayerText: String) -> Unit
 ) {
-    var name by remember { mutableStateOf("") }
+    var name by remember { mutableStateOf(defaultName) }
     var location by remember { mutableStateOf("") }
     var prayerText by remember { mutableStateOf("") }
     var showError by remember { mutableStateOf(false) }

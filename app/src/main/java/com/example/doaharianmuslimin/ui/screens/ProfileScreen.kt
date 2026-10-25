@@ -10,6 +10,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -24,27 +25,62 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.doaharianmuslimin.R
 import com.example.doaharianmuslimin.data.AppThemeMode
+import com.example.doaharianmuslimin.data.DoaRepository
+import com.example.doaharianmuslimin.data.PreferencesManager
 import com.example.doaharianmuslimin.ui.theme.AccentGold
 import com.example.doaharianmuslimin.ui.theme.PrimaryTosca
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @Composable
 fun ProfileScreen(
     currentThemeMode: AppThemeMode,
     onOpenThemeDialog: () -> Unit,
     totalFavorites: Int,
+    onSelectDoa: ((Int) -> Unit)? = null,
+    onNavigateToQuran: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
+    val prefs = remember { PreferencesManager(context) }
+
+    var currentUserName by remember { mutableStateOf(prefs.getUserName()) }
+    var showEditNameDialog by remember { mutableStateOf(false) }
+    var nameInput by remember { mutableStateOf("") }
+
+    var showHistoryFavoriteDialog by remember { mutableStateOf(false) }
+    var historyFavoriteTab by remember { mutableIntStateOf(0) }
 
     var showInfaqDialog by remember { mutableStateOf(false) }
     var showGoogleLoginDialog by remember { mutableStateOf(false) }
+
+    fun formatHistoryTimestamp(timestamp: Long): String {
+        val diff = System.currentTimeMillis() - timestamp
+        val seconds = diff / 1000
+        val minutes = seconds / 60
+        val hours = minutes / 60
+        val days = hours / 24
+
+        return when {
+            diff < 60_000 -> "Baru saja"
+            minutes < 60 -> "$minutes menit lalu"
+            hours < 24 -> "$hours jam lalu"
+            days < 7 -> "$days hari lalu"
+            else -> {
+                val sdf = SimpleDateFormat("dd MMM yyyy", Locale("id", "ID"))
+                sdf.format(Date(timestamp))
+            }
+        }
+    }
 
     fun copyToClipboard(label: String, text: String) {
         val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
@@ -151,12 +187,39 @@ fun ProfileScreen(
 
                             Spacer(modifier = Modifier.height(10.dp))
 
-                            Text(
-                                text = "Hamba Allah",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
+                            // Editable Profile Name
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Text(
+                                    text = currentUserName,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Surface(
+                                    shape = CircleShape,
+                                    color = MaterialTheme.colorScheme.primaryContainer,
+                                    modifier = Modifier
+                                        .size(26.dp)
+                                        .clip(CircleShape)
+                                        .clickable {
+                                            nameInput = currentUserName
+                                            showEditNameDialog = true
+                                        }
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Icon(
+                                            imageVector = Icons.Default.Edit,
+                                            contentDescription = "Edit Nama",
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(14.dp)
+                                        )
+                                    }
+                                }
+                            }
 
                             Text(
                                 text = "Akun Tamu (Data Tersimpan di HP)",
@@ -193,7 +256,16 @@ fun ProfileScreen(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceEvenly
                             ) {
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .clickable {
+                                            historyFavoriteTab = 1
+                                            showHistoryFavoriteDialog = true
+                                        }
+                                        .padding(4.dp)
+                                ) {
                                     Text(
                                         text = "$totalFavorites",
                                         fontSize = 20.sp,
@@ -215,7 +287,16 @@ fun ProfileScreen(
                                         .clip(RoundedCornerShape(1.dp))
                                 )
 
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .clickable {
+                                            historyFavoriteTab = 0
+                                            showHistoryFavoriteDialog = true
+                                        }
+                                        .padding(4.dp)
+                                ) {
                                     Text(
                                         text = "114",
                                         fontSize = 20.sp,
@@ -237,7 +318,16 @@ fun ProfileScreen(
                                         .clip(RoundedCornerShape(1.dp))
                                 )
 
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .clickable {
+                                            historyFavoriteTab = 1
+                                            showHistoryFavoriteDialog = true
+                                        }
+                                        .padding(4.dp)
+                                ) {
                                     Text(
                                         text = "Aktif",
                                         fontSize = 20.sp,
@@ -251,6 +341,76 @@ fun ProfileScreen(
                                     )
                                 }
                             }
+                        }
+                    }
+                }
+
+                // ==================== RIWAYAT & FAVORIT ====================
+                item {
+                    Text(
+                        text = "Aktivitas Ibadah Saya",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(start = 4.dp, top = 4.dp)
+                    )
+                }
+
+                item {
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(16.dp))
+                            .clickable { showHistoryFavoriteDialog = true },
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f))
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Surface(
+                                    shape = CircleShape,
+                                    color = PrimaryTosca.copy(alpha = 0.15f),
+                                    modifier = Modifier.size(42.dp)
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Icon(
+                                            imageVector = Icons.Default.Bookmarks,
+                                            contentDescription = null,
+                                            tint = PrimaryTosca,
+                                            modifier = Modifier.size(22.dp)
+                                        )
+                                    }
+                                }
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Column {
+                                    Text(
+                                        text = "Riwayat & Favorit",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 14.sp,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Text(
+                                        text = "Riwayat Al-Qur'an & Doa yang tersimpan",
+                                        fontSize = 11.5.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                            Icon(
+                                imageVector = Icons.Default.ChevronRight,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary
+                            )
                         }
                     }
                 }
@@ -423,7 +583,7 @@ fun ProfileScreen(
                                         color = MaterialTheme.colorScheme.primary
                                     )
                                     Text(
-                                        text = "Doa & Dzikir Harian Muslimin v1.28.0",
+                                        text = "Doa & Dzikir Harian Muslimin v1.29.0",
                                         fontSize = 11.5.sp,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
@@ -455,6 +615,372 @@ fun ProfileScreen(
         SnackbarHost(
             hostState = snackbarHostState,
             modifier = Modifier.align(Alignment.BottomCenter)
+        )
+    }
+
+    // ==================== DIALOG EDIT NAMA PROFIL ====================
+    if (showEditNameDialog) {
+        AlertDialog(
+            onDismissRequest = { showEditNameDialog = false },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.Edit, contentDescription = null, tint = PrimaryTosca)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Ubah Nama Profil", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                }
+            },
+            text = {
+                Column {
+                    Text(
+                        text = "Nama ini akan ditampilkan saat Anda mengirimkan doa di fitur 'Aamiinkan Doa Saudaramu'.",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    OutlinedTextField(
+                        value = nameInput,
+                        onValueChange = { nameInput = it },
+                        label = { Text("Nama Lengkap / Panggilan") },
+                        placeholder = { Text("Misal: Ahmad / Sitti / Hamba Allah") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val savedName = nameInput.trim().ifBlank { "Hamba Allah" }
+                        prefs.setUserName(savedName)
+                        currentUserName = savedName
+                        showEditNameDialog = false
+                        coroutineScope.launch {
+                            snackbarHostState.showSnackbar("Nama profil berhasil diperbarui: $savedName")
+                        }
+                    }
+                ) {
+                    Text("Simpan")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showEditNameDialog = false }) {
+                    Text("Batal")
+                }
+            }
+        )
+    }
+
+    // ==================== DIALOG RIWAYAT & FAVORIT ====================
+    if (showHistoryFavoriteDialog) {
+        val quranHistory = remember { prefs.getQuranReadingHistory() }
+        val quranFavorites = remember { prefs.getQuranFavorites() }
+        val doaHistory = remember { prefs.getDoaReadingHistory() }
+        val doaFavoriteIds = remember { prefs.getFavoriteIds() }
+        val doaFavorites = remember(doaFavoriteIds) {
+            DoaRepository.doaList.filter { doaFavoriteIds.contains(it.id) }
+        }
+
+        AlertDialog(
+            onDismissRequest = { showHistoryFavoriteDialog = false },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.Bookmarks,
+                        contentDescription = null,
+                        tint = PrimaryTosca
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Riwayat & Favorit", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                }
+            },
+            text = {
+                Column(modifier = Modifier.fillMaxWidth().heightIn(max = 450.dp)) {
+                    TabRow(
+                        selectedTabIndex = historyFavoriteTab,
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        contentColor = MaterialTheme.colorScheme.primary
+                    ) {
+                        Tab(
+                            selected = historyFavoriteTab == 0,
+                            onClick = { historyFavoriteTab = 0 },
+                            text = { Text("Al-Qur'an", fontWeight = FontWeight.Bold, fontSize = 12.sp) },
+                            icon = { Icon(Icons.Default.MenuBook, contentDescription = null, modifier = Modifier.size(18.dp)) }
+                        )
+                        Tab(
+                            selected = historyFavoriteTab == 1,
+                            onClick = { historyFavoriteTab = 1 },
+                            text = { Text("Doa & Dzikir", fontWeight = FontWeight.Bold, fontSize = 12.sp) },
+                            icon = { Icon(Icons.Default.Favorite, contentDescription = null, modifier = Modifier.size(18.dp)) }
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    if (historyFavoriteTab == 0) {
+                        // Al-Qur'an Tab
+                        LazyColumn(
+                            modifier = Modifier.fillMaxWidth().weight(1f, fill = false),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            item {
+                                Text(
+                                    text = "Riwayat Terakhir Dibaca",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+
+                            if (quranHistory.isEmpty()) {
+                                item {
+                                    Text(
+                                        text = "Belum ada riwayat membaca Al-Qur'an.",
+                                        fontSize = 11.5.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.padding(vertical = 4.dp)
+                                    )
+                                }
+                            } else {
+                                items(quranHistory.take(10)) { item ->
+                                    Surface(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .clickable {
+                                                showHistoryFavoriteDialog = false
+                                                onNavigateToQuran?.invoke()
+                                            },
+                                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Icon(
+                                                Icons.Default.MenuBook,
+                                                contentDescription = null,
+                                                tint = PrimaryTosca,
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Column(modifier = Modifier.weight(1f)) {
+                                                Text(
+                                                    text = "${item.surahNumber}. ${item.surahName}",
+                                                    fontWeight = FontWeight.SemiBold,
+                                                    fontSize = 12.sp,
+                                                    maxLines = 1,
+                                                    overflow = TextOverflow.Ellipsis
+                                                )
+                                                Text(
+                                                    text = "Halaman ${item.pageNumber} • ${formatHistoryTimestamp(item.timestamp)}",
+                                                    fontSize = 10.5.sp,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                            }
+                                            Icon(Icons.Default.ChevronRight, contentDescription = null, modifier = Modifier.size(16.dp))
+                                        }
+                                    }
+                                }
+                            }
+
+                            item {
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text(
+                                    text = "Halaman & Surat Favorit",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = AccentGold
+                                )
+                            }
+
+                            if (quranFavorites.isEmpty()) {
+                                item {
+                                    Text(
+                                        text = "Belum ada halaman Al-Qur'an yang ditandai favorit.",
+                                        fontSize = 11.5.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.padding(vertical = 4.dp)
+                                    )
+                                }
+                            } else {
+                                items(quranFavorites) { item ->
+                                    Surface(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .clickable {
+                                                showHistoryFavoriteDialog = false
+                                                onNavigateToQuran?.invoke()
+                                            },
+                                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Icon(
+                                                Icons.Default.Bookmark,
+                                                contentDescription = null,
+                                                tint = AccentGold,
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Column(modifier = Modifier.weight(1f)) {
+                                                Text(
+                                                    text = "${item.surahNumber}. ${item.surahName}",
+                                                    fontWeight = FontWeight.SemiBold,
+                                                    fontSize = 12.sp
+                                                )
+                                                Text(
+                                                    text = "Halaman ${item.pageNumber}",
+                                                    fontSize = 10.5.sp,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                            }
+                                            Icon(Icons.Default.ChevronRight, contentDescription = null, modifier = Modifier.size(16.dp))
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        // Doa & Dzikir Tab
+                        LazyColumn(
+                            modifier = Modifier.fillMaxWidth().weight(1f, fill = false),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            item {
+                                Text(
+                                    text = "Doa Favorit Tersimpan",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+
+                            if (doaFavorites.isEmpty()) {
+                                item {
+                                    Text(
+                                        text = "Belum ada doa favorit. Ketuk ikon bintang/hati pada doa untuk menandainya.",
+                                        fontSize = 11.5.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.padding(vertical = 4.dp)
+                                    )
+                                }
+                            } else {
+                                items(doaFavorites) { doa ->
+                                    Surface(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .clickable {
+                                                showHistoryFavoriteDialog = false
+                                                onSelectDoa?.invoke(doa.id)
+                                            },
+                                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Icon(
+                                                Icons.Default.Favorite,
+                                                contentDescription = null,
+                                                tint = Color(0xFFE91E63),
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Column(modifier = Modifier.weight(1f)) {
+                                                Text(
+                                                    text = doa.title,
+                                                    fontWeight = FontWeight.SemiBold,
+                                                    fontSize = 12.sp,
+                                                    maxLines = 1,
+                                                    overflow = TextOverflow.Ellipsis
+                                                )
+                                                Text(
+                                                    text = doa.category.title,
+                                                    fontSize = 10.5.sp,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                            }
+                                            Icon(Icons.Default.ChevronRight, contentDescription = null, modifier = Modifier.size(16.dp))
+                                        }
+                                    }
+                                }
+                            }
+
+                            item {
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text(
+                                    text = "Riwayat Doa Terakhir Dibaca",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = PrimaryTosca
+                                )
+                            }
+
+                            if (doaHistory.isEmpty()) {
+                                item {
+                                    Text(
+                                        text = "Belum ada riwayat membaca doa.",
+                                        fontSize = 11.5.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.padding(vertical = 4.dp)
+                                    )
+                                }
+                            } else {
+                                items(doaHistory.take(10)) { item ->
+                                    Surface(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .clickable {
+                                                showHistoryFavoriteDialog = false
+                                                onSelectDoa?.invoke(item.doaId)
+                                            },
+                                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Icon(
+                                                Icons.Default.History,
+                                                contentDescription = null,
+                                                tint = PrimaryTosca,
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Column(modifier = Modifier.weight(1f)) {
+                                                Text(
+                                                    text = item.title,
+                                                    fontWeight = FontWeight.SemiBold,
+                                                    fontSize = 12.sp,
+                                                    maxLines = 1,
+                                                    overflow = TextOverflow.Ellipsis
+                                                )
+                                                Text(
+                                                    text = formatHistoryTimestamp(item.timestamp),
+                                                    fontSize = 10.5.sp,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                            }
+                                            Icon(Icons.Default.ChevronRight, contentDescription = null, modifier = Modifier.size(16.dp))
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showHistoryFavoriteDialog = false }) {
+                    Text("Tutup", fontWeight = FontWeight.Bold)
+                }
+            }
         )
     }
 

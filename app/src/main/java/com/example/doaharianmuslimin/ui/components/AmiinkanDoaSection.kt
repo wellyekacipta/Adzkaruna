@@ -255,13 +255,13 @@ fun CommunityPrayerCard(
                 )
             }
 
-            // Bottom: Action row (Aamiin & Like)
+            // Bottom: Action row (Hanya tombol Aamiin dengan icon tangan)
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                horizontalArrangement = Arrangement.Start,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Tombol Aamiin dengan ICON DUA TANGAN BERDOA (🤲)
+                // Tombol Aamiin dengan ICON TANGAN (🤲) dan tulisan "Aamiin"
                 FilledTonalButton(
                     onClick = onAamiinClick,
                     colors = ButtonDefaults.filledTonalButtonColors(
@@ -269,31 +269,18 @@ fun CommunityPrayerCard(
                         contentColor = if (prayer.isAamiined) Color.White else MaterialTheme.colorScheme.onPrimaryContainer
                     ),
                     shape = RoundedCornerShape(10.dp),
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
                     modifier = Modifier.height(34.dp)
                 ) {
                     Text(
                         text = "🤲",
-                        fontSize = 13.sp
+                        fontSize = 14.sp
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = if (prayer.isAamiined) "Aamiin (${prayer.aamiinCount})" else "Aamiinkan (${prayer.aamiinCount})",
-                        fontSize = 11.sp,
+                        text = "Aamiin (${prayer.aamiinCount})",
+                        fontSize = 12.sp,
                         fontWeight = FontWeight.SemiBold
-                    )
-                }
-
-                // Tombol Suka / Like
-                IconButton(
-                    onClick = onLikeClick,
-                    modifier = Modifier.size(32.dp)
-                ) {
-                    Icon(
-                        imageVector = if (prayer.isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                        contentDescription = "Like",
-                        tint = if (prayer.isLiked) Color(0xFFE91E63) else MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(18.dp)
                     )
                 }
             }

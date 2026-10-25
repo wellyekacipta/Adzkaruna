@@ -9,6 +9,20 @@ enum class AppThemeMode(val title: String) {
     SYSTEM("Ikuti Sistem")
 }
 
+
+data class QuranHistoryItem(
+    val surahNumber: Int,
+    val surahName: String,
+    val pageNumber: Int,
+    val timestamp: Long = System.currentTimeMillis()
+)
+
+data class DoaHistoryItem(
+    val doaId: Int,
+    val title: String,
+    val timestamp: Long = System.currentTimeMillis()
+)
+
 class PreferencesManager(context: Context) {
     private val prefs: SharedPreferences =
         context.getSharedPreferences("doa_muslimin_prefs", Context.MODE_PRIVATE)
@@ -25,6 +39,10 @@ class PreferencesManager(context: Context) {
         private const val KEY_CITY_NAME = "key_selected_city_name"
         private const val KEY_MUSHAF_DOWNLOAD_PROMPTED = "key_mushaf_download_prompted"
         private const val KEY_MUSHAF_ALL_DOWNLOADED = "key_mushaf_all_downloaded"
+        private const val KEY_USER_NAME = "key_profile_user_name"
+        private const val KEY_QURAN_HISTORY = "key_quran_reading_history_json"
+        private const val KEY_QURAN_FAVORITES = "key_quran_favorites_json"
+        private const val KEY_DOA_HISTORY = "key_doa_reading_history_json"
     }
 
     // --- Adhan & Sholat Preferences ---
@@ -107,5 +125,129 @@ class PreferencesManager(context: Context) {
 
     fun setThemeMode(mode: AppThemeMode) {
         prefs.edit().putString(KEY_THEME_MODE, mode.name).apply()
+    }
+
+    // --- Profil & Edit Nama ---
+    fun getUserName(): String = prefs.getString(KEY_USER_NAME, "Hamba Allah") ?: "Hamba Allah"
+    fun setUserName(name: String) = prefs.edit().putString(KEY_USER_NAME, name.trim().ifBlank { "Hamba Allah" }).apply()
+
+    // --- Riwayat & Favorit Al-Qur'an ---
+    fun getQuranReadingHistory(): List<QuranHistoryItem> {
+        val jsonStr = prefs.getString(KEY_QURAN_HISTORY, null) ?: return emptyList()
+        return try {
+            val list = mutableListOf<QuranHistoryItem>()
+            val array = org.json.JSONArray(jsonStr)
+            for (i in 0 until array.length()) {
+                val obj = array.getJSONObject(i)
+                list.add(
+                    QuranHistoryItem(
+                        surahNumber = obj.getInt("surahNumber"),
+                        surahName = obj.getString("surahName"),
+                        pageNumber = obj.getInt("pageNumber"),
+                        timestamp = obj.optLong("timestamp", System.currentTimeMillis())
+                    )
+                )
+            }
+            list
+        } catch (_: Exception) { emptyList() }
+    }
+
+    fun addQuranReadingHistory(surahNumber: Int, surahName: String, pageNumber: Int) {
+        val current = getQuranReadingHistory().filterNot { it.surahNumber == surahNumber && it.pageNumber == pageNumber }.toMutableList()
+        current.add(0, QuranHistoryItem(surahNumber, surahName, pageNumber, System.currentTimeMillis()))
+        val trimmed = current.take(30)
+        val array = org.json.JSONArray()
+        for (item in trimmed) {
+            array.put(org.json.JSONObject().apply {
+                put("surahNumber", item.surahNumber)
+                put("surahName", item.surahName)
+                put("pageNumber", item.pageNumber)
+                put("timestamp", item.timestamp)
+            })
+        }
+        prefs.edit().putString(KEY_QURAN_HISTORY, array.toString()).apply()
+    }
+
+    fun getQuranFavorites(): List<QuranHistoryItem> {
+        val jsonStr = prefs.getString(KEY_QURAN_FAVORITES, null) ?: return emptyList()
+        return try {
+            val list = mutableListOf<QuranHistoryItem>()
+            val array = org.json.JSONArray(jsonStr)
+            for (i in 0 until array.length()) {
+                val obj = array.getJSONObject(i)
+                list.add(
+                    QuranHistoryItem(
+                        surahNumber = obj.getInt("surahNumber"),
+                        surahName = obj.getString("surahName"),
+                        pageNumber = obj.getInt("pageNumber"),
+                        timestamp = obj.optLong("timestamp", System.currentTimeMillis())
+                    )
+                )
+            }
+            list
+        } catch (_: Exception) { emptyList() }
+    }
+
+    fun toggleQuranFavorite(surahNumber: Int, surahName: String, pageNumber: Int): Boolean {
+        val current = getQuranFavorites().toMutableList()
+        val existingIndex = current.indexOfFirst { it.surahNumber == surahNumber && it.pageNumber == pageNumber }
+        val isNowFav: Boolean
+        if (existingIndex >= 0) {
+            current.removeAt(existingIndex)
+            isNowFav = false
+        } else {
+            current.add(0, QuranHistoryItem(surahNumber, surahName, pageNumber, System.currentTimeMillis()))
+            isNowFav = true
+        }
+        val array = org.json.JSONArray()
+        for (item in current) {
+            array.put(org.json.JSONObject().apply {
+                put("surahNumber", item.surahNumber)
+                put("surahName", item.surahName)
+                put("pageNumber", item.pageNumber)
+                put("timestamp", item.timestamp)
+            })
+        }
+        prefs.edit().putString(KEY_QURAN_FAVORITES, array.toString()).apply()
+        return isNowFav
+    }
+
+    fun isQuranFavorite(pageNumber: Int): Boolean {
+        return getQuranFavorites().any { it.pageNumber == pageNumber }
+    }
+
+    // --- Riwayat Bacaan Doa ---
+    fun getDoaReadingHistory(): List<DoaHistoryItem> {
+        val jsonStr = prefs.getString(KEY_DOA_HISTORY, null) ?: return emptyList()
+        return try {
+            val list = mutableListOf<DoaHistoryItem>()
+            val array = org.json.JSONArray(jsonStr)
+            for (i in 0 until array.length()) {
+                val obj = array.getJSONObject(i)
+                list.add(
+                    DoaHistoryItem(
+                        doaId = obj.getInt("doaId"),
+                        title = obj.getString("title"),
+                        timestamp = obj.optLong("timestamp", System.currentTimeMillis())
+                    )
+                )
+            }
+            list
+        } catch (_: Exception) { emptyList() }
+    }
+
+    fun addDoaReadingHistory(doaId: Int, title: String) {
+        val current = getDoaReadingHistory().filterNot { it.doaId == doaId }.toMutableList()
+        current.add(0, DoaHistoryItem(doaId, title, System.currentTimeMillis()))
+        val trimmed = current.take(30)
+        val array = org.json.JSONArray()
+        for (item in trimmed) {
+            array.put(org.json.JSONObject().apply {
+                put("doaId", item.doaId)
+                put("title", item.title)
+                put("timestamp", item.timestamp)
+            })
+        }
+        prefs.edit().putString(KEY_DOA_HISTORY, array.toString()).apply()
     }
 }

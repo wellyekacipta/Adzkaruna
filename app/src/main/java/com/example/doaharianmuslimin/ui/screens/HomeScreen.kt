@@ -235,7 +235,7 @@ fun HomeScreen(
                                 color = Color.White
                             )
                             Text(
-                                text = "Doa & Dzikir Harian Muslimin v1.28.0",
+                                text = "Doa & Dzikir Harian Muslimin v1.29.0",
                                 fontSize = 11.sp,
                                 color = Color.White.copy(alpha = 0.85f)
                             )
@@ -243,12 +243,15 @@ fun HomeScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { isSearchActive = !isSearchActive }) {
-                        Icon(
-                            imageVector = if (isSearchActive) Icons.Default.Close else Icons.Default.Search,
-                            contentDescription = "Cari",
-                            tint = Color.White
-                        )
+                    // Tombol pencarian hanya muncul di menu yang membutuhkan pencarian (Home & Doa), disembunyikan di Quran, Explore & Profil
+                    if (currentNavTab == BottomNavTab.HOME || currentNavTab == BottomNavTab.DOA) {
+                        IconButton(onClick = { isSearchActive = !isSearchActive }) {
+                            Icon(
+                                imageVector = if (isSearchActive) Icons.Default.Close else Icons.Default.Search,
+                                contentDescription = "Cari",
+                                tint = Color.White
+                            )
+                        }
                     }
 
                     IconButton(onClick = { showThemeDialog = true }) {
@@ -411,7 +414,15 @@ fun HomeScreen(
                     ProfileScreen(
                         currentThemeMode = currentThemeMode,
                         onOpenThemeDialog = { showThemeDialog = true },
-                        totalFavorites = favoriteIds.size
+                        totalFavorites = favoriteIds.size,
+                        onSelectDoa = { doaId ->
+                            DoaRepository.doaList.find { it.id == doaId }?.let {
+                                selectedDoaForDetail = it
+                            }
+                        },
+                        onNavigateToQuran = {
+                            currentNavTab = BottomNavTab.QURAN
+                        }
                     )
                 }
 
@@ -618,7 +629,10 @@ fun HomeScreen(
                                         onFavoriteToggle = { toggleFavorite(doa.id) },
                                         onCopy = { copyDoaToClipboard(doa) },
                                         onShare = { shareDoa(doa) },
-                                        onClick = { selectedDoaForDetail = doa }
+                                        onClick = {
+                                            prefs.addDoaReadingHistory(doa.id, doa.title)
+                                            selectedDoaForDetail = doa
+                                        }
                                     )
                                 }
                             }
@@ -632,6 +646,7 @@ fun HomeScreen(
         if (showCreatePrayerSheet) {
             CreatePrayerBottomSheet(
                 onDismiss = { showCreatePrayerSheet = false },
+                defaultName = prefs.getUserName(),
                 onSubmit = { name, location, text ->
                     communityRepo.addPrayer(name, location, text)
                     coroutineScope.launch {

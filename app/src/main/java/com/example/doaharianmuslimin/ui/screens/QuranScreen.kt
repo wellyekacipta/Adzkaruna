@@ -161,8 +161,11 @@ fun QuranScreen(
             .apply()
         lastReadPage = page
         lastReadSurah = surahName
+        val sNum = selectedSurah?.number ?: 1
+        prefs.toggleQuranFavorite(sNum, surahName, page)
+        prefs.addQuranReadingHistory(sNum, surahName, page)
         coroutineScope.launch {
-            snackbarHostState.showSnackbar("Halaman $page ($surahName) ditandai sebagai Terakhir Dibaca 🔖")
+            snackbarHostState.showSnackbar("Halaman $page ($surahName) ditandai & tersimpan di Favorit 🔖")
         }
     }
 
@@ -264,6 +267,8 @@ fun QuranScreen(
             loadError = null
             currentPageIndex = 0
             selectedSurah = surah
+            val startP = QuranRepository.getStartPageForSurah(surah.number)
+            prefs.addQuranReadingHistory(surah.number, surah.name, startP)
 
             val fullSurah = QuranRepository.getSurahDetail(surah.number)
             if (fullSurah != null && fullSurah.ayats.isNotEmpty()) {
@@ -809,8 +814,11 @@ fun QuranScreen(
                                         Spacer(modifier = Modifier.height(10.dp))
 
                                         // Arabic Text in Islamic Green (Warna hijau mushaf identik Bismillah)
+                                        val tajweedAnnotated = remember(ayat.arabic, isDark) {
+                                            buildTajweedAnnotatedString(ayat.arabic, isDark)
+                                        }
                                         Text(
-                                            text = buildTajweedAnnotatedString(ayat.arabic, isDark),
+                                            text = tajweedAnnotated,
                                             fontFamily = LpmqFontFamily,
                                             fontSize = 26.sp,
                                             fontWeight = FontWeight.SemiBold,
@@ -831,11 +839,11 @@ fun QuranScreen(
 
                                         Spacer(modifier = Modifier.height(6.dp))
 
-                                        // Indonesian Translation (Kemenag RI)
+                                        // Indonesian Translation (Kemenag RI) - Warna hitam pekat di mode terang sesuai permintaan user
                                         Text(
                                             text = ayat.translation,
                                             style = MaterialTheme.typography.bodyMedium,
-                                            color = if (isDark) Color(0xFFECEFF1) else Color(0xFF0F172A)
+                                            color = if (isDark) Color(0xFFECEFF1) else Color.Black
                                         )
                                     }
                                 }
