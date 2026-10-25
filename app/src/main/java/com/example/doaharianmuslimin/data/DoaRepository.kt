@@ -355,6 +355,32 @@ object DoaRepository {
             category = DoaCategory.PAGI_PETANG,
             repeatCount = 3,
             note = "Wajib bagi Allah untuk meridhai orang yang membacanya 3x setiap pagi dan petang."
+        ),
+        Doa(
+            id = 36,
+            title = "Keutamaan Berdoa Sebelum Tidur",
+            arabic = "",
+            latin = "",
+            translation = """Sekuat apapun manusia, dia menjadi sangat lemah ketika tidur. Orang yang tidur lelap, bisa menjadi sasaran bagi makhluk jahat di sekitarnya. Jika dia bisa merasa aman dari gangguan manusia, tidak ada jaminan aman dari gangguan makhluk yang tidak nampak. Itulah jin yang jahat. Jika mereka tidak mengganggu anda di alam nyata, bisa jadi mereka akan mengganggu anda di alam mimpi. Itulah kesempatan terbesar bagi setan untuk bertindak nakal, mengganggu manusia.
+
+Dari Abu Hurairah radhiallahu 'anhu, Nabi shallallahu 'alaihi wa sallam bersabda, "Mimpi itu ada tiga macam: bisikan hati, ditakuti setan, dan kabar gembira dari Allah." [1]
+
+Jika gangguan dari luar, anda bisa meminta bantuan orang lain untuk mengusirnya. Tapi ini tidak berlaku ketika dalam mimpi. Anda tidak mungkin memanggil perawat atau istri anda untuk mengusir setan yang mengganggu anda dalam dunia mimpi. Karena itulah, orang yang tidur tanpa berdzikir terlebih dahulu, akan menjadi penyesalan baginya.
+
+Dalam Al-Adzkar, An-Nawawi membuat judul bab: "Bab Makruh Tidur tanpa Berdzikir kepada Allah (sebelum tidur)" (Al-Adzkar, hlm. 95). Selanjutnya, An-Nawawi menyebutkan hadis berikut: Dari Abu Hurairah radhiyallahu 'anhu, Nabi shallallahu 'alaihi wa sallam bersabda: "Siapa yang tidur, sementara tidak berdzikir ketika hendak tidur, akan menjadi penyesalan baginya di hadapan Allah." [2]
+
+Malaikat Dan Setan Menghadiri Orang Yang Hendak Tidur
+Dalam hadist yang berasal dari Jabir bin Abdullah, dinyatakan: "Apabila manusia berbaring di pembaringannya (akan tidur), malaikat dan syetan segera menghampirinya. Malaikat membisikkan, 'Akhiri (malam-mu) dengan kebaikan,' sedangkan syetan membisikan, 'Akhiri (malam-mu) dengan keburukan.' Apabila dia berdzikir menyebut nama Allah kemudian tidur, maka malaikat melindungi dia di malam itu." [3]
+
+Di saat anda tidur, anda sangat butuh pertolongan dan pengamanan dari Allah. Untuk mendapatkan jaminan keamanan ini, Rasulullah shallallahu 'alaihi wa sallam mengajarkan kepada kita berbagai doa dan dzikir sebelum tidur. Anda bisa rutinkan doa ini, setiap kali anda hendak tidur.
+
+[1] HR. Bukhari dan Muslim.
+[2] HR. Abu Daud 4856 dan dishahihkan Al-Albani.
+[3] HR. Ibnu Hibban 5533, Hakim dalam Al-Mustadrak 1969 dan beliau shahihkan, kemudian disepakati oleh Adz-Dzahabi.""".trimIndent(),
+            source = "HR. Bukhari, Muslim, Abu Daud & Ibnu Hibban",
+            category = DoaCategory.PAGI_PETANG,
+            note = "Faedah dan keutamaan mengamalkan doa dan dzikir sebelum tidur",
+            repeatCount = 1
         )
     )
 

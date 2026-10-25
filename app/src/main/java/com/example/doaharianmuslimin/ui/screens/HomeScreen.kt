@@ -37,8 +37,14 @@ import com.example.doaharianmuslimin.data.model.Doa
 import com.example.doaharianmuslimin.data.model.DoaCategory
 import com.example.doaharianmuslimin.ui.components.*
 import com.example.doaharianmuslimin.ui.theme.AccentGold
+import com.example.doaharianmuslimin.ui.theme.PrimaryTosca
 import kotlinx.coroutines.launch
 import java.util.Calendar
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.shape.CircleShape
 
 enum class BottomNavTab(val title: String) {
     QURAN("Quran"),
@@ -77,11 +83,15 @@ fun HomeScreen(
     var showThemeDialog by remember { mutableStateOf(false) }
     var showCreatePrayerSheet by remember { mutableStateOf(false) }
     var filterOnlyFavorites by remember { mutableStateOf(false) }
+    var filterOnlyHistory by remember { mutableStateOf(false) }
 
     var favoriteIds by remember { mutableStateOf(prefs.getFavoriteIds()) }
     var arabicFontSize by remember { mutableFloatStateOf(prefs.getArabicFontSize()) }
     var showLatin by remember { mutableStateOf(prefs.isShowLatin()) }
     val communityPrayers by communityRepo.prayersFlow.collectAsState()
+    val homeQuranHistory = remember(currentNavTab) { prefs.getQuranReadingHistory().firstOrNull() }
+    val homeDoaHistory = remember(currentNavTab) { prefs.getDoaReadingHistory().firstOrNull() }
+    val doaHistoryList = remember(currentNavTab, filterOnlyHistory) { prefs.getDoaReadingHistory() }
 
     var selectedDoaForDetail by remember { mutableStateOf<Doa?>(null) }
     var isQuranImmersive by remember { mutableStateOf(false) }
@@ -516,10 +526,105 @@ fun HomeScreen(
                                             MainMenuItem.FAVORIT -> {
                                                 currentNavTab = BottomNavTab.DOA
                                                 filterOnlyFavorites = true
+                                                filterOnlyHistory = false
                                             }
                                         }
                                     }
                                 )
+                            }
+
+                            // Quick Access: Terakhir Dibaca Al-Qur'an & Doa (Riwayat Nyata)
+                            item {
+                                val quranHist = homeQuranHistory
+                                val doaHist = homeDoaHistory
+                                if (quranHist != null || doaHist != null) {
+                                    Surface(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f),
+                                        shape = RoundedCornerShape(16.dp),
+                                        border = BorderStroke(1.dp, PrimaryTosca.copy(alpha = 0.35f))
+                                    ) {
+                                        Column(modifier = Modifier.padding(14.dp)) {
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                                    Icon(Icons.Default.History, contentDescription = null, tint = PrimaryTosca, modifier = Modifier.size(18.dp))
+                                                    Spacer(modifier = Modifier.width(6.dp))
+                                                    Text(
+                                                        text = "Aktivitas Terakhir Dibaca",
+                                                        fontWeight = FontWeight.Bold,
+                                                        fontSize = 13.sp,
+                                                        color = MaterialTheme.colorScheme.primary
+                                                    )
+                                                }
+                                            }
+
+                                            Spacer(modifier = Modifier.height(10.dp))
+
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                            ) {
+                                                if (quranHist != null) {
+                                                    Surface(
+                                                        modifier = Modifier
+                                                            .weight(1f)
+                                                            .clip(RoundedCornerShape(12.dp))
+                                                            .clickable {
+                                                                currentNavTab = BottomNavTab.QURAN
+                                                            },
+                                                        color = MaterialTheme.colorScheme.surface,
+                                                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+                                                    ) {
+                                                        Column(modifier = Modifier.padding(10.dp)) {
+                                                            Text("Al-Qur'an", fontSize = 10.5.sp, color = PrimaryTosca, fontWeight = FontWeight.Bold)
+                                                            Spacer(modifier = Modifier.height(2.dp))
+                                                            Text(
+                                                                quranHist.surahName,
+                                                                fontWeight = FontWeight.Bold,
+                                                                fontSize = 12.sp,
+                                                                maxLines = 1,
+                                                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                                            )
+                                                            Text("Hal. ${quranHist.pageNumber} ›", fontSize = 10.5.sp, color = MaterialTheme.colorScheme.primary)
+                                                        }
+                                                    }
+                                                }
+
+                                                if (doaHist != null) {
+                                                    Surface(
+                                                        modifier = Modifier
+                                                            .weight(1f)
+                                                            .clip(RoundedCornerShape(12.dp))
+                                                            .clickable {
+                                                                DoaRepository.doaList.find { it.id == doaHist.doaId }?.let {
+                                                                    selectedDoaForDetail = it
+                                                                }
+                                                            },
+                                                        color = MaterialTheme.colorScheme.surface,
+                                                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+                                                    ) {
+                                                        Column(modifier = Modifier.padding(10.dp)) {
+                                                            Text("Doa Harian", fontSize = 10.5.sp, color = AccentGold, fontWeight = FontWeight.Bold)
+                                                            Spacer(modifier = Modifier.height(2.dp))
+                                                            Text(
+                                                                doaHist.title,
+                                                                fontWeight = FontWeight.Bold,
+                                                                fontSize = 12.sp,
+                                                                maxLines = 1,
+                                                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                                            )
+                                                            Text("Buka Doa ›", fontSize = 10.5.sp, color = MaterialTheme.colorScheme.primary)
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
                             }
 
                             // 3. Aamiinkan Doa Saudaramu (Dipindah ke bawah Menu Utama)
@@ -540,13 +645,24 @@ fun HomeScreen(
 
                         // ==================== KHUSUS TAB DOA ATAU KETIKA SEARCH AKTIF ====================
                         if (currentNavTab == BottomNavTab.DOA || searchQuery.isNotEmpty()) {
-                            // Category Chips di tab Doa
+                            // Category Chips di tab Doa (Lengkap dengan tombol Favorit & Riwayat)
                             if (searchQuery.isEmpty()) {
                                 item {
                                     CategoryChips(
                                         selectedCategory = selectedCategory,
                                         onCategorySelected = {
                                             selectedCategory = it
+                                            filterOnlyFavorites = false
+                                            filterOnlyHistory = false
+                                        },
+                                        isFavoritesSelected = filterOnlyFavorites,
+                                        onFavoritesClick = {
+                                            filterOnlyFavorites = true
+                                            filterOnlyHistory = false
+                                        },
+                                        isHistorySelected = filterOnlyHistory,
+                                        onHistoryClick = {
+                                            filterOnlyHistory = true
                                             filterOnlyFavorites = false
                                         }
                                     )
@@ -557,6 +673,7 @@ fun HomeScreen(
                             item {
                                 val headerTitle = when {
                                     searchQuery.isNotEmpty() -> "Hasil Pencarian (${displayedDoas.size})"
+                                    filterOnlyHistory -> "Riwayat Doa yang Dibaca"
                                     filterOnlyFavorites -> "Doa Favorit Tersimpan (${displayedDoas.size})"
                                     selectedCategory != DoaCategory.SEMUA -> "${selectedCategory.title} (${displayedDoas.size})"
                                     else -> "Koleksi Lengkap Doa (${displayedDoas.size})"
@@ -574,16 +691,109 @@ fun HomeScreen(
                                         color = MaterialTheme.colorScheme.onBackground
                                     )
 
-                                    if (filterOnlyFavorites) {
-                                        TextButton(onClick = { filterOnlyFavorites = false }) {
+                                    if (filterOnlyFavorites || filterOnlyHistory) {
+                                        TextButton(onClick = {
+                                            filterOnlyFavorites = false
+                                            filterOnlyHistory = false
+                                            selectedCategory = DoaCategory.SEMUA
+                                        }) {
                                             Text("Lihat Semua", color = MaterialTheme.colorScheme.primary, fontSize = 12.sp)
                                         }
                                     }
                                 }
                             }
 
-                            // Empty State
-                            if (displayedDoas.isEmpty()) {
+                            if (filterOnlyHistory) {
+                                if (doaHistoryList.isEmpty()) {
+                                    item {
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(vertical = 40.dp),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                                Icon(
+                                                    imageVector = Icons.Default.History,
+                                                    contentDescription = null,
+                                                    tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+                                                    modifier = Modifier.size(64.dp)
+                                                )
+                                                Spacer(modifier = Modifier.height(12.dp))
+                                                Text(
+                                                    text = "Belum Ada Riwayat Baca Doa",
+                                                    fontWeight = FontWeight.SemiBold,
+                                                    color = MaterialTheme.colorScheme.onSurface
+                                                )
+                                                Spacer(modifier = Modifier.height(4.dp))
+                                                Text(
+                                                    text = "Setiap doa yang Anda buka akan otomatis tercatat di sini lengkap dengan tanggal & jam.",
+                                                    fontSize = 12.sp,
+                                                    textAlign = TextAlign.Center,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    items(doaHistoryList, key = { "${it.doaId}_${it.timestamp}" }) { item ->
+                                        val foundDoa = DoaRepository.doaList.find { it.id == item.doaId }
+                                        Card(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .clip(RoundedCornerShape(14.dp))
+                                                .clickable {
+                                                    if (foundDoa != null) {
+                                                        selectedDoaForDetail = foundDoa
+                                                    }
+                                                },
+                                            shape = RoundedCornerShape(14.dp),
+                                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f))
+                                        ) {
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth().padding(14.dp),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                                                    Surface(
+                                                        shape = CircleShape,
+                                                        color = MaterialTheme.colorScheme.primaryContainer,
+                                                        modifier = Modifier.size(38.dp)
+                                                    ) {
+                                                        Box(contentAlignment = Alignment.Center) {
+                                                            Icon(
+                                                                imageVector = Icons.Default.History,
+                                                                contentDescription = null,
+                                                                tint = MaterialTheme.colorScheme.primary,
+                                                                modifier = Modifier.size(20.dp)
+                                                            )
+                                                        }
+                                                    }
+                                                    Spacer(modifier = Modifier.width(12.dp))
+                                                    Column {
+                                                        Text(
+                                                            text = item.title,
+                                                            fontWeight = FontWeight.Bold,
+                                                            fontSize = 13.5.sp,
+                                                            maxLines = 1,
+                                                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                                        )
+                                                        val sdf = SimpleDateFormat("dd MMM yyyy, HH:mm 'WIB'", Locale("id", "ID"))
+                                                        Text(
+                                                            text = "Dibaca: ${sdf.format(Date(item.timestamp))}",
+                                                            fontSize = 11.sp,
+                                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                        )
+                                                    }
+                                                }
+                                                Icon(Icons.Default.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                            }
+                                        }
+                                    }
+                                }
+                            } else if (displayedDoas.isEmpty()) {
                                 item {
                                     Box(
                                         modifier = Modifier

@@ -72,6 +72,9 @@ import com.example.doaharianmuslimin.ui.theme.AccentGold
 import com.example.doaharianmuslimin.ui.theme.PrimaryTosca
 import com.example.doaharianmuslimin.ui.theme.UthmanicFontFamily
 import com.example.doaharianmuslimin.ui.theme.LpmqFontFamily
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -83,6 +86,8 @@ enum class QuranViewMode {
 
 enum class QuranFilterCategory(val label: String) {
     SEMUA("Semua (114)"),
+    RIWAYAT("🕒 Riwayat"),
+    FAVORIT("⭐ Favorit"),
     MAKKIYAH("Makkiyah (86)"),
     MADANIYYAH("Madaniyyah (28)"),
     JUZ_30("Juz 30 (37)")
@@ -153,6 +158,8 @@ fun QuranScreen(
     val sharedPrefs = remember { context.getSharedPreferences("adzkaruna_quran_prefs", Context.MODE_PRIVATE) }
     var lastReadPage by remember { mutableIntStateOf(sharedPrefs.getInt("last_read_page", 1)) }
     var lastReadSurah by remember { mutableStateOf(sharedPrefs.getString("last_read_surah", "Al-Fatihah") ?: "Al-Fatihah") }
+    val quranHistoryList = remember(selectedSurah, currentMushafPage, selectedFilter) { prefs.getQuranReadingHistory() }
+    val quranFavList = remember(selectedSurah, selectedFilter) { prefs.getQuranFavorites() }
 
     fun saveBookmark(page: Int, surahName: String) {
         sharedPrefs.edit()
@@ -245,6 +252,8 @@ fun QuranScreen(
         QuranRepository.allSurahMeta.filter { surah ->
             val matchesFilter = when (selectedFilter) {
                 QuranFilterCategory.SEMUA -> true
+                QuranFilterCategory.RIWAYAT -> true
+                QuranFilterCategory.FAVORIT -> true
                 QuranFilterCategory.MAKKIYAH -> surah.revelation == "Makkiyah"
                 QuranFilterCategory.MADANIYYAH -> surah.revelation == "Madaniyyah"
                 QuranFilterCategory.JUZ_30 -> surah.number >= 78
@@ -416,6 +425,78 @@ fun QuranScreen(
                         )
                     }
 
+                    // Terakhir Dibaca Banner
+                    item {
+                        // using quranHistoryList
+                        val latestHist = quranHistoryList.firstOrNull()
+                        val bannerSurah = latestHist?.surahName ?: lastReadSurah
+                        val bannerPage = latestHist?.pageNumber ?: lastReadPage
+                        val bannerSurahNum = latestHist?.surahNumber ?: 1
+
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(14.dp))
+                                .clickable {
+                                    val targetSurah = QuranRepository.allSurahMeta.find { it.number == bannerSurahNum }
+                                        ?: QuranRepository.allSurahMeta.firstOrNull()
+                                    if (targetSurah != null) {
+                                        openSurah(targetSurah)
+                                        currentMushafPage = bannerPage
+                                    }
+                                },
+                            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f),
+                            shape = RoundedCornerShape(14.dp),
+                            border = BorderStroke(1.dp, PrimaryTosca.copy(alpha = 0.35f))
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 14.dp, vertical = 10.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                                    Surface(
+                                        shape = CircleShape,
+                                        color = PrimaryTosca,
+                                        modifier = Modifier.size(36.dp)
+                                    ) {
+                                        Box(contentAlignment = Alignment.Center) {
+                                            Icon(
+                                                imageVector = Icons.AutoMirrored.Filled.MenuBook,
+                                                contentDescription = null,
+                                                tint = Color.White,
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                        }
+                                    }
+                                    Spacer(modifier = Modifier.width(10.dp))
+                                    Column {
+                                        Text(
+                                            text = "Terakhir Dibaca (Lanjutkan)",
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                        Text(
+                                            text = "QS. $bannerSurah • Halaman $bannerPage",
+                                            fontSize = 13.5.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                    }
+                                }
+                                Text(
+                                    text = "Lanjut ›",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
+                    }
+
                     // Category Filter Chips
                     item {
                         LazyRow(
@@ -431,7 +512,7 @@ fun QuranScreen(
                                     label = { Text(category.label, fontSize = 11.5.sp) },
                                     shape = RoundedCornerShape(18.dp),
                                     colors = FilterChipDefaults.filterChipColors(
-                                        selectedContainerColor = MaterialTheme.colorScheme.primary,
+                                        selectedContainerColor = if (category == QuranFilterCategory.FAVORIT) AccentGold else MaterialTheme.colorScheme.primary,
                                         selectedLabelColor = Color.White
                                     )
                                 )
@@ -439,8 +520,130 @@ fun QuranScreen(
                         }
                     }
 
-                    // Surahs list items with stable key
-                    items(displayedSurahs, key = { it.number }) { surah ->
+                    if (selectedFilter == QuranFilterCategory.RIWAYAT) {
+                        val historyItems = quranHistoryList
+                        if (historyItems.isEmpty()) {
+                            item {
+                                Box(
+                                    modifier = Modifier.fillMaxWidth().padding(vertical = 40.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                        Icon(Icons.Default.History, contentDescription = null, tint = PrimaryTosca.copy(alpha = 0.5f), modifier = Modifier.size(54.dp))
+                                        Spacer(modifier = Modifier.height(10.dp))
+                                        Text("Belum Ada Riwayat Baca", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text("Surat dan halaman yang Anda buka akan otomatis tercatat di sini.", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
+                                    }
+                                }
+                            }
+                        } else {
+                            items(historyItems, key = { "${it.surahNumber}_${it.pageNumber}_${it.timestamp}" }) { item ->
+                                Card(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(14.dp))
+                                        .clickable {
+                                            val foundSurah = QuranRepository.allSurahMeta.find { it.number == item.surahNumber }
+                                            if (foundSurah != null) {
+                                                openSurah(foundSurah)
+                                                currentMushafPage = item.pageNumber
+                                            }
+                                        },
+                                    shape = RoundedCornerShape(14.dp),
+                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f))
+                                ) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth().padding(14.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                                            Surface(
+                                                color = MaterialTheme.colorScheme.primaryContainer,
+                                                shape = CircleShape,
+                                                modifier = Modifier.size(38.dp)
+                                            ) {
+                                                Box(contentAlignment = Alignment.Center) {
+                                                    Text("${item.surahNumber}", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
+                                                }
+                                            }
+                                            Spacer(modifier = Modifier.width(12.dp))
+                                            Column {
+                                                Text(item.surahName, fontWeight = FontWeight.Bold, fontSize = 13.5.sp)
+                                                val sdf = SimpleDateFormat("dd MMM yyyy, HH:mm 'WIB'", Locale("id", "ID"))
+                                                Text("Halaman ${item.pageNumber} • ${sdf.format(Date(item.timestamp))}", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                            }
+                                        }
+                                        Icon(Icons.Default.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                    }
+                                }
+                            }
+                        }
+                    } else if (selectedFilter == QuranFilterCategory.FAVORIT) {
+                        val favItems = quranFavList
+                        if (favItems.isEmpty()) {
+                            item {
+                                Box(
+                                    modifier = Modifier.fillMaxWidth().padding(vertical = 40.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                        Icon(Icons.Default.BookmarkBorder, contentDescription = null, tint = AccentGold.copy(alpha = 0.5f), modifier = Modifier.size(54.dp))
+                                        Spacer(modifier = Modifier.height(10.dp))
+                                        Text("Belum Ada Surat / Halaman Favorit", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text("Tandai halaman atau surat yang sering dibaca dengan tombol penanda agar muncul di sini.", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
+                                    }
+                                }
+                            }
+                        } else {
+                            items(favItems, key = { "${it.surahNumber}_${it.pageNumber}" }) { item ->
+                                Card(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(14.dp))
+                                        .clickable {
+                                            val foundSurah = QuranRepository.allSurahMeta.find { it.number == item.surahNumber }
+                                            if (foundSurah != null) {
+                                                openSurah(foundSurah)
+                                                currentMushafPage = item.pageNumber
+                                            }
+                                        },
+                                    shape = RoundedCornerShape(14.dp),
+                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f))
+                                ) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth().padding(14.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                                            Surface(
+                                                color = AccentGold.copy(alpha = 0.15f),
+                                                shape = CircleShape,
+                                                modifier = Modifier.size(38.dp)
+                                            ) {
+                                                Box(contentAlignment = Alignment.Center) {
+                                                    Icon(Icons.Default.Bookmark, contentDescription = null, tint = AccentGold, modifier = Modifier.size(20.dp))
+                                                }
+                                            }
+                                            Spacer(modifier = Modifier.width(12.dp))
+                                            Column {
+                                                Text(item.surahName, fontWeight = FontWeight.Bold, fontSize = 13.5.sp)
+                                                Text("Halaman ${item.pageNumber}", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                            }
+                                        }
+                                        Icon(Icons.Default.ChevronRight, contentDescription = null, tint = AccentGold)
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        // Surahs list items with stable key
+                        items(displayedSurahs, key = { it.number }) { surah ->
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -518,6 +721,7 @@ fun QuranScreen(
                                 }
                             }
                         }
+                    }
                     }
                 }
             } else {
@@ -685,7 +889,7 @@ fun QuranScreen(
                                             Text(
                                                 text = "Dengan nama Allah Yang Maha Pengasih, Maha Penyayang",
                                                 style = MaterialTheme.typography.bodySmall,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                color = if (isDark) Color(0xFFECEFF1) else Color.Black
                                             )
                                         }
                                     }
@@ -1368,7 +1572,7 @@ fun QuranScreen(
                                                         text = ayatItem.translation,
                                                         fontSize = 11.5.sp,
                                                         lineHeight = 16.sp,
-                                                        color = MaterialTheme.colorScheme.onSurface
+                                                        color = if (isDark) Color(0xFFECEFF1) else Color.Black
                                                     )
                                                 }
                                             }
@@ -1656,7 +1860,7 @@ fun QuranScreen(
                             Text(
                                 text = ayat.translation,
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurface
+                                color = if (isDark) Color(0xFFECEFF1) else Color.Black
                             )
                         }
                     }
@@ -1699,7 +1903,7 @@ fun QuranScreen(
                             text = tafsirContent ?: "Tafsir belum tersedia.",
                             style = MaterialTheme.typography.bodyMedium,
                             lineHeight = 22.sp,
-                            color = MaterialTheme.colorScheme.onSurface
+                            color = if (isDark) Color(0xFFECEFF1) else Color.Black
                         )
                     }
 

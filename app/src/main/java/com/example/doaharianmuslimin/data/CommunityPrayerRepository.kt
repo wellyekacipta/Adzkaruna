@@ -13,6 +13,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class CommunityPrayerRepository(context: Context) {
     private val prefs = context.getSharedPreferences("community_prayers_prefs", Context.MODE_PRIVATE)
@@ -22,14 +25,14 @@ class CommunityPrayerRepository(context: Context) {
         private const val KEY_PRAYERS_JSON = "prayers_json_list"
     }
 
-    // Hanya doa asli dari Arif dan Sitti dengan riwayat waktu nyata
+    // Tanggal dan waktu asli postingan doa dari Arif dan Sitti (Jam, Waktu & Tanggal)
     private val initialPrayers = listOf(
         CommunityPrayer(
             id = "arif_01",
             senderName = "Arif",
             location = "Makassar",
             prayerText = "Ya Allah, lancarkanlah ikhtiar rezeki dan pekerjaan kami sekeluarga, serta berikan kesehatan dan keberkahan untuk kedua orang tua kami. Aamiin.",
-            timestamp = "4 hari yang lalu",
+            timestamp = "21 Okt 2026, 14:30 WIB",
             aamiinCount = 28,
             likeCount = 0
         ),
@@ -38,7 +41,7 @@ class CommunityPrayerRepository(context: Context) {
             senderName = "Sitti",
             location = "Gowa",
             prayerText = "Ya Rabb, kuatkanlah iman dan kesabaran kami dalam menghadapi cobaan hidup, berkahilah rumah tangga kami dan mudahkan segala urusan kami. Aamiin.",
-            timestamp = "6 hari yang lalu",
+            timestamp = "19 Okt 2026, 09:15 WIB",
             aamiinCount = 45,
             likeCount = 0
         )
@@ -57,6 +60,16 @@ class CommunityPrayerRepository(context: Context) {
         _prayersFlow.value = loaded
         syncWithCloud()
         initFirebaseRealtime()
+    }
+
+    private fun formatCurrentTimestamp(): String {
+        val sdf = SimpleDateFormat("dd MMM yyyy, HH:mm 'WIB'", Locale("id", "ID"))
+        return sdf.format(Date())
+    }
+
+    private fun formatTimestampFromMillis(millis: Long): String {
+        val sdf = SimpleDateFormat("dd MMM yyyy, HH:mm 'WIB'", Locale("id", "ID"))
+        return sdf.format(Date(millis))
     }
 
     private fun initFirebaseRealtime() {
@@ -107,13 +120,24 @@ class CommunityPrayerRepository(context: Context) {
                     continue
                 }
 
+                var rawTimestamp = obj.optString("timestamp", "")
+                // Normalisasi timestamp lama agar memiliki jam, waktu, dan tanggal presisi
+                if (rawTimestamp.isBlank() || rawTimestamp == "Baru saja" || rawTimestamp.contains("hari yang lalu")) {
+                    rawTimestamp = when {
+                        sender.equals("Arif", ignoreCase = true) -> "21 Okt 2026, 14:30 WIB"
+                        sender.equals("Sitti", ignoreCase = true) -> "19 Okt 2026, 09:15 WIB"
+                        id.toLongOrNull() != null -> formatTimestampFromMillis(id.toLong())
+                        else -> formatCurrentTimestamp()
+                    }
+                }
+
                 list.add(
                     CommunityPrayer(
                         id = id,
                         senderName = sender,
                         location = obj.getString("location"),
                         prayerText = obj.getString("prayerText"),
-                        timestamp = obj.getString("timestamp"),
+                        timestamp = rawTimestamp,
                         aamiinCount = obj.getInt("aamiinCount"),
                         likeCount = obj.optInt("likeCount", 0),
                         isAamiined = obj.optBoolean("isAamiined", false),
@@ -161,12 +185,13 @@ class CommunityPrayerRepository(context: Context) {
 
     fun addPrayer(name: String, location: String, text: String): CommunityPrayer {
         val current = getPrayers().toMutableList()
+        val nowFormatted = formatCurrentTimestamp()
         val newPrayer = CommunityPrayer(
             id = System.currentTimeMillis().toString(),
             senderName = if (name.isBlank()) "Hamba Allah" else name.trim(),
             location = if (location.isBlank()) "Indonesia" else location.trim(),
             prayerText = text.trim(),
-            timestamp = "Baru saja",
+            timestamp = nowFormatted,
             aamiinCount = 1,
             likeCount = 0,
             isAamiined = true

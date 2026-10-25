@@ -62,7 +62,7 @@ fun DoaCard(
                     shape = RoundedCornerShape(8.dp)
                 ) {
                     Text(
-                        text = doa.category.title,
+                        text = if (doa.arabic.isBlank()) "📖 ${doa.category.title} • Keutamaan" else doa.category.title,
                         color = MaterialTheme.colorScheme.onPrimaryContainer,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.SemiBold,
@@ -121,30 +121,32 @@ fun DoaCard(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            // Arabic preview with Uthmanic font
-            Text(
-                text = doa.arabic,
-                color = MaterialTheme.colorScheme.primary,
-                fontFamily = UthmanicFontFamily,
-                fontSize = 22.sp,
-                lineHeight = 36.sp,
-                textAlign = TextAlign.End,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 4.dp)
-            )
+            // Arabic preview with Uthmanic font (hanya jika ada teks Arab)
+            if (doa.arabic.isNotBlank()) {
+                Text(
+                    text = doa.arabic,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontFamily = UthmanicFontFamily,
+                    fontSize = 22.sp,
+                    lineHeight = 36.sp,
+                    textAlign = TextAlign.End,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp)
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+            }
 
-            Spacer(modifier = Modifier.height(6.dp))
-
-            // Translation preview
+            // Translation / Article preview
             Text(
                 text = doa.translation,
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f),
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f),
+                maxLines = if (doa.arabic.isBlank()) 4 else 2,
+                overflow = TextOverflow.Ellipsis,
+                lineHeight = 20.sp
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -162,7 +164,7 @@ fun DoaCard(
                 )
 
                 Text(
-                    text = "Selengkapnya →",
+                    text = if (doa.arabic.isBlank()) "Baca Faedah Lengkap →" else "Selengkapnya →",
                     fontSize = 12.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.primary

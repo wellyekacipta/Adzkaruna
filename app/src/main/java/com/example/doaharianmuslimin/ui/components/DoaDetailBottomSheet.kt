@@ -137,137 +137,227 @@ fun DoaDetailBottomSheet(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // Accessibility toolbar: Font size and Latin toggle
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
-                shape = RoundedCornerShape(14.dp)
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 12.dp, vertical = 6.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+            if (doa.arabic.isNotBlank()) {
+                // Accessibility toolbar: Font size and Latin toggle
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                    shape = RoundedCornerShape(14.dp)
                 ) {
-                    // Font zoom controls
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = "Ukuran Arab:",
-                            fontSize = 12.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        IconButton(
-                            onClick = {
-                                if (arabicFontSize > 18f) onFontSizeChange(arabicFontSize - 2f)
-                            },
-                            modifier = Modifier.size(32.dp)
-                        ) {
-                            Text(text = "A-", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 6.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // Font zoom controls
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = "Ukuran Arab:",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            IconButton(
+                                onClick = {
+                                    if (arabicFontSize > 18f) onFontSizeChange(arabicFontSize - 2f)
+                                },
+                                modifier = Modifier.size(32.dp)
+                            ) {
+                                Text(text = "A-", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
+                            }
+                            Text(
+                                text = "${arabicFontSize.toInt()}sp",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            IconButton(
+                                onClick = {
+                                    if (arabicFontSize < 40f) onFontSizeChange(arabicFontSize + 2f)
+                                },
+                                modifier = Modifier.size(32.dp)
+                            ) {
+                                Text(text = "A+", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.primary)
+                            }
                         }
-                        Text(
-                            text = "${arabicFontSize.toInt()}sp",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        IconButton(
-                            onClick = {
-                                if (arabicFontSize < 40f) onFontSizeChange(arabicFontSize + 2f)
-                            },
-                            modifier = Modifier.size(32.dp)
+
+                        // Latin toggle
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.clickable { onToggleLatin(!showLatin) }
                         ) {
-                            Text(text = "A+", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.primary)
+                            Text(
+                                text = "Latin",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Switch(
+                                checked = showLatin,
+                                onCheckedChange = { onToggleLatin(it) },
+                                modifier = Modifier.height(28.dp),
+                                colors = SwitchDefaults.colors(
+                                    checkedThumbColor = MaterialTheme.colorScheme.primary,
+                                    checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
+                                )
+                            )
                         }
                     }
+                }
 
-                    // Latin toggle
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.clickable { onToggleLatin(!showLatin) }
+                Spacer(modifier = Modifier.height(20.dp))
+
+                // Main Arabic Box with Uthmanic Font
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+                    shape = RoundedCornerShape(16.dp),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.6f))
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(20.dp)
                     ) {
                         Text(
-                            text = "Latin",
-                            fontSize = 12.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Switch(
-                            checked = showLatin,
-                            onCheckedChange = { onToggleLatin(it) },
-                            modifier = Modifier.height(28.dp),
-                            colors = SwitchDefaults.colors(
-                                checkedThumbColor = MaterialTheme.colorScheme.primary,
-                                checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
-                            )
+                            text = doa.arabic,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontFamily = UthmanicFontFamily,
+                            fontSize = arabicFontSize.sp,
+                            lineHeight = (arabicFontSize * 1.9f).sp,
+                            textAlign = TextAlign.End,
+                            fontWeight = FontWeight.Normal,
+                            modifier = Modifier.fillMaxWidth()
                         )
                     }
                 }
-            }
 
-            Spacer(modifier = Modifier.height(20.dp))
-
-            // Main Arabic Box with Uthmanic Font
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
-                shape = RoundedCornerShape(16.dp),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.6f))
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(20.dp)
-                ) {
+                // Latin transliteration
+                if (showLatin && doa.latin.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(16.dp))
                     Text(
-                        text = doa.arabic,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontFamily = UthmanicFontFamily,
-                        fontSize = arabicFontSize.sp,
-                        lineHeight = (arabicFontSize * 1.9f).sp,
-                        textAlign = TextAlign.End,
-                        fontWeight = FontWeight.Normal,
-                        modifier = Modifier.fillMaxWidth()
+                        text = "Pelafalan (Latin):",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = doa.latin,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontStyle = FontStyle.Italic,
+                        lineHeight = 22.sp,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.88f)
                     )
                 }
-            }
 
-            // Latin transliteration
-            if (showLatin) {
                 Spacer(modifier = Modifier.height(16.dp))
+
+                // Indonesian translation
                 Text(
-                    text = "Pelafalan (Latin):",
+                    text = "Artinya:",
                     fontSize = 12.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.primary
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = doa.latin,
+                    text = doa.translation,
                     style = MaterialTheme.typography.bodyLarge,
-                    fontStyle = FontStyle.Italic,
                     lineHeight = 22.sp,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.88f)
+                    color = MaterialTheme.colorScheme.onSurface
                 )
+            } else {
+                // ==================== LAYOUT KHUSUS: DOA / ARTIKEL KEUTAMAAN TANPA TEKS ARAB ====================
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f),
+                    shape = RoundedCornerShape(14.dp),
+                    border = BorderStroke(1.dp, PrimaryTosca.copy(alpha = 0.3f))
+                ) {
+                    Row(
+                        modifier = Modifier.padding(14.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.MenuBook,
+                            contentDescription = null,
+                            tint = PrimaryTosca,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Column {
+                            Text(
+                                text = "Faedah & Penjelasan Keutamaan",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Text(
+                                text = "Kajian hadits shahih & panduan sebelum beristirahat",
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Content formatted beautifully into paragraphs
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
+                    shape = RoundedCornerShape(16.dp),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(18.dp),
+                        verticalArrangement = Arrangement.spacedBy(14.dp)
+                    ) {
+                        val paragraphs = doa.translation.split("\n\n")
+                        for (p in paragraphs) {
+                            val trimmed = p.trim()
+                            if (trimmed.isNotBlank()) {
+                                if (trimmed.startsWith("Malaikat Dan Setan")) {
+                                    Text(
+                                        text = trimmed,
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                } else if (trimmed.startsWith("[1]") || trimmed.startsWith("[2]") || trimmed.startsWith("[3]")) {
+                                    Surface(
+                                        color = PrimaryTosca.copy(alpha = 0.08f),
+                                        shape = RoundedCornerShape(8.dp),
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Text(
+                                            text = trimmed,
+                                            fontSize = 11.5.sp,
+                                            lineHeight = 18.sp,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.padding(10.dp)
+                                        )
+                                    }
+                                } else {
+                                    Text(
+                                        text = trimmed,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontSize = 14.5.sp,
+                                        lineHeight = 23.sp,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
             }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Indonesian translation
-            Text(
-                text = "Artinya:",
-                fontSize = 12.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.primary
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = doa.translation,
-                style = MaterialTheme.typography.bodyLarge,
-                lineHeight = 22.sp,
-                color = MaterialTheme.colorScheme.onSurface
-            )
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -338,8 +428,8 @@ fun DoaDetailBottomSheet(
                 }
             }
 
-            // Repetition Counter if repeatable (e.g. 3x or 33x)
-            if (doa.repeatCount > 1) {
+            // Repetition Counter if repeatable (e.g. 3x or 33x) and has Arabic
+            if (doa.repeatCount > 1 && doa.arabic.isNotBlank()) {
                 Spacer(modifier = Modifier.height(20.dp))
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
@@ -426,7 +516,7 @@ fun DoaDetailBottomSheet(
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("Salin Doa")
+                    Text(if (doa.arabic.isBlank()) "Salin Faedah" else "Salin Doa")
                 }
 
                 OutlinedButton(
