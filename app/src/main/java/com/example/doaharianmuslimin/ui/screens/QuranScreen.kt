@@ -48,6 +48,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -102,7 +103,7 @@ fun QuranScreen(
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
-    val isDark = isSystemInDarkTheme()
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
 
     var selectedSurah by remember { mutableStateOf<QuranSurah?>(null) }
     var isLoadingSurah by remember { mutableStateOf(false) }
@@ -710,7 +711,8 @@ fun QuranScreen(
                                         text = surah.arabicName,
                                         fontFamily = UthmanicFontFamily,
                                         fontSize = 20.sp,
-                                        color = MaterialTheme.colorScheme.primary,
+                                        fontWeight = FontWeight.Bold,
+                                        color = if (isDark) Color(0xFFFFFFFF) else Color(0xFF000000),
                                         modifier = Modifier.padding(end = 6.dp)
                                     )
                                     Icon(
@@ -877,7 +879,7 @@ fun QuranScreen(
                                             modifier = Modifier.padding(14.dp),
                                             horizontalAlignment = Alignment.CenterHorizontally
                                         ) {
-                                            val bismillahColor = if (isDark) Color(0xFFECEFF1) else Color(0xFF000000)
+                                            val bismillahColor = if (isDark) Color(0xFFFFFFFF) else Color(0xFF000000)
                                             Text(
                                                 text = "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ",
                                                 fontFamily = UthmanicFontFamily,
@@ -888,8 +890,10 @@ fun QuranScreen(
                                             Spacer(modifier = Modifier.height(4.dp))
                                             Text(
                                                 text = "Dengan nama Allah Yang Maha Pengasih, Maha Penyayang",
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = if (isDark) Color(0xFFECEFF1) else Color(0xFF000000)
+                                                style = MaterialTheme.typography.bodySmall.copy(
+                                                    color = if (isDark) Color(0xFFFFFFFF) else Color(0xFF000000)
+                                                ),
+                                                color = if (isDark) Color(0xFFFFFFFF) else Color(0xFF000000)
                                             )
                                         }
                                     }
@@ -1017,15 +1021,15 @@ fun QuranScreen(
 
                                         Spacer(modifier = Modifier.height(10.dp))
 
-                                        // Arabic Text in Solid Black (#000000)
+                                        // Arabic Text in Solid Pure Black (#000000)
                                         Text(
                                             text = ayat.arabic,
                                             fontFamily = UthmanicFontFamily,
                                             fontSize = 26.sp,
-                                            fontWeight = FontWeight.SemiBold,
+                                            fontWeight = FontWeight.Bold,
                                             lineHeight = 48.sp,
                                             textAlign = TextAlign.End,
-                                            color = if (isDark) Color(0xFFECEFF1) else Color(0xFF000000),
+                                            color = if (isDark) Color(0xFFFFFFFF) else Color(0xFF000000),
                                             modifier = Modifier.fillMaxWidth()
                                         )
 
@@ -1044,8 +1048,10 @@ fun QuranScreen(
                                         // Indonesian Translation (Kemenag RI) - Warna hitam pekat (#000000) di mode terang
                                         Text(
                                             text = ayat.translation,
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            color = if (isDark) Color(0xFFECEFF1) else Color(0xFF000000)
+                                            style = MaterialTheme.typography.bodyMedium.copy(
+                                                color = if (isDark) Color(0xFFFFFFFF) else Color(0xFF000000)
+                                            ),
+                                            color = if (isDark) Color(0xFFFFFFFF) else Color(0xFF000000)
                                         )
                                     }
                                 }
@@ -1557,20 +1563,24 @@ fun QuranScreen(
                                                         text = ayatItem.arabic,
                                                         fontFamily = UthmanicFontFamily,
                                                         fontSize = 20.sp,
+                                                        fontWeight = FontWeight.Bold,
                                                         lineHeight = 36.sp,
                                                         textAlign = TextAlign.End,
-                                                        color = if (isDark) Color(0xFFECEFF1) else Color(0xFF000000),
+                                                        color = if (isDark) Color(0xFFFFFFFF) else Color(0xFF000000),
                                                         modifier = Modifier.fillMaxWidth()
                                                     )
 
                                                     Spacer(modifier = Modifier.height(6.dp))
 
-                                                    // Terjemahan Kemenag RI
+                                                    // Terjemahan Kemenag RI (#000000)
                                                     Text(
                                                         text = ayatItem.translation,
+                                                        style = MaterialTheme.typography.bodySmall.copy(
+                                                            color = if (isDark) Color(0xFFFFFFFF) else Color(0xFF000000)
+                                                        ),
                                                         fontSize = 11.5.sp,
                                                         lineHeight = 16.sp,
-                                                        color = if (isDark) Color(0xFFECEFF1) else Color.Black
+                                                        color = if (isDark) Color(0xFFFFFFFF) else Color(0xFF000000)
                                                     )
                                                 }
                                             }
@@ -1823,9 +1833,10 @@ fun QuranScreen(
                         text = ayat.arabic,
                         fontFamily = UthmanicFontFamily,
                         fontSize = 26.sp,
+                        fontWeight = FontWeight.Bold,
                         lineHeight = 48.sp,
                         textAlign = TextAlign.End,
-                        color = if (isDark) Color(0xFFECEFF1) else Color(0xFF000000),
+                        color = if (isDark) Color(0xFFFFFFFF) else Color(0xFF000000),
                         modifier = Modifier.fillMaxWidth()
                     )
 
@@ -1858,8 +1869,10 @@ fun QuranScreen(
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
                                 text = ayat.translation,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = if (isDark) Color(0xFFECEFF1) else Color.Black
+                                style = MaterialTheme.typography.bodyMedium.copy(
+                                    color = if (isDark) Color(0xFFFFFFFF) else Color(0xFF000000)
+                                ),
+                                color = if (isDark) Color(0xFFFFFFFF) else Color(0xFF000000)
                             )
                         }
                     }
