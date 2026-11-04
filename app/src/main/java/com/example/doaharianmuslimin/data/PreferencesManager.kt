@@ -2,6 +2,14 @@ package com.example.doaharianmuslimin.data
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.example.doaharianmuslimin.data.model.QuranDayStat
+import com.example.doaharianmuslimin.data.model.QuranWeeklyStats
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
+import org.json.JSONArray
+import org.json.JSONObject
 
 enum class AppThemeMode(val title: String) {
     LIGHT("Hijau Tosca & Putih (Default)"),
@@ -45,6 +53,7 @@ class PreferencesManager(context: Context) {
         private const val KEY_QURAN_HISTORY = "key_quran_reading_history_json"
         private const val KEY_QURAN_FAVORITES = "key_quran_favorites_json"
         private const val KEY_DOA_HISTORY = "key_doa_reading_history_json"
+        private const val KEY_QURAN_DAILY_READ_LOG = "key_quran_daily_read_log"
     }
 
     // --- Adhan & Sholat Preferences ---
@@ -168,6 +177,155 @@ class PreferencesManager(context: Context) {
             })
         }
         prefs.edit().putString(KEY_QURAN_HISTORY, array.toString()).apply()
+        recordQuranDailyPage(surahNumber, surahName, pageNumber)
+    }
+
+    fun recordQuranDailyPage(surahNumber: Int, surahName: String, pageNumber: Int) {
+        val sdfDate = SimpleDateFormat("yyyy-MM-dd", Locale.forLanguageTag("id-ID"))
+        val todayStr = sdfDate.format(Date())
+
+        val currentLogJson = prefs.getString(KEY_QURAN_DAILY_READ_LOG, "{}") ?: "{}"
+        try {
+            val root = JSONObject(currentLogJson)
+            val dayObj = root.optJSONObject(todayStr) ?: JSONObject()
+            val pagesArr = dayObj.optJSONArray("pages") ?: JSONArray()
+            val surahsArr = dayObj.optJSONArray("surahs") ?: JSONArray()
+
+            var pageFound = false
+            for (i in 0 until pagesArr.length()) {
+                if (pagesArr.getInt(i) == pageNumber) {
+                    pageFound = true
+                    break
+                }
+            }
+            if (!pageFound) pagesArr.put(pageNumber)
+
+            var surahFound = false
+            for (i in 0 until surahsArr.length()) {
+                if (surahsArr.getString(i) == surahName) {
+                    surahFound = true
+                    break
+                }
+            }
+            if (!surahFound) surahsArr.put(surahName)
+
+            dayObj.put("pages", pagesArr)
+            dayObj.put("surahs", surahsArr)
+            dayObj.put("lastTimestamp", System.currentTimeMillis())
+
+            root.put(todayStr, dayObj)
+            prefs.edit().putString(KEY_QURAN_DAILY_READ_LOG, root.toString()).apply()
+        } catch (_: Exception) {}
+    }
+
+    fun getQuranWeeklyStats(): QuranWeeklyStats {
+        val now = Calendar.getInstance()
+        val dayOfWeek = now.get(Calendar.DAY_OF_WEEK)
+        val diffToMonday = if (dayOfWeek == Calendar.SUNDAY) -6 else Calendar.MONDAY - dayOfWeek
+
+        val mondayCal = Calendar.getInstance().apply {
+            add(Calendar.DAY_OF_YEAR, diffToMonday)
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }
+
+        val sdfDate = SimpleDateFormat("yyyy-MM-dd", Locale.forLanguageTag("id-ID"))
+        val sdfDisplay = SimpleDateFormat("d MMM", Locale.forLanguageTag("id-ID"))
+        val todayStr = sdfDate.format(now.time)
+
+        val logJsonStr = prefs.getString(KEY_QURAN_DAILY_READ_LOG, "{}") ?: "{}"
+        val logRoot = try { JSONObject(logJsonStr) } catch (_: Exception) { JSONObject() }
+        val historyList = getQuranReadingHistory()
+
+        val dayNames = arrayOf("Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Ahad")
+        val shortNames = arrayOf("Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Ahd")
+
+        val daysList = mutableListOf<QuranDayStat>()
+        var activeDays = 0
+        var totalPages = 0
+        val allSurahs = mutableSetOf<String>()
+
+        for (i in 0..6) {
+            val dayCal = (mondayCal.clone() as Calendar).apply {
+                add(Calendar.DAY_OF_YEAR, i)
+            }
+            val dateStr = sdfDate.format(dayCal.time)
+            val dateDisp = sdfDisplay.format(dayCal.time)
+            val isToday = (dateStr == todayStr)
+            val isFuture = dayCal.after(now) && !isToday
+
+            val dayObj = logRoot.optJSONObject(dateStr)
+            val pagesSet = mutableSetOf<Int>()
+            val surahsSet = mutableSetOf<String>()
+
+            if (dayObj != null) {
+                val pagesArr = dayObj.optJSONArray("pages")
+                if (pagesArr != null) {
+                    for (p in 0 until pagesArr.length()) {
+                        pagesSet.add(pagesArr.getInt(p))
+                    }
+                }
+                val surahsArr = dayObj.optJSONArray("surahs")
+                if (surahsArr != null) {
+                    for (s in 0 until surahsArr.length()) {
+                        surahsSet.add(surahsArr.getString(s))
+                    }
+                }
+            }
+
+            for (hist in historyList) {
+                if (sdfDate.format(Date(hist.timestamp)) == dateStr) {
+                    pagesSet.add(hist.pageNumber)
+                    surahsSet.add(hist.surahName)
+                }
+            }
+
+            val pagesCount = pagesSet.size
+            if (pagesCount > 0) {
+                activeDays++
+                totalPages += pagesCount
+                allSurahs.addAll(surahsSet)
+            }
+
+            daysList.add(
+                QuranDayStat(
+                    dayIndex = i,
+                    dayName = dayNames[i],
+                    shortName = shortNames[i],
+                    dateDisplay = dateDisp,
+                    fullDateString = dateStr,
+                    pagesRead = pagesCount,
+                    surahs = surahsSet.toList(),
+                    isToday = isToday,
+                    isFuture = isFuture
+                )
+            )
+        }
+
+        var streak = 0
+        val checkCal = Calendar.getInstance()
+        while (true) {
+            val checkDateStr = sdfDate.format(checkCal.time)
+            val dayObj = logRoot.optJSONObject(checkDateStr)
+            val hasInLog = dayObj != null && (dayObj.optJSONArray("pages")?.length() ?: 0) > 0
+            val hasInHist = historyList.any { sdfDate.format(Date(it.timestamp)) == checkDateStr }
+            if (hasInLog || hasInHist) {
+                streak++
+                checkCal.add(Calendar.DAY_OF_YEAR, -1)
+            } else {
+                break
+            }
+        }
+
+        return QuranWeeklyStats(
+            days = daysList,
+            activeDaysCount = activeDays,
+            totalPagesRead = totalPages,
+            totalSurahsRead = allSurahs.size,
+            currentStreak = streak
+        )
     }
 
     fun getQuranFavorites(): List<QuranHistoryItem> {

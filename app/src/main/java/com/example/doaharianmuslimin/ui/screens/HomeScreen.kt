@@ -92,6 +92,7 @@ fun HomeScreen(
     val homeQuranHistory = remember(currentNavTab) { prefs.getQuranReadingHistory().firstOrNull() }
     val homeDoaHistory = remember(currentNavTab) { prefs.getDoaReadingHistory().firstOrNull() }
     val doaHistoryList = remember(currentNavTab, filterOnlyHistory) { prefs.getDoaReadingHistory() }
+    val quranWeeklyStats = remember(currentNavTab) { prefs.getQuranWeeklyStats() }
 
     var selectedDoaForDetail by remember { mutableStateOf<Doa?>(null) }
     var isQuranImmersive by remember { mutableStateOf(false) }
@@ -243,7 +244,7 @@ fun HomeScreen(
                                 color = Color.White
                             )
                             Text(
-                                text = "Doa & Dzikir Harian Muslimin v1.39.0",
+                                text = "Doa & Dzikir Harian Muslimin v1.40.0",
                                 fontSize = 11.sp,
                                 color = Color.White.copy(alpha = 0.85f)
                             )
@@ -627,7 +628,17 @@ fun HomeScreen(
                                 }
                             }
 
-                            // 3. Aamiinkan Doa Saudaramu (Dipindah ke bawah Menu Utama)
+                            // Statistik Membaca Al-Qur'an (Senin - Ahad) - Di bawah Aktivitas Terakhir Dibaca
+                            item {
+                                QuranWeeklyStatsCard(
+                                    weeklyStats = quranWeeklyStats,
+                                    onNavigateToQuran = {
+                                        currentNavTab = BottomNavTab.QURAN
+                                    }
+                                )
+                            }
+
+                            // 4. Aamiinkan Doa Saudaramu (Dipindah ke bawah Menu Utama)
                             item {
                                 AmiinkanDoaSection(
                                     prayers = communityPrayers,

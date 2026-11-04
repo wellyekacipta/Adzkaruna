@@ -1066,6 +1066,8 @@ fun QuranScreen(
                         LaunchedEffect(currentMushafPage) {
                             isLoadingPage = true
                             blockedVerseKey = null
+                            prefs.recordQuranDailyPage(surah.number, surah.name, currentMushafPage)
+                            prefs.addQuranReadingHistory(surah.number, surah.name, currentMushafPage)
                             QuranRepository.preloadMushafAdjacentPages(context, currentMushafPage)
                             coroutineScope.launch {
                                 pageData = QuranRepository.getMushafPage(currentMushafPage, context)
