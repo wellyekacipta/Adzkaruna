@@ -230,11 +230,9 @@ fun HomeScreen(
                 title = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Image(
-                            painter = painterResource(id = R.drawable.app_logo),
+                            painter = painterResource(id = R.drawable.app_logo_kufi),
                             contentDescription = "Logo Adzkaruna",
-                            modifier = Modifier
-                                .size(36.dp)
-                                .clip(RoundedCornerShape(8.dp))
+                            modifier = Modifier.size(44.dp)
                         )
                         Spacer(modifier = Modifier.width(10.dp))
                         Column {
@@ -245,7 +243,7 @@ fun HomeScreen(
                                 color = Color.White
                             )
                             Text(
-                                text = "Doa & Dzikir Harian Muslimin v1.30.0",
+                                text = "Doa & Dzikir Harian Muslimin v1.37.0",
                                 fontSize = 11.sp,
                                 color = Color.White.copy(alpha = 0.85f)
                             )
