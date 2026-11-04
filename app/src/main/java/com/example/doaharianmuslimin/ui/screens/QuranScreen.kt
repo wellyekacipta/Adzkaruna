@@ -877,7 +877,7 @@ fun QuranScreen(
                                             modifier = Modifier.padding(14.dp),
                                             horizontalAlignment = Alignment.CenterHorizontally
                                         ) {
-                                            val bismillahColor = if (isDark) Color(0xFFECEFF1) else Color.Black
+                                            val bismillahColor = if (isDark) Color(0xFFECEFF1) else Color(0xFF000000)
                                             Text(
                                                 text = "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ",
                                                 fontFamily = UthmanicFontFamily,
@@ -889,7 +889,7 @@ fun QuranScreen(
                                             Text(
                                                 text = "Dengan nama Allah Yang Maha Pengasih, Maha Penyayang",
                                                 style = MaterialTheme.typography.bodySmall,
-                                                color = if (isDark) Color(0xFFECEFF1) else Color.Black
+                                                color = if (isDark) Color(0xFFECEFF1) else Color(0xFF000000)
                                             )
                                         }
                                     }
@@ -1017,18 +1017,15 @@ fun QuranScreen(
 
                                         Spacer(modifier = Modifier.height(10.dp))
 
-                                        // Arabic Text in Islamic Green (Warna hijau mushaf identik Bismillah)
-                                        val tajweedAnnotated = remember(ayat.arabic, isDark) {
-                                            buildTajweedAnnotatedString(ayat.arabic, isDark)
-                                        }
+                                        // Arabic Text in Solid Black (#000000)
                                         Text(
-                                            text = tajweedAnnotated,
+                                            text = ayat.arabic,
                                             fontFamily = UthmanicFontFamily,
                                             fontSize = 26.sp,
                                             fontWeight = FontWeight.SemiBold,
                                             lineHeight = 48.sp,
                                             textAlign = TextAlign.End,
-                                            color = if (isDark) Color(0xFFECEFF1) else Color.Black,
+                                            color = if (isDark) Color(0xFFECEFF1) else Color(0xFF000000),
                                             modifier = Modifier.fillMaxWidth()
                                         )
 
@@ -1044,11 +1041,11 @@ fun QuranScreen(
 
                                         Spacer(modifier = Modifier.height(6.dp))
 
-                                        // Indonesian Translation (Kemenag RI) - Warna hitam pekat di mode terang sesuai permintaan user
+                                        // Indonesian Translation (Kemenag RI) - Warna hitam pekat (#000000) di mode terang
                                         Text(
                                             text = ayat.translation,
                                             style = MaterialTheme.typography.bodyMedium,
-                                            color = if (isDark) Color(0xFFECEFF1) else Color.Black
+                                            color = if (isDark) Color(0xFFECEFF1) else Color(0xFF000000)
                                         )
                                     }
                                 }
@@ -1555,14 +1552,14 @@ fun QuranScreen(
 
                                                     Spacer(modifier = Modifier.height(8.dp))
 
-                                                    // Teks Arab
+                                                    // Teks Arab (#000000)
                                                     Text(
-                                                        text = buildTajweedAnnotatedString(ayatItem.arabic, isDark),
+                                                        text = ayatItem.arabic,
                                                         fontFamily = UthmanicFontFamily,
                                                         fontSize = 20.sp,
                                                         lineHeight = 36.sp,
                                                         textAlign = TextAlign.End,
-                                                        color = if (isDark) Color(0xFFECEFF1) else Color.Black,
+                                                        color = if (isDark) Color(0xFFECEFF1) else Color(0xFF000000),
                                                         modifier = Modifier.fillMaxWidth()
                                                     )
 
@@ -1821,14 +1818,14 @@ fun QuranScreen(
 
                     Spacer(modifier = Modifier.height(14.dp))
 
-                    // Lafadz Ayat Arab dengan Tajwid
+                    // Lafadz Ayat Arab (#000000)
                     Text(
-                        text = buildTajweedAnnotatedString(ayat.arabic, isDark),
+                        text = ayat.arabic,
                         fontFamily = UthmanicFontFamily,
                         fontSize = 26.sp,
                         lineHeight = 48.sp,
                         textAlign = TextAlign.End,
-                        color = if (isDark) Color(0xFFECEFF1) else Color.Black,
+                        color = if (isDark) Color(0xFFECEFF1) else Color(0xFF000000),
                         modifier = Modifier.fillMaxWidth()
                     )
 
