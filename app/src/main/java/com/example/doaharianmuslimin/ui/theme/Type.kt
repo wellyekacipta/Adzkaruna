@@ -8,10 +8,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import com.example.doaharianmuslimin.R
 
-// Arabic Uthmanic Font Family
+// Font Resmi Mushaf Madinah V2 (KFGQPC - King Fahd Glorious Quran Printing Complex)
 val UthmanicFontFamily = FontFamily(
-    Font(R.font.uthmanic, FontWeight.Normal)
+    Font(R.font.kfgqpc_hafs, FontWeight.Normal)
 )
+val MadinahFontFamily = UthmanicFontFamily
 
 // Font Resmi Al-Qur'an Standar Indonesia (LPMQ Kemenag RI - Isep Misbah)
 val LpmqFontFamily = FontFamily(

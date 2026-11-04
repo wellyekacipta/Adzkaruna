@@ -708,7 +708,7 @@ fun QuranScreen(
                                 ) {
                                     Text(
                                         text = surah.arabicName,
-                                        fontFamily = LpmqFontFamily,
+                                        fontFamily = UthmanicFontFamily,
                                         fontSize = 20.sp,
                                         color = MaterialTheme.colorScheme.primary,
                                         modifier = Modifier.padding(end = 6.dp)
@@ -880,7 +880,7 @@ fun QuranScreen(
                                             val quranGreenColor = if (isDark) Color(0xFF4DB6AC) else Color(0xFF1B5E20)
                                             Text(
                                                 text = "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ",
-                                                fontFamily = LpmqFontFamily,
+                                                fontFamily = UthmanicFontFamily,
                                                 fontSize = 26.sp,
                                                 fontWeight = FontWeight.Bold,
                                                 color = quranGreenColor
@@ -1023,7 +1023,7 @@ fun QuranScreen(
                                         }
                                         Text(
                                             text = tajweedAnnotated,
-                                            fontFamily = LpmqFontFamily,
+                                            fontFamily = UthmanicFontFamily,
                                             fontSize = 26.sp,
                                             fontWeight = FontWeight.SemiBold,
                                             lineHeight = 48.sp,
@@ -1556,12 +1556,11 @@ fun QuranScreen(
 
                                                     // Teks Arab
                                                     Text(
-                                                        text = ayatItem.arabic,
-                                                        fontFamily = LpmqFontFamily,
+                                                        text = buildTajweedAnnotatedString(ayatItem.arabic, isDark),
+                                                        fontFamily = UthmanicFontFamily,
                                                         fontSize = 20.sp,
                                                         lineHeight = 36.sp,
                                                         textAlign = TextAlign.End,
-                                                        color = if (isDark) Color(0xFF4DB6AC) else Color(0xFF1B5E20),
                                                         modifier = Modifier.fillMaxWidth()
                                                     )
 
@@ -1823,7 +1822,7 @@ fun QuranScreen(
                     // Lafadz Ayat Arab dengan Tajwid
                     Text(
                         text = buildTajweedAnnotatedString(ayat.arabic, isDark),
-                        fontFamily = LpmqFontFamily,
+                        fontFamily = UthmanicFontFamily,
                         fontSize = 26.sp,
                         lineHeight = 48.sp,
                         textAlign = TextAlign.End,
@@ -1921,17 +1920,117 @@ fun QuranScreen(
 
 /**
  * Intelligent Tajweed Colorizer:
- * Matches official Kemenag RI Mushaf Tajweed color rules:
- * - Cyan / Sky Blue: Mad Wajib & Mad Jaiz (ٓ)
- * - Magenta / Pink: Ghunnah (نّ, مّ)
- * - Green: Ikhfa Haqiqi & Tanwin (نْ, ً ٍ ٌ)
+ * Matches official Mushaf Madinah & Kemenag RI Tajweed color standards:
+ * - Cyan / Sky Blue: Mad Wajib, Mad Jaiz, Mad Lazim (ٓ, ۤ, ~)
+ * - Pink / Magenta: Ghunnah Musyaddadah (نّ, مّ)
  * - Reddish Orange: Qalqalah (قْ, طْ, بْ, جْ, دْ)
+ * - Green: Ikhfa Haqiqi & Tanwin bertemu huruf ikhfa
+ * - Warm Amber: Idgham Bighunnah
+ * - Slate Grey: Idgham Bilaghunnah
+ * - Deep Blue: Iqlab (mim kecil ۢ sebelum ba)
+ * - Base text: Islamic dark charcoal (Light) / Soft White (Dark)
  */
 fun buildTajweedAnnotatedString(text: String, isDark: Boolean): AnnotatedString {
     return buildAnnotatedString {
-        val quranGreen = if (isDark) Color(0xFF4DB6AC) else Color(0xFF1B5E20)
-        withStyle(SpanStyle(color = quranGreen, fontWeight = FontWeight.SemiBold)) {
-            append(text)
+        val baseColor = if (isDark) Color(0xFFECEFF1) else Color(0xFF1B3B2B)
+        val madColor = if (isDark) Color(0xFF29B6F6) else Color(0xFF0288D1)
+        val ghunnahColor = if (isDark) Color(0xFFFF4081) else Color(0xFFC2185B)
+        val qalqalahColor = if (isDark) Color(0xFFFF7043) else Color(0xFFE65100)
+        val ikhfaColor = if (isDark) Color(0xFF81C784) else Color(0xFF2E7D32)
+        val idghamBiColor = if (isDark) Color(0xFFFFB74D) else Color(0xFFF57C00)
+        val idghamBilaColor = if (isDark) Color(0xFFB0BEC5) else Color(0xFF757575)
+        val iqlabColor = if (isDark) Color(0xFF64B5F6) else Color(0xFF1565C0)
+
+        append(text)
+
+        // Base text style
+        addStyle(SpanStyle(color = baseColor, fontWeight = FontWeight.SemiBold), 0, text.length)
+
+        val chars = text.toCharArray()
+        fun isHarakat(c: Char) = c in '\u064B'..'\u0652' || c == '\u0670' || c in '\u06DF'..'\u06E1'
+        fun isTanwin(c: Char) = c == '\u064B' || c == '\u064C' || c == '\u064D'
+        fun isMaddah(c: Char) = c == '\u0653' || c == '\u06E4' || c == '~'
+        fun isQalqalah(c: Char) = c in "قطبجد"
+        fun isSukun(c: Char) = c == '\u0652' || c == '\u06DF' || c == '\u06E1'
+        fun isShaddah(c: Char) = c == '\u0651'
+        val ikhfaLetters = "تثجدذزسشصضطظفقك"
+        val idghamBiLetters = "ينمو"
+        val idghamBilaLetters = "لر"
+
+        var i = 0
+        while (i < chars.size) {
+            val c = chars[i]
+
+            // 1. Maddah (Mad Wajib, Jaiz, Lazim)
+            if (isMaddah(c)) {
+                val start = (i - 1).coerceAtLeast(0)
+                addStyle(SpanStyle(color = madColor, fontWeight = FontWeight.Bold), start, i + 1)
+                i++
+                continue
+            }
+
+            // 2. Ghunnah: Nun or Mim with Shaddah (نّ, مّ)
+            if ((c == 'ن' || c == 'م') && i + 1 < chars.size && isShaddah(chars[i + 1])) {
+                val end = if (i + 2 < chars.size && isHarakat(chars[i + 2])) i + 3 else i + 2
+                addStyle(SpanStyle(color = ghunnahColor, fontWeight = FontWeight.Bold), i, end.coerceAtMost(chars.size))
+                i = end
+                continue
+            }
+
+            // 3. Qalqalah: [قطبجد] with Sukun
+            if (isQalqalah(c)) {
+                if (i + 1 < chars.size && isSukun(chars[i + 1])) {
+                    addStyle(SpanStyle(color = qalqalahColor, fontWeight = FontWeight.Bold), i, (i + 2).coerceAtMost(chars.size))
+                    i += 2
+                    continue
+                }
+            }
+
+            // 4. Nun Sukun, Tanwin, and Iqlab rules
+            val isTanwinChar = isTanwin(c)
+            var isNunSukun = false
+            if (c == 'ن') {
+                if (i + 1 < chars.size && isSukun(chars[i + 1])) {
+                    isNunSukun = true
+                } else if (i + 1 >= chars.size || chars[i + 1] == ' ' || !isHarakat(chars[i + 1])) {
+                    isNunSukun = true // Bare nun in Uthmanic script
+                }
+            }
+
+            if (isNunSukun || isTanwinChar) {
+                val matchStart = i
+                var nextLetterIdx = -1
+                var j = if (isTanwinChar) i + 1 else (if (i + 1 < chars.size && isSukun(chars[i + 1])) i + 2 else i + 1)
+                while (j < chars.size) {
+                    val cj = chars[j]
+                    if (cj != ' ' && !isHarakat(cj) && !isShaddah(cj)) {
+                        if (isTanwinChar && (cj == 'ا' || cj == 'ى') && j + 1 < chars.size && (chars[j + 1] == ' ' || isHarakat(chars[j + 1]))) {
+                            j++
+                            continue
+                        }
+                        nextLetterIdx = j
+                        break
+                    }
+                    j++
+                }
+
+                if (nextLetterIdx != -1) {
+                    val nextChar = chars[nextLetterIdx]
+                    val spanText = text.substring(matchStart, nextLetterIdx)
+                    val endIdx = (nextLetterIdx + 1).coerceAtMost(chars.size)
+                    if (nextChar == 'ب' || spanText.contains('\u06E2')) {
+                        addStyle(SpanStyle(color = iqlabColor, fontWeight = FontWeight.Bold), matchStart, endIdx)
+                    } else if (nextChar in idghamBilaLetters) {
+                        addStyle(SpanStyle(color = idghamBilaColor, fontWeight = FontWeight.Bold), matchStart, endIdx)
+                    } else if (nextChar in idghamBiLetters) {
+                        addStyle(SpanStyle(color = idghamBiColor, fontWeight = FontWeight.Bold), matchStart, endIdx)
+                    } else if (nextChar in ikhfaLetters) {
+                        addStyle(SpanStyle(color = ikhfaColor, fontWeight = FontWeight.Bold), matchStart, endIdx)
+                    }
+                }
+            }
+
+            i++
         }
     }
 }
