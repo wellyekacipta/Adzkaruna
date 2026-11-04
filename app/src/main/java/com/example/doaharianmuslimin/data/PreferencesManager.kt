@@ -4,8 +4,10 @@ import android.content.Context
 import android.content.SharedPreferences
 
 enum class AppThemeMode(val title: String) {
-    LIGHT("Mode Terang"),
+    LIGHT("Hijau Tosca & Putih (Default)"),
     DARK("Mode Gelap"),
+    RED("Merah & Putih"),
+    BLUE("Biru & Putih"),
     SYSTEM("Ikuti Sistem")
 }
 

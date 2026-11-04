@@ -238,7 +238,7 @@ fun ProfileScreen(
                                 Icon(
                                     imageVector = Icons.Default.AccountCircle,
                                     contentDescription = null,
-                                    tint = PrimaryTosca,
+                                    tint = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.size(18.dp)
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
@@ -332,7 +332,7 @@ fun ProfileScreen(
                                         text = "Aktif",
                                         fontSize = 20.sp,
                                         fontWeight = FontWeight.Bold,
-                                        color = PrimaryTosca
+                                        color = MaterialTheme.colorScheme.primary
                                     )
                                     Text(
                                         text = "Doa & Dzikir",
@@ -379,14 +379,14 @@ fun ProfileScreen(
                             ) {
                                 Surface(
                                     shape = CircleShape,
-                                    color = PrimaryTosca.copy(alpha = 0.15f),
+                                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
                                     modifier = Modifier.size(42.dp)
                                 ) {
                                     Box(contentAlignment = Alignment.Center) {
                                         Icon(
                                             imageVector = Icons.Default.Bookmarks,
                                             contentDescription = null,
-                                            tint = PrimaryTosca,
+                                            tint = MaterialTheme.colorScheme.primary,
                                             modifier = Modifier.size(22.dp)
                                         )
                                     }
@@ -435,7 +435,7 @@ fun ProfileScreen(
                             .clickable { showInfaqDialog = true },
                         shape = RoundedCornerShape(16.dp),
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f)),
-                        border = BorderStroke(1.dp, PrimaryTosca.copy(alpha = 0.4f))
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.4f))
                     ) {
                         Row(
                             modifier = Modifier
@@ -450,7 +450,7 @@ fun ProfileScreen(
                             ) {
                                 Surface(
                                     shape = CircleShape,
-                                    color = PrimaryTosca,
+                                    color = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.size(42.dp)
                                 ) {
                                     Box(contentAlignment = Alignment.Center) {
@@ -531,6 +531,8 @@ fun ProfileScreen(
                         icon = when (currentThemeMode) {
                             AppThemeMode.LIGHT -> Icons.Default.LightMode
                             AppThemeMode.DARK -> Icons.Default.DarkMode
+                            AppThemeMode.RED -> Icons.Default.Palette
+                            AppThemeMode.BLUE -> Icons.Default.Palette
                             AppThemeMode.SYSTEM -> Icons.Default.BrightnessAuto
                         },
                         onClick = onOpenThemeDialog
@@ -583,7 +585,7 @@ fun ProfileScreen(
                                         color = MaterialTheme.colorScheme.primary
                                     )
                                     Text(
-                                        text = "Doa & Dzikir Harian Muslimin v1.29.0",
+                                        text = "Doa & Dzikir Harian Muslimin v1.30.0",
                                         fontSize = 11.5.sp,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
@@ -624,7 +626,7 @@ fun ProfileScreen(
             onDismissRequest = { showEditNameDialog = false },
             title = {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.Edit, contentDescription = null, tint = PrimaryTosca)
+                    Icon(Icons.Default.Edit, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("Ubah Nama Profil", fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 }
@@ -688,7 +690,7 @@ fun ProfileScreen(
                     Icon(
                         imageVector = Icons.Default.Bookmarks,
                         contentDescription = null,
-                        tint = PrimaryTosca
+                        tint = MaterialTheme.colorScheme.primary
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("Riwayat & Favorit", fontSize = 16.sp, fontWeight = FontWeight.Bold)
@@ -760,7 +762,7 @@ fun ProfileScreen(
                                             Icon(
                                                 Icons.Default.MenuBook,
                                                 contentDescription = null,
-                                                tint = PrimaryTosca,
+                                                tint = MaterialTheme.colorScheme.primary,
                                                 modifier = Modifier.size(16.dp)
                                             )
                                             Spacer(modifier = Modifier.width(8.dp))
@@ -917,7 +919,7 @@ fun ProfileScreen(
                                     text = "Riwayat Doa Terakhir Dibaca",
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = PrimaryTosca
+                                    color = MaterialTheme.colorScheme.primary
                                 )
                             }
 
@@ -949,7 +951,7 @@ fun ProfileScreen(
                                             Icon(
                                                 Icons.Default.History,
                                                 contentDescription = null,
-                                                tint = PrimaryTosca,
+                                                tint = MaterialTheme.colorScheme.primary,
                                                 modifier = Modifier.size(16.dp)
                                             )
                                             Spacer(modifier = Modifier.width(8.dp))
@@ -993,7 +995,7 @@ fun ProfileScreen(
                     Icon(
                         imageVector = Icons.Default.VolunteerActivism,
                         contentDescription = null,
-                        tint = PrimaryTosca
+                        tint = MaterialTheme.colorScheme.primary
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("Infaq & Dukungan Developer", fontSize = 16.sp, fontWeight = FontWeight.Bold)
@@ -1030,7 +1032,7 @@ fun ProfileScreen(
                                 Text("Bank Syariah Indonesia (BSI)", fontWeight = FontWeight.Bold, fontSize = 12.sp)
                                 Text("7123456789 (a.n. Pengembang Adzkaruna)", fontSize = 11.5.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
-                            Icon(Icons.Default.ContentCopy, contentDescription = "Salin", tint = PrimaryTosca, modifier = Modifier.size(16.dp))
+                            Icon(Icons.Default.ContentCopy, contentDescription = "Salin", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
                         }
                     }
 
@@ -1056,7 +1058,7 @@ fun ProfileScreen(
                                 Text("GoPay / DANA / OVO", fontWeight = FontWeight.Bold, fontSize = 12.sp)
                                 Text("0812-3456-7890", fontSize = 11.5.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
-                            Icon(Icons.Default.ContentCopy, contentDescription = "Salin", tint = PrimaryTosca, modifier = Modifier.size(16.dp))
+                            Icon(Icons.Default.ContentCopy, contentDescription = "Salin", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
                         }
                     }
                 }
@@ -1078,7 +1080,7 @@ fun ProfileScreen(
                     Icon(
                         imageVector = Icons.Default.CloudSync,
                         contentDescription = null,
-                        tint = PrimaryTosca
+                        tint = MaterialTheme.colorScheme.primary
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("Masuk dengan Google", fontSize = 16.sp, fontWeight = FontWeight.Bold)

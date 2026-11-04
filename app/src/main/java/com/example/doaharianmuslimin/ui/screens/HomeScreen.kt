@@ -245,7 +245,7 @@ fun HomeScreen(
                                 color = Color.White
                             )
                             Text(
-                                text = "Doa & Dzikir Harian Muslimin v1.29.0",
+                                text = "Doa & Dzikir Harian Muslimin v1.30.0",
                                 fontSize = 11.sp,
                                 color = Color.White.copy(alpha = 0.85f)
                             )
@@ -269,6 +269,8 @@ fun HomeScreen(
                             imageVector = when (currentThemeMode) {
                                 AppThemeMode.LIGHT -> Icons.Default.LightMode
                                 AppThemeMode.DARK -> Icons.Default.DarkMode
+                                AppThemeMode.RED -> Icons.Default.Palette
+                                AppThemeMode.BLUE -> Icons.Default.Palette
                                 AppThemeMode.SYSTEM -> Icons.Default.BrightnessAuto
                             },
                             contentDescription = "Pengaturan Tema",
@@ -542,7 +544,7 @@ fun HomeScreen(
                                         modifier = Modifier.fillMaxWidth(),
                                         color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f),
                                         shape = RoundedCornerShape(16.dp),
-                                        border = BorderStroke(1.dp, PrimaryTosca.copy(alpha = 0.35f))
+                                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.35f))
                                     ) {
                                         Column(modifier = Modifier.padding(14.dp)) {
                                             Row(
@@ -551,7 +553,7 @@ fun HomeScreen(
                                                 verticalAlignment = Alignment.CenterVertically
                                             ) {
                                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                                    Icon(Icons.Default.History, contentDescription = null, tint = PrimaryTosca, modifier = Modifier.size(18.dp))
+                                                    Icon(Icons.Default.History, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
                                                     Spacer(modifier = Modifier.width(6.dp))
                                                     Text(
                                                         text = "Aktivitas Terakhir Dibaca",
@@ -580,7 +582,7 @@ fun HomeScreen(
                                                         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
                                                     ) {
                                                         Column(modifier = Modifier.padding(10.dp)) {
-                                                            Text("Al-Qur'an", fontSize = 10.5.sp, color = PrimaryTosca, fontWeight = FontWeight.Bold)
+                                                            Text("Al-Qur'an", fontSize = 10.5.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
                                                             Spacer(modifier = Modifier.height(2.dp))
                                                             Text(
                                                                 quranHist.surahName,
@@ -898,15 +900,32 @@ fun HomeScreen(
                                         .padding(horizontal = 14.dp, vertical = 12.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Icon(
-                                        imageVector = when (mode) {
-                                            AppThemeMode.LIGHT -> Icons.Default.LightMode
-                                            AppThemeMode.DARK -> Icons.Default.DarkMode
-                                            AppThemeMode.SYSTEM -> Icons.Default.BrightnessAuto
+                                    Surface(
+                                        shape = CircleShape,
+                                        color = when (mode) {
+                                            AppThemeMode.LIGHT -> Color(0xFF00897B)
+                                            AppThemeMode.DARK -> Color(0xFF143330)
+                                            AppThemeMode.RED -> Color(0xFFC62828)
+                                            AppThemeMode.BLUE -> Color(0xFF1565C0)
+                                            AppThemeMode.SYSTEM -> MaterialTheme.colorScheme.primary
                                         },
-                                        contentDescription = null,
-                                        tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
+                                        modifier = Modifier.size(28.dp)
+                                    ) {
+                                        Box(contentAlignment = Alignment.Center) {
+                                            Icon(
+                                                imageVector = when (mode) {
+                                                    AppThemeMode.LIGHT -> Icons.Default.LightMode
+                                                    AppThemeMode.DARK -> Icons.Default.DarkMode
+                                                    AppThemeMode.RED -> Icons.Default.Palette
+                                                    AppThemeMode.BLUE -> Icons.Default.Palette
+                                                    AppThemeMode.SYSTEM -> Icons.Default.BrightnessAuto
+                                                },
+                                                contentDescription = null,
+                                                tint = Color.White,
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                        }
+                                    }
                                     Spacer(modifier = Modifier.width(12.dp))
                                     Text(
                                         text = mode.title,

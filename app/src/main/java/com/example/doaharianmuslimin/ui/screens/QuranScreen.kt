@@ -378,7 +378,7 @@ fun QuranScreen(
                                 Icon(
                                     imageVector = Icons.Default.Verified,
                                     contentDescription = null,
-                                    tint = PrimaryTosca,
+                                    tint = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.size(24.dp)
                                 )
                                 Spacer(modifier = Modifier.width(10.dp))
@@ -447,7 +447,7 @@ fun QuranScreen(
                                 },
                             color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f),
                             shape = RoundedCornerShape(14.dp),
-                            border = BorderStroke(1.dp, PrimaryTosca.copy(alpha = 0.35f))
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.35f))
                         ) {
                             Row(
                                 modifier = Modifier
@@ -459,7 +459,7 @@ fun QuranScreen(
                                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
                                     Surface(
                                         shape = CircleShape,
-                                        color = PrimaryTosca,
+                                        color = MaterialTheme.colorScheme.primary,
                                         modifier = Modifier.size(36.dp)
                                     ) {
                                         Box(contentAlignment = Alignment.Center) {
@@ -529,7 +529,7 @@ fun QuranScreen(
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                        Icon(Icons.Default.History, contentDescription = null, tint = PrimaryTosca.copy(alpha = 0.5f), modifier = Modifier.size(54.dp))
+                                        Icon(Icons.Default.History, contentDescription = null, tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f), modifier = Modifier.size(54.dp))
                                         Spacer(modifier = Modifier.height(10.dp))
                                         Text("Belum Ada Riwayat Baca", fontWeight = FontWeight.Bold, fontSize = 14.sp)
                                         Spacer(modifier = Modifier.height(4.dp))
@@ -804,7 +804,7 @@ fun QuranScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            CircularProgressIndicator(color = PrimaryTosca)
+                            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                             Spacer(modifier = Modifier.height(14.dp))
                             Text(
                                 text = "Memuat Surat ${surah.name}...",
@@ -871,7 +871,7 @@ fun QuranScreen(
                                         modifier = Modifier.fillMaxWidth(),
                                         color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f),
                                         shape = RoundedCornerShape(14.dp),
-                                        border = BorderStroke(1.dp, PrimaryTosca.copy(alpha = 0.2f))
+                                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
                                     ) {
                                         Column(
                                             modifier = Modifier.padding(14.dp),
@@ -1233,7 +1233,7 @@ fun QuranScreen(
                                         )
                                     } else if (isLoadingPage) {
                                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                            CircularProgressIndicator(color = PrimaryTosca, strokeWidth = 2.5.dp, modifier = Modifier.size(34.dp))
+                                            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary, strokeWidth = 2.5.dp, modifier = Modifier.size(34.dp))
                                             Spacer(modifier = Modifier.height(8.dp))
                                             Text(
                                                 text = "Memuat Halaman $currentMushafPage Mushaf Madinah...",
@@ -1261,7 +1261,7 @@ fun QuranScreen(
                                                         isLoadingPage = false
                                                     }
                                                 },
-                                                colors = ButtonDefaults.buttonColors(containerColor = PrimaryTosca)
+                                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                                             ) {
                                                 Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(14.dp))
                                                 Spacer(modifier = Modifier.width(4.dp))
@@ -1297,7 +1297,7 @@ fun QuranScreen(
                                                 contentPadding = PaddingValues(horizontal = 10.dp, vertical = 2.dp),
                                                 modifier = Modifier.height(30.dp),
                                                 colors = ButtonDefaults.filledTonalButtonColors(
-                                                    containerColor = PrimaryTosca,
+                                                    containerColor = MaterialTheme.colorScheme.primary,
                                                     contentColor = Color.White
                                                 )
                                             ) {
@@ -1513,7 +1513,7 @@ fun QuranScreen(
                                                                 contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
                                                                 modifier = Modifier.height(28.dp),
                                                                 colors = ButtonDefaults.filledTonalButtonColors(
-                                                                    containerColor = PrimaryTosca,
+                                                                    containerColor = MaterialTheme.colorScheme.primary,
                                                                     contentColor = Color.White
                                                                 )
                                                             ) {
@@ -1594,7 +1594,7 @@ fun QuranScreen(
                     prefs.setMushafDownloadPrompted(true)
                 },
                 icon = {
-                    Icon(Icons.Default.CloudDownload, contentDescription = null, tint = PrimaryTosca, modifier = Modifier.size(36.dp))
+                    Icon(Icons.Default.CloudDownload, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(36.dp))
                 },
                 title = {
                     Text(
@@ -1616,7 +1616,7 @@ fun QuranScreen(
                             Text(
                                 text = "Sudah tersimpan di perangkat: $cachedPageCount / 604 halaman",
                                 fontSize = 11.5.sp,
-                                color = PrimaryTosca,
+                                color = MaterialTheme.colorScheme.primary,
                                 fontWeight = FontWeight.SemiBold
                             )
                         }
@@ -1639,7 +1639,7 @@ fun QuranScreen(
                                 snackbarHostState.showSnackbar("Alhamdulillah! Seluruh 604 halaman mushaf telah tersimpan offline 📖✨")
                             }
                         },
-                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryTosca)
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                     ) {
                         Text("Unduh Sekarang")
                     }
@@ -1663,7 +1663,7 @@ fun QuranScreen(
                 onDismissRequest = { /* jangan tutup saat klik luar */ },
                 title = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        CircularProgressIndicator(modifier = Modifier.size(22.dp), strokeWidth = 2.5.dp, color = PrimaryTosca)
+                        CircularProgressIndicator(modifier = Modifier.size(22.dp), strokeWidth = 2.5.dp, color = MaterialTheme.colorScheme.primary)
                         Spacer(modifier = Modifier.width(10.dp))
                         Text("Mengunduh Mushaf Offline...", fontSize = 16.sp, fontWeight = FontWeight.Bold)
                     }
@@ -1674,13 +1674,13 @@ fun QuranScreen(
                         LinearProgressIndicator(
                             progress = { if (totalMushafPages > 0) downloadProgressCount.toFloat() / totalMushafPages else 0f },
                             modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp)),
-                            color = PrimaryTosca,
-                            trackColor = PrimaryTosca.copy(alpha = 0.2f)
+                            color = MaterialTheme.colorScheme.primary,
+                            trackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                             Text("$downloadProgressCount / $totalMushafPages Halaman", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Text("$percent%", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = PrimaryTosca)
+                            Text("$percent%", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                         }
                         Spacer(modifier = Modifier.height(4.dp))
                         Text("Halaman yang tersimpan langsung dapat dibaca tanpa internet.", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -1726,7 +1726,7 @@ fun QuranScreen(
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Surface(
-                                color = PrimaryTosca,
+                                color = MaterialTheme.colorScheme.primary,
                                 shape = RoundedCornerShape(6.dp),
                                 modifier = Modifier.size(28.dp)
                             ) {
@@ -1775,7 +1775,7 @@ fun QuranScreen(
                         modifier = Modifier.fillMaxWidth(),
                         color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f),
                         shape = RoundedCornerShape(12.dp),
-                        border = BorderStroke(1.dp, PrimaryTosca.copy(alpha = 0.3f))
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
                     ) {
                         Row(
                             modifier = Modifier
@@ -1805,14 +1805,14 @@ fun QuranScreen(
                                     onClick = { copyAyat(ayat, surahName) },
                                     modifier = Modifier.size(36.dp)
                                 ) {
-                                    Icon(Icons.Default.ContentCopy, contentDescription = "Salin", tint = PrimaryTosca, modifier = Modifier.size(18.dp))
+                                    Icon(Icons.Default.ContentCopy, contentDescription = "Salin", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
                                 }
 
                                 IconButton(
                                     onClick = { shareAyat(ayat, surahName) },
                                     modifier = Modifier.size(36.dp)
                                 ) {
-                                    Icon(Icons.Default.Share, contentDescription = "Bagikan", tint = PrimaryTosca, modifier = Modifier.size(18.dp))
+                                    Icon(Icons.Default.Share, contentDescription = "Bagikan", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
                                 }
                             }
                         }
@@ -1854,7 +1854,7 @@ fun QuranScreen(
                                 text = "Terjemahan Kemenag RI:",
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 11.5.sp,
-                                color = PrimaryTosca
+                                color = MaterialTheme.colorScheme.primary
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
@@ -1893,7 +1893,7 @@ fun QuranScreen(
                             contentAlignment = Alignment.Center
                         ) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                CircularProgressIndicator(color = PrimaryTosca)
+                                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Text("Mengambil tafsir resmi Kemenag RI...", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }

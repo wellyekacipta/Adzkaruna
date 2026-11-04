@@ -334,7 +334,7 @@ fun PrayerTimesScreen(
                         modifier = Modifier
                             .background(
                                 Brush.horizontalGradient(
-                                    colors = listOf(PrimaryTosca, PrimaryToscaLight)
+                                    colors = listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.tertiary)
                                 )
                             )
                             .padding(20.dp)
@@ -500,7 +500,7 @@ fun PrayerTimesScreen(
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Surface(
                                         shape = CircleShape,
-                                        color = if (item.isNext) PrimaryTosca else MaterialTheme.colorScheme.primaryContainer,
+                                        color = if (item.isNext) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primaryContainer,
                                         modifier = Modifier.size(38.dp)
                                     ) {
                                         Box(contentAlignment = Alignment.Center) {
@@ -533,7 +533,7 @@ fun PrayerTimesScreen(
                                             if (item.isNext) {
                                                 Spacer(modifier = Modifier.width(6.dp))
                                                 Surface(
-                                                    color = PrimaryTosca,
+                                                    color = MaterialTheme.colorScheme.primary,
                                                     shape = RoundedCornerShape(4.dp)
                                                 ) {
                                                     Text(
@@ -560,7 +560,7 @@ fun PrayerTimesScreen(
                                         text = item.time,
                                         fontWeight = FontWeight.ExtraBold,
                                         fontSize = 18.sp,
-                                        color = if (item.isNext) PrimaryTosca else MaterialTheme.colorScheme.onSurface
+                                        color = if (item.isNext) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                                     )
 
                                     if (isMajorPrayer) {
@@ -614,7 +614,7 @@ fun PrayerTimesScreen(
                                 Icon(
                                     imageVector = Icons.AutoMirrored.Filled.VolumeUp,
                                     contentDescription = null,
-                                    tint = PrimaryTosca,
+                                    tint = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.size(22.dp)
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
@@ -670,10 +670,10 @@ fun PrayerTimesScreen(
                                         .padding(vertical = 4.dp)
                                         .clip(RoundedCornerShape(10.dp))
                                         .clickable { onSelectVoice(option) },
-                                    color = if (isSelected) PrimaryTosca.copy(alpha = 0.1f) else Color.Transparent,
+                                    color = if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.1f) else Color.Transparent,
                                     border = BorderStroke(
                                         1.dp,
-                                        if (isSelected) PrimaryTosca else MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+                                        if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
                                     ),
                                     shape = RoundedCornerShape(10.dp)
                                 ) {
@@ -783,7 +783,7 @@ fun PrayerTimesScreen(
                         modifier = Modifier.fillMaxWidth(),
                         placeholder = { Text("Ketik nama kota / kabupaten...", fontSize = 12.sp) },
                         leadingIcon = {
-                            Icon(Icons.Default.Search, contentDescription = null, tint = PrimaryTosca)
+                            Icon(Icons.Default.Search, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                         },
                         trailingIcon = {
                             if (citySearchQuery.isNotEmpty()) {
@@ -807,20 +807,20 @@ fun PrayerTimesScreen(
                                 showCityDialog = false
                                 requestGpsLocation()
                             },
-                        color = PrimaryTosca.copy(alpha = 0.12f),
-                        border = BorderStroke(1.dp, PrimaryTosca.copy(alpha = 0.3f))
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
                     ) {
                         Row(
                             modifier = Modifier.padding(10.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Icon(Icons.Default.MyLocation, contentDescription = null, tint = PrimaryTosca, modifier = Modifier.size(18.dp))
+                            Icon(Icons.Default.MyLocation, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
                                 text = "Gunakan Lokasi Terkini Saya (GPS)",
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = PrimaryTosca
+                                color = MaterialTheme.colorScheme.primary
                             )
                         }
                     }
@@ -844,7 +844,7 @@ fun PrayerTimesScreen(
                                         AdhanReminderHelper.scheduleAllPrayerAlarms(context)
                                         showCityDialog = false
                                     },
-                                color = if (isSelected) PrimaryTosca.copy(alpha = 0.15f) else Color.Transparent
+                                color = if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f) else Color.Transparent
                             ) {
                                 Row(
                                     modifier = Modifier
@@ -857,10 +857,10 @@ fun PrayerTimesScreen(
                                         text = city.name,
                                         fontSize = 13.sp,
                                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                        color = if (isSelected) PrimaryTosca else MaterialTheme.colorScheme.onSurface
+                                        color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                                     )
                                     if (isSelected) {
-                                        Icon(Icons.Default.Check, contentDescription = null, tint = PrimaryTosca, modifier = Modifier.size(18.dp))
+                                        Icon(Icons.Default.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
                                     }
                                 }
                             }

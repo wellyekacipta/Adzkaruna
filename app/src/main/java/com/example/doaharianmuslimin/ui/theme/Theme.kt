@@ -47,19 +47,53 @@ private val LightColorScheme = lightColorScheme(
     outline = CardBorderLight
 )
 
+private val RedColorScheme = lightColorScheme(
+    primary = PrimaryRed,
+    onPrimary = Color.White,
+    primaryContainer = RedContainerLight,
+    onPrimaryContainer = OnRedContainerLight,
+    secondary = AccentGold,
+    onSecondary = TextPrimaryRed,
+    tertiary = PrimaryRedLight,
+    background = BackgroundRedLight,
+    surface = SurfaceLight,
+    surfaceVariant = RedContainerLight,
+    onBackground = TextPrimaryRed,
+    onSurface = TextPrimaryRed,
+    onSurfaceVariant = TextSecondaryRed,
+    outline = CardBorderRed
+)
+
+private val BlueColorScheme = lightColorScheme(
+    primary = PrimaryBlue,
+    onPrimary = Color.White,
+    primaryContainer = BlueContainerLight,
+    onPrimaryContainer = OnBlueContainerLight,
+    secondary = AccentGold,
+    onSecondary = TextPrimaryBlue,
+    tertiary = PrimaryBlueLight,
+    background = BackgroundBlueLight,
+    surface = SurfaceLight,
+    surfaceVariant = BlueContainerLight,
+    onBackground = TextPrimaryBlue,
+    onSurface = TextPrimaryBlue,
+    onSurfaceVariant = TextSecondaryBlue,
+    outline = CardBorderBlue
+)
+
 @Composable
 fun DoaHarianMusliminTheme(
     themeMode: AppThemeMode = AppThemeMode.SYSTEM,
     content: @Composable () -> Unit
 ) {
     val isSystemDark = isSystemInDarkTheme()
-    val isDark = when (themeMode) {
-        AppThemeMode.LIGHT -> false
-        AppThemeMode.DARK -> true
-        AppThemeMode.SYSTEM -> isSystemDark
+    val colorScheme = when (themeMode) {
+        AppThemeMode.LIGHT -> LightColorScheme
+        AppThemeMode.DARK -> DarkColorScheme
+        AppThemeMode.RED -> RedColorScheme
+        AppThemeMode.BLUE -> BlueColorScheme
+        AppThemeMode.SYSTEM -> if (isSystemDark) DarkColorScheme else LightColorScheme
     }
-
-    val colorScheme = if (isDark) DarkColorScheme else LightColorScheme
 
     val view = LocalView.current
     if (!view.isInEditMode) {

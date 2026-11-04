@@ -47,7 +47,7 @@ fun DailyDoaBanner(
             modifier = Modifier
                 .background(
                     Brush.horizontalGradient(
-                        colors = listOf(PrimaryTosca, PrimaryToscaLight)
+                        colors = listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.tertiary)
                     )
                 )
                 .padding(18.dp)

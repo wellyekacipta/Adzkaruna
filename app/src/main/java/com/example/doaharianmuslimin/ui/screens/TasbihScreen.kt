@@ -184,7 +184,7 @@ fun TasbihScreen(modifier: Modifier = Modifier) {
                 .clip(CircleShape)
                 .background(
                     Brush.radialGradient(
-                        colors = listOf(PrimaryToscaLight, PrimaryTosca)
+                        colors = listOf(MaterialTheme.colorScheme.tertiary, MaterialTheme.colorScheme.primary)
                     )
                 )
                 .clickable(

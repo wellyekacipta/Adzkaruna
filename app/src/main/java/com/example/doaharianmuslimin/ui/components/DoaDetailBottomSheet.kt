@@ -275,7 +275,7 @@ fun DoaDetailBottomSheet(
                     modifier = Modifier.fillMaxWidth(),
                     color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f),
                     shape = RoundedCornerShape(14.dp),
-                    border = BorderStroke(1.dp, PrimaryTosca.copy(alpha = 0.3f))
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
                 ) {
                     Row(
                         modifier = Modifier.padding(14.dp),
@@ -284,7 +284,7 @@ fun DoaDetailBottomSheet(
                         Icon(
                             imageVector = Icons.Default.MenuBook,
                             contentDescription = null,
-                            tint = PrimaryTosca,
+                            tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(24.dp)
                         )
                         Spacer(modifier = Modifier.width(10.dp))
@@ -332,7 +332,7 @@ fun DoaDetailBottomSheet(
                                     )
                                 } else if (trimmed.startsWith("[1]") || trimmed.startsWith("[2]") || trimmed.startsWith("[3]")) {
                                     Surface(
-                                        color = PrimaryTosca.copy(alpha = 0.08f),
+                                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f),
                                         shape = RoundedCornerShape(8.dp),
                                         modifier = Modifier.fillMaxWidth()
                                     ) {
