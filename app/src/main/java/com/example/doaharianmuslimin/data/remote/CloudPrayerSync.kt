@@ -54,13 +54,19 @@ object CloudPrayerSync {
 
                 for (i in 0 until jsonArray.length()) {
                     val obj = jsonArray.getJSONObject(i)
+                    val rawTimestamp = obj.optString("timestamp_label", "")
+                    val prayerId = obj.optString("id", System.currentTimeMillis().toString())
+                    val createdAt = obj.optLong("created_at_ms", 0L).let {
+                        if (it > 0L) it else CommunityPrayer.parseTimestampToMillis(rawTimestamp, prayerId) ?: System.currentTimeMillis()
+                    }
                     resultList.add(
                         CommunityPrayer(
-                            id = obj.optString("id", System.currentTimeMillis().toString()),
+                            id = prayerId,
                             senderName = obj.optString("sender_name", "Hamba Allah"),
                             location = obj.optString("location", "Indonesia"),
                             prayerText = obj.optString("prayer_text", ""),
-                            timestamp = obj.optString("timestamp_label", "Baru saja"),
+                            timestamp = rawTimestamp,
+                            createdAt = createdAt,
                             aamiinCount = obj.optInt("aamiin_count", 1),
                             likeCount = obj.optInt("like_count", 0)
                         )
@@ -101,6 +107,7 @@ object CloudPrayerSync {
                 put("location", prayer.location)
                 put("prayer_text", prayer.prayerText)
                 put("timestamp_label", prayer.timestamp)
+                put("created_at_ms", prayer.createdAt)
                 put("aamiin_count", prayer.aamiinCount)
                 put("like_count", prayer.likeCount)
             }

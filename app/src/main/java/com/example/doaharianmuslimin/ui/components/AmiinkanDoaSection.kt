@@ -226,7 +226,7 @@ fun CommunityPrayerCard(
                             overflow = TextOverflow.Ellipsis
                         )
                         Text(
-                            text = "${prayer.location} • ${prayer.timestamp}",
+                            text = "${prayer.location} • ${prayer.displayTime}",
                             fontSize = 10.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 1,
@@ -342,7 +342,7 @@ fun PrayerDetailDialog(
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
-                                text = "${prayer.location} • ${prayer.timestamp}",
+                                text = "${prayer.location} • ${prayer.displayTime}",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontSize = 11.sp

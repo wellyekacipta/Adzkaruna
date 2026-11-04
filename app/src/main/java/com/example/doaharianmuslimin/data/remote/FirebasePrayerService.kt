@@ -53,12 +53,18 @@ object FirebasePrayerService {
                     val list = mutableListOf<CommunityPrayer>()
                     for (doc in snapshot.documents) {
                         try {
+                            val createdAt = doc.getLong("createdAtTimestamp")
+                                ?: doc.getLong("createdAt")
+                                ?: doc.id.toLongOrNull()
+                                ?: 0L
+                            val rawTimestamp = doc.getString("timestamp") ?: ""
                             val prayer = CommunityPrayer(
                                 id = doc.id,
                                 senderName = doc.getString("senderName") ?: "Hamba Allah",
                                 location = doc.getString("location") ?: "Indonesia",
                                 prayerText = doc.getString("prayerText") ?: "",
-                                timestamp = doc.getString("timestamp") ?: "Baru saja",
+                                timestamp = rawTimestamp,
+                                createdAt = createdAt,
                                 aamiinCount = (doc.getLong("aamiinCount") ?: 1L).toInt(),
                                 likeCount = (doc.getLong("likeCount") ?: 0L).toInt()
                             )
@@ -76,12 +82,14 @@ object FirebasePrayerService {
      * Mengirimkan doa baru ke Firestore secara realtime
      */
     fun sendPrayer(prayer: CommunityPrayer, onComplete: (Boolean) -> Unit = {}) {
+        val creationMillis = if (prayer.createdAt > 0L) prayer.createdAt else System.currentTimeMillis()
         val data = hashMapOf(
             "senderName" to prayer.senderName,
             "location" to prayer.location,
             "prayerText" to prayer.prayerText,
             "timestamp" to prayer.timestamp,
-            "createdAtTimestamp" to System.currentTimeMillis(),
+            "createdAt" to creationMillis,
+            "createdAtTimestamp" to creationMillis,
             "aamiinCount" to prayer.aamiinCount,
             "likeCount" to prayer.likeCount,
             "creatorUid" to (auth.currentUser?.uid ?: "anonymous")

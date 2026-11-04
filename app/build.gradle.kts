@@ -14,8 +14,8 @@ android {
         applicationId = "com.example.doaharianmuslimin"
         minSdk = 24
         targetSdk = 37
-        versionCode = 37
-        versionName = "1.37.0"
+        versionCode = 38
+        versionName = "1.38.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
