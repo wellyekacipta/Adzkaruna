@@ -350,7 +350,7 @@ class PreferencesManager(context: Context) {
 
     fun toggleQuranFavorite(surahNumber: Int, surahName: String, pageNumber: Int): Boolean {
         val current = getQuranFavorites().toMutableList()
-        val existingIndex = current.indexOfFirst { it.surahNumber == surahNumber && it.pageNumber == pageNumber }
+        val existingIndex = current.indexOfFirst { it.pageNumber == pageNumber }
         val isNowFav: Boolean
         if (existingIndex >= 0) {
             current.removeAt(existingIndex)

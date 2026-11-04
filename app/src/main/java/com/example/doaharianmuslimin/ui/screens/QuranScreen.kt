@@ -163,24 +163,63 @@ fun QuranScreen(
     var mediaPlayer by remember { mutableStateOf<MediaPlayer?>(null) }
     var isPlayingAyatAudio by remember { mutableStateOf(false) }
 
-    val quranHistoryList = remember(selectedSurah, currentMushafPage, selectedFilter, lastReadPage) { prefs.getQuranReadingHistory() }
-    val quranFavList = remember(selectedSurah, selectedFilter, lastReadPage) { prefs.getQuranFavorites() }
+    var quranHistoryList by remember { mutableStateOf(prefs.getQuranReadingHistory()) }
+    var quranFavList by remember { mutableStateOf(prefs.getQuranFavorites()) }
 
     fun saveBookmark(page: Int, surahName: String? = null, surahNumber: Int? = null) {
         val sNum = surahNumber ?: QuranRepository.getSurahNumberForPage(page)
         val sName = surahName ?: QuranRepository.allSurahMeta.find { it.number == sNum }?.name ?: "Al-Fatihah"
-        sharedPrefs.edit()
-            .putInt("last_read_page", page)
-            .putString("last_read_surah", sName)
-            .putInt("last_read_surah_number", sNum)
-            .apply()
-        lastReadPage = page
-        lastReadSurah = sName
-        prefs.toggleQuranFavorite(sNum, sName, page)
-        prefs.addQuranReadingHistory(sNum, sName, page)
-        prefs.recordQuranDailyPage(sNum, sName, page)
-        coroutineScope.launch {
-            snackbarHostState.showSnackbar("Halaman $page ($sName) ditandai & tersimpan di Favorit 🔖")
+
+        val isNowFav = prefs.toggleQuranFavorite(sNum, sName, page)
+        quranFavList = prefs.getQuranFavorites()
+
+        if (isNowFav) {
+            sharedPrefs.edit()
+                .putInt("last_read_page", page)
+                .putString("last_read_surah", sName)
+                .putInt("last_read_surah_number", sNum)
+                .apply()
+            lastReadPage = page
+            lastReadSurah = sName
+            prefs.addQuranReadingHistory(sNum, sName, page)
+            prefs.recordQuranDailyPage(sNum, sName, page)
+            quranHistoryList = prefs.getQuranReadingHistory()
+
+            Toast.makeText(context, "Halaman $page ($sName) ditandai 🔖", Toast.LENGTH_SHORT).show()
+            coroutineScope.launch {
+                snackbarHostState.showSnackbar("Halaman $page ($sName) ditandai & tersimpan di Favorit 🔖")
+            }
+        } else {
+            // Halaman dilepas dari penanda / dihapus dari Favorit (klik ke-2)
+            val remainingFav = quranFavList.firstOrNull()
+            if (remainingFav != null) {
+                sharedPrefs.edit()
+                    .putInt("last_read_page", remainingFav.pageNumber)
+                    .putString("last_read_surah", remainingFav.surahName)
+                    .putInt("last_read_surah_number", remainingFav.surahNumber)
+                    .apply()
+                lastReadPage = remainingFav.pageNumber
+                lastReadSurah = remainingFav.surahName
+            } else {
+                val latestHistory = prefs.getQuranReadingHistory().firstOrNull()
+                if (latestHistory != null) {
+                    sharedPrefs.edit()
+                        .putInt("last_read_page", latestHistory.pageNumber)
+                        .putString("last_read_surah", latestHistory.surahName)
+                        .putInt("last_read_surah_number", latestHistory.surahNumber)
+                        .apply()
+                    lastReadPage = latestHistory.pageNumber
+                    lastReadSurah = latestHistory.surahName
+                } else {
+                    sharedPrefs.edit().putInt("last_read_page", 0).apply()
+                    lastReadPage = 0
+                }
+            }
+
+            Toast.makeText(context, "Penanda Halaman $page ($sName) dihapus 🗑️", Toast.LENGTH_SHORT).show()
+            coroutineScope.launch {
+                snackbarHostState.showSnackbar("Penanda Halaman $page ($sName) dihapus dari Favorit 🗑️")
+            }
         }
     }
 
@@ -1029,13 +1068,14 @@ fun QuranScreen(
                                                 IconButton(
                                                     onClick = {
                                                         val startP = QuranRepository.getStartPageForSurah(surah.number)
-                                                        saveBookmark(startP, surah.name)
-                                                        Toast.makeText(context, "QS. ${surah.name}:${ayat.number} ditandai", Toast.LENGTH_SHORT).show()
+                                                        saveBookmark(startP, surah.name, surah.number)
                                                     },
                                                     modifier = Modifier.size(32.dp)
                                                 ) {
+                                                    val startP = QuranRepository.getStartPageForSurah(surah.number)
+                                                    val isAyatPageBookmarked = quranFavList.any { it.pageNumber == startP }
                                                     Icon(
-                                                        Icons.Default.BookmarkBorder,
+                                                        imageVector = if (isAyatPageBookmarked) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
                                                         contentDescription = "Favorit",
                                                         tint = AccentGold,
                                                         modifier = Modifier.size(17.dp)
@@ -1099,6 +1139,7 @@ fun QuranScreen(
                             val pSurahName = pSurahMeta?.name ?: surah.name
                             prefs.recordQuranDailyPage(pSurahNum, pSurahName, currentMushafPage)
                             prefs.addQuranReadingHistory(pSurahNum, pSurahName, currentMushafPage)
+                            quranHistoryList = prefs.getQuranReadingHistory()
                             QuranRepository.preloadMushafAdjacentPages(context, currentMushafPage)
                             coroutineScope.launch {
                                 pageData = QuranRepository.getMushafPage(currentMushafPage, context)
@@ -1119,7 +1160,7 @@ fun QuranScreen(
                         val isEvenPage = currentMushafPage % 2 == 0
                         val currentJuz = pageData?.juzNumber ?: QuranRepository.getJuzForPage(currentMushafPage)
                         val currentSurahName = pageData?.mainSurahName ?: pageSurahMeta?.name ?: surah.name
-                        val isPageBookmarked = currentMushafPage == lastReadPage || quranFavList.any { it.pageNumber == currentMushafPage }
+                        val isPageBookmarked = quranFavList.any { it.pageNumber == currentMushafPage }
 
                         // Mode Imersif: Kartu mengisi 100% layar (0dp horizontal padding agar rapat kiri-kanan)
                         Box(
@@ -1371,7 +1412,6 @@ fun QuranScreen(
                                                 OutlinedButton(
                                                     onClick = {
                                                         saveBookmark(currentMushafPage, currentSurahName, pageSurahNum)
-                                                        Toast.makeText(context, "Halaman $currentMushafPage ($currentSurahName) ditandai 🔖", Toast.LENGTH_SHORT).show()
                                                     },
                                                     shape = RoundedCornerShape(8.dp),
                                                     contentPadding = PaddingValues(horizontal = 10.dp, vertical = 2.dp),
