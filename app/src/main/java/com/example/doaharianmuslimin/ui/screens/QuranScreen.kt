@@ -1,5 +1,6 @@
 package com.example.doaharianmuslimin.ui.screens
 
+import androidx.activity.compose.BackHandler
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -100,6 +101,7 @@ fun QuranScreen(
     modifier: Modifier = Modifier,
     initialTargetPage: Int? = null,
     onResetTargetPage: (() -> Unit)? = null,
+    onNavigateToHome: (() -> Unit)? = null,
     onImmersiveModeChanged: ((Boolean) -> Unit)? = null
 ) {
     val context = LocalContext.current
@@ -165,6 +167,21 @@ fun QuranScreen(
 
     var quranHistoryList by remember { mutableStateOf(prefs.getQuranReadingHistory()) }
     var quranFavList by remember { mutableStateOf(prefs.getQuranFavorites()) }
+
+    // Menangani tombol kembali sistem Android di layar Al-Qur'an (kembali ke Home)
+    BackHandler(enabled = true) {
+        if (showPageVersesSheet) {
+            showPageVersesSheet = false
+        } else if (selectedAyatForTafsir != null) {
+            selectedAyatForTafsir = null
+        } else if (selectedSurah != null) {
+            selectedSurah = null
+            loadError = null
+            onNavigateToHome?.invoke()
+        } else {
+            onNavigateToHome?.invoke()
+        }
+    }
 
     fun saveBookmark(page: Int, surahName: String? = null, surahNumber: Int? = null) {
         val sNum = surahNumber ?: QuranRepository.getSurahNumberForPage(page)

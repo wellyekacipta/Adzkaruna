@@ -1,10 +1,13 @@
 package com.example.doaharianmuslimin.ui.screens
 
+import android.app.Activity
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.ContextWrapper
 import android.content.Intent
 import androidx.activity.compose.BackHandler
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.animation.*
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
@@ -97,10 +100,30 @@ fun HomeScreen(
     var selectedDoaForDetail by remember { mutableStateOf<Doa?>(null) }
     var isQuranImmersive by remember { mutableStateOf(false) }
     var quranTargetPage by remember { mutableStateOf<Int?>(null) }
+    var showExitConfirmationDialog by remember { mutableStateOf(false) }
 
-    // Intercept Back Press if inside a subscreen
-    BackHandler(enabled = activeSubScreen != ActiveSubScreen.NONE) {
-        activeSubScreen = ActiveSubScreen.NONE
+    // Menangani tombol kembali sistem Android di seluruh aplikasi (kembali ke Home, lalu pop-up keluar)
+    BackHandler(enabled = true) {
+        when {
+            showCreatePrayerSheet -> showCreatePrayerSheet = false
+            showThemeDialog -> showThemeDialog = false
+            selectedDoaForDetail != null -> selectedDoaForDetail = null
+            isSearchActive -> {
+                isSearchActive = false
+                searchQuery = ""
+            }
+            activeSubScreen != ActiveSubScreen.NONE -> {
+                activeSubScreen = ActiveSubScreen.NONE
+            }
+            currentNavTab != BottomNavTab.HOME -> {
+                currentNavTab = BottomNavTab.HOME
+                filterOnlyFavorites = false
+                filterOnlyHistory = false
+            }
+            else -> {
+                showExitConfirmationDialog = true
+            }
+        }
     }
 
     // Doa Pilihan Hari ini: Berdasarkan apa yang sudah difavoritkan user (Requirement 4)
@@ -245,7 +268,7 @@ fun HomeScreen(
                                 color = Color.White
                             )
                             Text(
-                                text = "Doa & Dzikir Harian Muslimin v1.44.0",
+                                text = "Doa & Dzikir Harian Muslimin v1.45.0",
                                 fontSize = 11.sp,
                                 color = Color.White.copy(alpha = 0.85f)
                             )
@@ -410,6 +433,9 @@ fun HomeScreen(
                     QuranScreen(
                         initialTargetPage = quranTargetPage,
                         onResetTargetPage = { quranTargetPage = null },
+                        onNavigateToHome = {
+                            currentNavTab = BottomNavTab.HOME
+                        },
                         onImmersiveModeChanged = { immersive ->
                             isQuranImmersive = immersive
                         }
@@ -991,6 +1017,77 @@ fun HomeScreen(
                     showLatin = newShow
                     prefs.setShowLatin(newShow)
                 }
+            )
+        }
+
+        // Dialog Konfirmasi Keluar dari Aplikasi
+        if (showExitConfirmationDialog) {
+            AlertDialog(
+                onDismissRequest = { showExitConfirmationDialog = false },
+                icon = {
+                    Surface(
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.error.copy(alpha = 0.12f),
+                        modifier = Modifier.size(52.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ExitToApp,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.size(26.dp)
+                            )
+                        }
+                    }
+                },
+                title = {
+                    Text(
+                        text = "Keluar dari Aplikasi?",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 17.sp,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                },
+                text = {
+                    Text(
+                        text = "Apakah Anda yakin ingin keluar dari aplikasi Adzkaruna?",
+                        fontSize = 13.5.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            showExitConfirmationDialog = false
+                            var act: Activity? = context as? Activity
+                            var ctx = context
+                            while (act == null && ctx is ContextWrapper) {
+                                ctx = ctx.baseContext
+                                act = ctx as? Activity
+                            }
+                            act?.finish()
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.error
+                        ),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Text("Keluar", fontWeight = FontWeight.Bold, color = Color.White)
+                    }
+                },
+                dismissButton = {
+                    OutlinedButton(
+                        onClick = { showExitConfirmationDialog = false },
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Text("Batal", fontWeight = FontWeight.SemiBold)
+                    }
+                },
+                shape = RoundedCornerShape(20.dp),
+                containerColor = MaterialTheme.colorScheme.surface
             )
         }
     }
