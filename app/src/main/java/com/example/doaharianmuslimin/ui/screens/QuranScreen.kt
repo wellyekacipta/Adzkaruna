@@ -877,13 +877,13 @@ fun QuranScreen(
                                             modifier = Modifier.padding(14.dp),
                                             horizontalAlignment = Alignment.CenterHorizontally
                                         ) {
-                                            val quranGreenColor = if (isDark) Color(0xFF4DB6AC) else Color(0xFF1B5E20)
+                                            val bismillahColor = if (isDark) Color(0xFFECEFF1) else Color.Black
                                             Text(
                                                 text = "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ",
                                                 fontFamily = UthmanicFontFamily,
                                                 fontSize = 26.sp,
                                                 fontWeight = FontWeight.Bold,
-                                                color = quranGreenColor
+                                                color = bismillahColor
                                             )
                                             Spacer(modifier = Modifier.height(4.dp))
                                             Text(
@@ -1028,6 +1028,7 @@ fun QuranScreen(
                                             fontWeight = FontWeight.SemiBold,
                                             lineHeight = 48.sp,
                                             textAlign = TextAlign.End,
+                                            color = if (isDark) Color(0xFFECEFF1) else Color.Black,
                                             modifier = Modifier.fillMaxWidth()
                                         )
 
@@ -1561,6 +1562,7 @@ fun QuranScreen(
                                                         fontSize = 20.sp,
                                                         lineHeight = 36.sp,
                                                         textAlign = TextAlign.End,
+                                                        color = if (isDark) Color(0xFFECEFF1) else Color.Black,
                                                         modifier = Modifier.fillMaxWidth()
                                                     )
 
@@ -1826,6 +1828,7 @@ fun QuranScreen(
                         fontSize = 26.sp,
                         lineHeight = 48.sp,
                         textAlign = TextAlign.End,
+                        color = if (isDark) Color(0xFFECEFF1) else Color.Black,
                         modifier = Modifier.fillMaxWidth()
                     )
 
@@ -1928,13 +1931,13 @@ fun QuranScreen(
  * - Warm Amber: Idgham Bighunnah
  * - Slate Grey: Idgham Bilaghunnah
  * - Deep Blue: Iqlab (mim kecil ۢ sebelum ba)
- * - Base text: Islamic dark charcoal (Light) / Soft White (Dark)
+ * - Base text: Hitam Pekat Solid Black (Light) / Soft White (Dark)
  */
 fun buildTajweedAnnotatedString(text: String, isDark: Boolean): AnnotatedString {
     return buildAnnotatedString {
-        val baseColor = if (isDark) Color(0xFFECEFF1) else Color(0xFF1B3B2B)
-        val madColor = if (isDark) Color(0xFF29B6F6) else Color(0xFF0288D1)
-        val ghunnahColor = if (isDark) Color(0xFFFF4081) else Color(0xFFC2185B)
+        val baseColor = if (isDark) Color(0xFFECEFF1) else Color.Black
+        val madColor = if (isDark) Color(0xFF40C4FF) else Color(0xFF0091EA)
+        val ghunnahColor = if (isDark) Color(0xFFFF4081) else Color(0xFFE91E63)
         val qalqalahColor = if (isDark) Color(0xFFFF7043) else Color(0xFFE65100)
         val ikhfaColor = if (isDark) Color(0xFF81C784) else Color(0xFF2E7D32)
         val idghamBiColor = if (isDark) Color(0xFFFFB74D) else Color(0xFFF57C00)
