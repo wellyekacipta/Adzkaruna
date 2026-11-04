@@ -16,7 +16,9 @@ val MadinahFontFamily = UthmanicFontFamily
 
 // Font Resmi Al-Qur'an Standar Indonesia (LPMQ Kemenag RI - Isep Misbah)
 val LpmqFontFamily = FontFamily(
-    Font(R.font.lpmq, FontWeight.Normal)
+    Font(R.font.lpmq, FontWeight.Normal),
+    Font(R.font.lpmq, FontWeight.Bold),
+    Font(R.font.lpmq, FontWeight.SemiBold)
 )
 
 val Typography = Typography(

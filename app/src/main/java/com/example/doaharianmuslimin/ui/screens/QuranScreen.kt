@@ -709,7 +709,7 @@ fun QuranScreen(
                                 ) {
                                     Text(
                                         text = surah.arabicName,
-                                        fontFamily = UthmanicFontFamily,
+                                        fontFamily = LpmqFontFamily,
                                         fontSize = 20.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = if (isDark) Color(0xFFFFFFFF) else Color(0xFF000000),
@@ -882,7 +882,7 @@ fun QuranScreen(
                                             val bismillahColor = if (isDark) Color(0xFFFFFFFF) else Color(0xFF000000)
                                             Text(
                                                 text = "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ",
-                                                fontFamily = UthmanicFontFamily,
+                                                fontFamily = LpmqFontFamily,
                                                 fontSize = 26.sp,
                                                 fontWeight = FontWeight.Bold,
                                                 color = bismillahColor
@@ -1021,10 +1021,10 @@ fun QuranScreen(
 
                                         Spacer(modifier = Modifier.height(10.dp))
 
-                                        // Arabic Text in Solid Pure Black (#000000)
+                                        // Arabic Text in Solid Pure Black (#000000) - Font LPMQ Isep Misbah Kemenag RI
                                         Text(
                                             text = ayat.arabic,
-                                            fontFamily = UthmanicFontFamily,
+                                            fontFamily = LpmqFontFamily,
                                             fontSize = 26.sp,
                                             fontWeight = FontWeight.Bold,
                                             lineHeight = 48.sp,
@@ -1558,10 +1558,10 @@ fun QuranScreen(
 
                                                     Spacer(modifier = Modifier.height(8.dp))
 
-                                                    // Teks Arab (#000000)
+                                                    // Teks Arab (#000000) - Font LPMQ Isep Misbah
                                                     Text(
                                                         text = ayatItem.arabic,
-                                                        fontFamily = UthmanicFontFamily,
+                                                        fontFamily = LpmqFontFamily,
                                                         fontSize = 20.sp,
                                                         fontWeight = FontWeight.Bold,
                                                         lineHeight = 36.sp,
@@ -1828,10 +1828,10 @@ fun QuranScreen(
 
                     Spacer(modifier = Modifier.height(14.dp))
 
-                    // Lafadz Ayat Arab (#000000)
+                    // Lafadz Ayat Arab (#000000) - Font LPMQ Isep Misbah
                     Text(
                         text = ayat.arabic,
-                        fontFamily = UthmanicFontFamily,
+                        fontFamily = LpmqFontFamily,
                         fontSize = 26.sp,
                         fontWeight = FontWeight.Bold,
                         lineHeight = 48.sp,
