@@ -1225,7 +1225,7 @@ fun QuranScreen(
                                     if (pageBitmap != null) {
                                         Image(
                                             bitmap = pageBitmap!!.asImageBitmap(),
-                                            contentDescription = "Halaman $currentMushafPage Mushaf Madinah",
+                                            contentDescription = "Halaman $currentMushafPage Mushaf Madinah Tajwid",
                                             contentScale = ContentScale.Fit,
                                             modifier = Modifier
                                                 .fillMaxSize()
@@ -1236,13 +1236,13 @@ fun QuranScreen(
                                             CircularProgressIndicator(color = MaterialTheme.colorScheme.primary, strokeWidth = 2.5.dp, modifier = Modifier.size(34.dp))
                                             Spacer(modifier = Modifier.height(8.dp))
                                             Text(
-                                                text = "Memuat Halaman $currentMushafPage Mushaf Madinah...",
+                                                text = "Memuat Halaman $currentMushafPage Mushaf Madinah Tajwid...",
                                                 fontSize = 11.5.sp,
                                                 fontWeight = FontWeight.Medium,
                                                 color = greenDark
                                             )
                                             Text(
-                                                text = "15 Baris Standar Kemenag RI / KFGQPC",
+                                                text = "15 Baris Rasm Utsmani Tajwid Berwarna (KFGQPC)",
                                                 fontSize = 10.sp,
                                                 color = Color.Gray
                                             )
@@ -1598,7 +1598,7 @@ fun QuranScreen(
                 },
                 title = {
                     Text(
-                        text = "Unduh Seluruh Mushaf (604 Halaman)?",
+                        text = "Unduh Mushaf Tajwid (604 Halaman)?",
                         fontWeight = FontWeight.Bold,
                         fontSize = 17.sp,
                         textAlign = TextAlign.Center
@@ -1607,7 +1607,7 @@ fun QuranScreen(
                 text = {
                     Column {
                         Text(
-                            text = "Unduh seluruh halaman Al-Qur'an agar Anda dapat membaca dengan sangat cepat, lancar tanpa kendala/ngelag, dan 100% offline tanpa kuota internet (±45 MB).\n\nJika memilih 'Nanti Saja', halaman akan tetap dapat dibaca secara online (diunduh otomatis satu per satu saat dibuka).",
+                            text = "Unduh seluruh lembaran Mushaf Madinah Tajwid Berwarna (KFGQPC) agar Anda dapat membaca dengan sangat cepat, lancar tanpa kendala/ngelag, dan 100% offline tanpa kuota internet.\n\nJika memilih 'Nanti Saja', lembaran mushaf tajwid tetap dapat dibaca secara langsung (diunduh otomatis per halaman saat dibuka).",
                             fontSize = 13.sp,
                             lineHeight = 18.sp
                         )
@@ -1636,7 +1636,7 @@ fun QuranScreen(
                                 }
                                 isDownloadingAllMushaf = false
                                 prefs.setMushafAllDownloaded(true)
-                                snackbarHostState.showSnackbar("Alhamdulillah! Seluruh 604 halaman mushaf telah tersimpan offline 📖✨")
+                                snackbarHostState.showSnackbar("Alhamdulillah! Seluruh 604 halaman mushaf tajwid telah tersimpan offline 📖✨")
                             }
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
