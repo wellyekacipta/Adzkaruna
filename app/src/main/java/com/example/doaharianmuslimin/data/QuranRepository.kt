@@ -399,6 +399,17 @@ object QuranRepository {
         600, 600, 601, 601, 601, 602, 602, 602, 603, 603, 603, 604, 604, 604
     )
 
+    /**
+     * Determines which Surah number corresponds to any given Mushaf page (1..604).
+     */
+    fun getSurahNumberForPage(page: Int): Int {
+        val safePage = page.coerceIn(1, 604)
+        for (i in surahStartPages.indices.reversed()) {
+            if (safePage >= surahStartPages[i]) return i + 1
+        }
+        return 1
+    }
+
     fun getStartPageForSurah(surahNumber: Int): Int {
         val idx = (surahNumber - 1).coerceIn(0, surahStartPages.size - 1)
         return surahStartPages[idx]
@@ -491,7 +502,7 @@ object QuranRepository {
                         }
                     }
 
-                    val primarySurah = surahNumbersOnPage.firstOrNull() ?: 1
+                    val primarySurah = surahNumbersOnPage.firstOrNull() ?: getSurahNumberForPage(safePage)
                     val surahMeta = allSurahMeta.find { it.number == primarySurah } ?: allSurahMeta[0]
 
                     val lines = mutableListOf<MushafLine>()

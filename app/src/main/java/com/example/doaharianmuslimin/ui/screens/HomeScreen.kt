@@ -96,6 +96,7 @@ fun HomeScreen(
 
     var selectedDoaForDetail by remember { mutableStateOf<Doa?>(null) }
     var isQuranImmersive by remember { mutableStateOf(false) }
+    var quranTargetPage by remember { mutableStateOf<Int?>(null) }
 
     // Intercept Back Press if inside a subscreen
     BackHandler(enabled = activeSubScreen != ActiveSubScreen.NONE) {
@@ -244,7 +245,7 @@ fun HomeScreen(
                                 color = Color.White
                             )
                             Text(
-                                text = "Doa & Dzikir Harian Muslimin v1.40.0",
+                                text = "Doa & Dzikir Harian Muslimin v1.41.0",
                                 fontSize = 11.sp,
                                 color = Color.White.copy(alpha = 0.85f)
                             )
@@ -407,6 +408,8 @@ fun HomeScreen(
             when (currentNavTab) {
                 BottomNavTab.QURAN -> {
                     QuranScreen(
+                        initialTargetPage = quranTargetPage,
+                        onResetTargetPage = { quranTargetPage = null },
                         onImmersiveModeChanged = { immersive ->
                             isQuranImmersive = immersive
                         }
@@ -575,6 +578,7 @@ fun HomeScreen(
                                                             .weight(1f)
                                                             .clip(RoundedCornerShape(12.dp))
                                                             .clickable {
+                                                                quranTargetPage = quranHist.pageNumber
                                                                 currentNavTab = BottomNavTab.QURAN
                                                             },
                                                         color = MaterialTheme.colorScheme.surface,

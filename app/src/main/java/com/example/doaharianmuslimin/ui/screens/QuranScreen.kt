@@ -98,6 +98,8 @@ enum class QuranFilterCategory(val label: String) {
 @Composable
 fun QuranScreen(
     modifier: Modifier = Modifier,
+    initialTargetPage: Int? = null,
+    onResetTargetPage: (() -> Unit)? = null,
     onImmersiveModeChanged: ((Boolean) -> Unit)? = null
 ) {
     val context = LocalContext.current
@@ -118,6 +120,13 @@ fun QuranScreen(
     var downloadProgressCount by remember { mutableIntStateOf(0) }
     var totalMushafPages by remember { mutableIntStateOf(604) }
     var cachedPageCount by remember { mutableIntStateOf(0) }
+
+    // Bookmark & Last Read Handler (Adzkaruna QUL Engine)
+    val sharedPrefs = remember { context.getSharedPreferences("adzkaruna_quran_prefs", Context.MODE_PRIVATE) }
+    var lastReadPage by remember { mutableIntStateOf(sharedPrefs.getInt("last_read_page", 1)) }
+    var lastReadSurah by remember { mutableStateOf(sharedPrefs.getString("last_read_surah", "Al-Fatihah") ?: "Al-Fatihah") }
+
+    var currentMushafPage by remember { mutableIntStateOf(lastReadPage) }
 
     LaunchedEffect(viewMode) {
         if (viewMode == QuranViewMode.PER_HALAMAN) {
@@ -145,7 +154,6 @@ fun QuranScreen(
     var selectedTafsirSurahNumber by remember { mutableIntStateOf(1) }
     var selectedTafsirSurahName by remember { mutableStateOf("Al-Fatihah") }
     var blockedAyat by remember { mutableStateOf<QuranAyat?>(null) }
-    var currentMushafPage by remember(selectedSurah) { mutableIntStateOf(selectedSurah?.let { QuranRepository.getStartPageForSurah(it.number) } ?: 1) }
     var blockedVerseKey by remember { mutableStateOf<String?>(null) }
     var showPageVersesSheet by remember { mutableStateOf(false) }
     var tafsirContent by remember { mutableStateOf<String?>(null) }
@@ -155,25 +163,24 @@ fun QuranScreen(
     var mediaPlayer by remember { mutableStateOf<MediaPlayer?>(null) }
     var isPlayingAyatAudio by remember { mutableStateOf(false) }
 
-    // Bookmark & Last Read Handler (Adzkaruna QUL Engine)
-    val sharedPrefs = remember { context.getSharedPreferences("adzkaruna_quran_prefs", Context.MODE_PRIVATE) }
-    var lastReadPage by remember { mutableIntStateOf(sharedPrefs.getInt("last_read_page", 1)) }
-    var lastReadSurah by remember { mutableStateOf(sharedPrefs.getString("last_read_surah", "Al-Fatihah") ?: "Al-Fatihah") }
-    val quranHistoryList = remember(selectedSurah, currentMushafPage, selectedFilter) { prefs.getQuranReadingHistory() }
-    val quranFavList = remember(selectedSurah, selectedFilter) { prefs.getQuranFavorites() }
+    val quranHistoryList = remember(selectedSurah, currentMushafPage, selectedFilter, lastReadPage) { prefs.getQuranReadingHistory() }
+    val quranFavList = remember(selectedSurah, selectedFilter, lastReadPage) { prefs.getQuranFavorites() }
 
-    fun saveBookmark(page: Int, surahName: String) {
+    fun saveBookmark(page: Int, surahName: String? = null, surahNumber: Int? = null) {
+        val sNum = surahNumber ?: QuranRepository.getSurahNumberForPage(page)
+        val sName = surahName ?: QuranRepository.allSurahMeta.find { it.number == sNum }?.name ?: "Al-Fatihah"
         sharedPrefs.edit()
             .putInt("last_read_page", page)
-            .putString("last_read_surah", surahName)
+            .putString("last_read_surah", sName)
+            .putInt("last_read_surah_number", sNum)
             .apply()
         lastReadPage = page
-        lastReadSurah = surahName
-        val sNum = selectedSurah?.number ?: 1
-        prefs.toggleQuranFavorite(sNum, surahName, page)
-        prefs.addQuranReadingHistory(sNum, surahName, page)
+        lastReadSurah = sName
+        prefs.toggleQuranFavorite(sNum, sName, page)
+        prefs.addQuranReadingHistory(sNum, sName, page)
+        prefs.recordQuranDailyPage(sNum, sName, page)
         coroutineScope.launch {
-            snackbarHostState.showSnackbar("Halaman $page ($surahName) ditandai & tersimpan di Favorit 🔖")
+            snackbarHostState.showSnackbar("Halaman $page ($sName) ditandai & tersimpan di Favorit 🔖")
         }
     }
 
@@ -271,22 +278,37 @@ fun QuranScreen(
         }
     }
 
-    fun openSurah(surah: QuranSurah) {
+    fun openSurah(surah: QuranSurah, targetPage: Int? = null) {
         coroutineScope.launch {
             isLoadingSurah = true
             loadError = null
             currentPageIndex = 0
+            val pageToOpen = targetPage ?: QuranRepository.getStartPageForSurah(surah.number)
+            currentMushafPage = pageToOpen
             selectedSurah = surah
-            val startP = QuranRepository.getStartPageForSurah(surah.number)
-            prefs.addQuranReadingHistory(surah.number, surah.name, startP)
+            prefs.addQuranReadingHistory(surah.number, surah.name, pageToOpen)
+            prefs.recordQuranDailyPage(surah.number, surah.name, pageToOpen)
 
             val fullSurah = QuranRepository.getSurahDetail(surah.number)
             if (fullSurah != null && fullSurah.ayats.isNotEmpty()) {
                 selectedSurah = fullSurah
+                currentMushafPage = pageToOpen
             } else if (surah.ayats.isEmpty()) {
                 loadError = "Gagal memuat ayat surah. Pastikan koneksi internet aktif untuk unduhan pertama."
             }
             isLoadingSurah = false
+        }
+    }
+
+    LaunchedEffect(initialTargetPage) {
+        if (initialTargetPage != null && initialTargetPage in 1..604) {
+            val surahNum = QuranRepository.getSurahNumberForPage(initialTargetPage)
+            val targetSurah = QuranRepository.allSurahMeta.find { it.number == surahNum }
+                ?: QuranRepository.allSurahMeta.firstOrNull()
+            if (targetSurah != null) {
+                openSurah(targetSurah, initialTargetPage)
+            }
+            onResetTargetPage?.invoke()
         }
     }
 
@@ -430,9 +452,11 @@ fun QuranScreen(
                     item {
                         // using quranHistoryList
                         val latestHist = quranHistoryList.firstOrNull()
-                        val bannerSurah = latestHist?.surahName ?: lastReadSurah
                         val bannerPage = latestHist?.pageNumber ?: lastReadPage
-                        val bannerSurahNum = latestHist?.surahNumber ?: 1
+                        val bannerSurahNum = latestHist?.surahNumber ?: QuranRepository.getSurahNumberForPage(bannerPage)
+                        val bannerSurah = latestHist?.surahName
+                            ?: QuranRepository.allSurahMeta.find { it.number == bannerSurahNum }?.name
+                            ?: lastReadSurah
 
                         Surface(
                             modifier = Modifier
@@ -442,8 +466,7 @@ fun QuranScreen(
                                     val targetSurah = QuranRepository.allSurahMeta.find { it.number == bannerSurahNum }
                                         ?: QuranRepository.allSurahMeta.firstOrNull()
                                     if (targetSurah != null) {
-                                        openSurah(targetSurah)
-                                        currentMushafPage = bannerPage
+                                        openSurah(targetSurah, bannerPage)
                                     }
                                 },
                             color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f),
@@ -547,8 +570,7 @@ fun QuranScreen(
                                         .clickable {
                                             val foundSurah = QuranRepository.allSurahMeta.find { it.number == item.surahNumber }
                                             if (foundSurah != null) {
-                                                openSurah(foundSurah)
-                                                currentMushafPage = item.pageNumber
+                                                openSurah(foundSurah, item.pageNumber)
                                             }
                                         },
                                     shape = RoundedCornerShape(14.dp),
@@ -573,7 +595,7 @@ fun QuranScreen(
                                             Spacer(modifier = Modifier.width(12.dp))
                                             Column {
                                                 Text(item.surahName, fontWeight = FontWeight.Bold, fontSize = 13.5.sp)
-                                                val sdf = SimpleDateFormat("dd MMM yyyy, HH:mm 'WIB'", Locale("id", "ID"))
+                                                val sdf = SimpleDateFormat("dd MMM yyyy, HH:mm 'WIB'", Locale.forLanguageTag("id-ID"))
                                                 Text("Halaman ${item.pageNumber} • ${sdf.format(Date(item.timestamp))}", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                             }
                                         }
@@ -608,8 +630,7 @@ fun QuranScreen(
                                         .clickable {
                                             val foundSurah = QuranRepository.allSurahMeta.find { it.number == item.surahNumber }
                                             if (foundSurah != null) {
-                                                openSurah(foundSurah)
-                                                currentMushafPage = item.pageNumber
+                                                openSurah(foundSurah, item.pageNumber)
                                             }
                                         },
                                     shape = RoundedCornerShape(14.dp),
@@ -767,14 +788,18 @@ fun QuranScreen(
                                 }
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Column {
+                                    val displaySurah = if (viewMode == QuranViewMode.PER_HALAMAN) {
+                                        val sNum = QuranRepository.getSurahNumberForPage(currentMushafPage)
+                                        QuranRepository.allSurahMeta.find { it.number == sNum } ?: surah
+                                    } else surah
                                     Text(
-                                        text = surah.name,
+                                        text = displaySurah.name,
                                         fontSize = 17.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = Color.White
                                     )
                                     Text(
-                                        text = "${surah.revelation} • ${surah.totalAyat} Ayat",
+                                        text = "${displaySurah.revelation} • ${displaySurah.totalAyat} Ayat",
                                         fontSize = 11.sp,
                                         color = Color.White.copy(alpha = 0.85f)
                                     )
@@ -1059,6 +1084,9 @@ fun QuranScreen(
                         }
                     } else {
                         // ==================== MODE 2: MUSHAF 15 BARIS PER HALAMAN RESMI (604 HALAMAN) ====================
+                        val pageSurahNum = QuranRepository.getSurahNumberForPage(currentMushafPage)
+                        val pageSurahMeta = QuranRepository.allSurahMeta.find { it.number == pageSurahNum }
+
                         var pageData by remember(currentMushafPage) { mutableStateOf<MushafPageData?>(null) }
                         var pageBitmap by remember(currentMushafPage) { mutableStateOf<Bitmap?>(null) }
                         var isLoadingPage by remember(currentMushafPage) { mutableStateOf(true) }
@@ -1066,8 +1094,11 @@ fun QuranScreen(
                         LaunchedEffect(currentMushafPage) {
                             isLoadingPage = true
                             blockedVerseKey = null
-                            prefs.recordQuranDailyPage(surah.number, surah.name, currentMushafPage)
-                            prefs.addQuranReadingHistory(surah.number, surah.name, currentMushafPage)
+                            val pSurahNum = QuranRepository.getSurahNumberForPage(currentMushafPage)
+                            val pSurahMeta = QuranRepository.allSurahMeta.find { it.number == pSurahNum }
+                            val pSurahName = pSurahMeta?.name ?: surah.name
+                            prefs.recordQuranDailyPage(pSurahNum, pSurahName, currentMushafPage)
+                            prefs.addQuranReadingHistory(pSurahNum, pSurahName, currentMushafPage)
                             QuranRepository.preloadMushafAdjacentPages(context, currentMushafPage)
                             coroutineScope.launch {
                                 pageData = QuranRepository.getMushafPage(currentMushafPage, context)
@@ -1087,7 +1118,8 @@ fun QuranScreen(
                         val rosetteTxt = Color(0xFFBF360C)
                         val isEvenPage = currentMushafPage % 2 == 0
                         val currentJuz = pageData?.juzNumber ?: QuranRepository.getJuzForPage(currentMushafPage)
-                        val currentSurahName = pageData?.mainSurahName ?: surah.name
+                        val currentSurahName = pageData?.mainSurahName ?: pageSurahMeta?.name ?: surah.name
+                        val isPageBookmarked = currentMushafPage == lastReadPage || quranFavList.any { it.pageNumber == currentMushafPage }
 
                         // Mode Imersif: Kartu mengisi 100% layar (0dp horizontal padding agar rapat kiri-kanan)
                         Box(
@@ -1171,7 +1203,7 @@ fun QuranScreen(
                                                 shape = RoundedCornerShape(topStart = 14.dp, topEnd = 14.dp, bottomStart = 4.dp, bottomEnd = 4.dp),
                                                 border = BorderStroke(1.5.dp, goldColor),
                                                 modifier = Modifier.clickable {
-                                                    saveBookmark(currentMushafPage, currentSurahName)
+                                                    saveBookmark(currentMushafPage, currentSurahName, pageSurahNum)
                                                 }
                                             ) {
                                                 Row(
@@ -1179,9 +1211,9 @@ fun QuranScreen(
                                                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 2.dp)
                                                 ) {
                                                     Icon(
-                                                        imageVector = if (currentMushafPage == lastReadPage) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
+                                                        imageVector = if (isPageBookmarked) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
                                                         contentDescription = "Bookmark",
-                                                        tint = if (currentMushafPage == lastReadPage) AccentGold else greenDark,
+                                                        tint = if (isPageBookmarked) AccentGold else greenDark,
                                                         modifier = Modifier.size(13.dp)
                                                     )
                                                     Spacer(modifier = Modifier.width(4.dp))
@@ -1338,7 +1370,7 @@ fun QuranScreen(
 
                                                 OutlinedButton(
                                                     onClick = {
-                                                        saveBookmark(currentMushafPage, currentSurahName)
+                                                        saveBookmark(currentMushafPage, currentSurahName, pageSurahNum)
                                                         Toast.makeText(context, "Halaman $currentMushafPage ($currentSurahName) ditandai 🔖", Toast.LENGTH_SHORT).show()
                                                     },
                                                     shape = RoundedCornerShape(8.dp),
@@ -1346,14 +1378,14 @@ fun QuranScreen(
                                                     modifier = Modifier.height(30.dp)
                                                 ) {
                                                     Icon(
-                                                        imageVector = if (currentMushafPage == lastReadPage) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
+                                                        imageVector = if (isPageBookmarked) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
                                                         contentDescription = null,
-                                                        tint = if (currentMushafPage == lastReadPage) AccentGold else greenDark,
+                                                        tint = if (isPageBookmarked) AccentGold else greenDark,
                                                         modifier = Modifier.size(13.dp)
                                                     )
                                                     Spacer(modifier = Modifier.width(4.dp))
                                                     Text(
-                                                        text = if (currentMushafPage == lastReadPage) "Ditandai" else "Tandai Hal. $currentMushafPage",
+                                                        text = if (isPageBookmarked) "Ditandai" else "Tandai Hal. $currentMushafPage",
                                                         fontSize = 10.5.sp,
                                                         color = greenDark,
                                                         fontWeight = FontWeight.Medium
@@ -1445,11 +1477,12 @@ fun QuranScreen(
 
                             val filteredVerses = remember(ayatSearchQuery, selectedScopeIndex, versesOnPage, surah.ayats) {
                                 val query = ayatSearchQuery.trim()
+                                val baseList = if (selectedScopeIndex == 0) versesOnPage else surah.ayats
                                 if (query.isBlank()) {
-                                    if (selectedScopeIndex == 0) versesOnPage else surah.ayats
+                                    baseList
                                 } else {
                                     val numberQuery = query.filter { it.isDigit() }.toIntOrNull()
-                                    surah.ayats.filter { ayat ->
+                                    baseList.filter { ayat ->
                                         (numberQuery != null && ayat.number == numberQuery) ||
                                         ayat.number.toString() == query ||
                                         ayat.translation.contains(query, ignoreCase = true) ||
@@ -1483,7 +1516,7 @@ fun QuranScreen(
                                                 color = MaterialTheme.colorScheme.primary
                                             )
                                             Text(
-                                                text = "QS. ${surah.name} • Hal. $currentMushafPage • Juz $currentJuz",
+                                                text = "QS. $currentSurahName • Hal. $currentMushafPage • Juz $currentJuz",
                                                 fontSize = 11.5.sp,
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                                             )
