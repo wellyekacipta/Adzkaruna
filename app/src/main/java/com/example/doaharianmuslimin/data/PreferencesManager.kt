@@ -319,12 +319,16 @@ class PreferencesManager(context: Context) {
             }
         }
 
+        val todayIdx = daysList.indexOfFirst { it.isToday }
+        val currentDayOfWeek = if (todayIdx >= 0) todayIdx + 1 else 1
+
         return QuranWeeklyStats(
             days = daysList,
             activeDaysCount = activeDays,
             totalPagesRead = totalPages,
             totalSurahsRead = allSurahs.size,
-            currentStreak = streak
+            currentStreak = streak,
+            currentDayOfWeek = currentDayOfWeek
         )
     }
 

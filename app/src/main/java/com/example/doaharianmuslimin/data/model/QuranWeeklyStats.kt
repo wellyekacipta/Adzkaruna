@@ -17,5 +17,6 @@ data class QuranWeeklyStats(
     val activeDaysCount: Int,
     val totalPagesRead: Int,
     val totalSurahsRead: Int,
-    val currentStreak: Int
+    val currentStreak: Int,
+    val currentDayOfWeek: Int = 1
 )
