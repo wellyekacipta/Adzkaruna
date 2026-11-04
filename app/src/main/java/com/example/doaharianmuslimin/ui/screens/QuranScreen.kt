@@ -146,8 +146,6 @@ fun QuranScreen(
         onImmersiveModeChanged?.invoke(shouldBeImmersive)
     }
 
-    var currentPageIndex by remember(selectedSurah) { mutableIntStateOf(0) }
-
     var searchQuery by remember { mutableStateOf("") }
     var selectedFilter by remember { mutableStateOf(QuranFilterCategory.SEMUA) }
 
@@ -167,6 +165,7 @@ fun QuranScreen(
 
     var quranHistoryList by remember { mutableStateOf(prefs.getQuranReadingHistory()) }
     var quranFavList by remember { mutableStateOf(prefs.getQuranFavorites()) }
+    var showConfirmClearQuranDialog by remember { mutableStateOf(false) }
 
     // Menangani tombol kembali sistem Android di layar Al-Qur'an (kembali ke Home)
     BackHandler(enabled = true) {
@@ -338,7 +337,6 @@ fun QuranScreen(
         coroutineScope.launch {
             isLoadingSurah = true
             loadError = null
-            currentPageIndex = 0
             val pageToOpen = targetPage ?: QuranRepository.getStartPageForSurah(surah.number)
             currentMushafPage = pageToOpen
             selectedSurah = surah
@@ -505,74 +503,75 @@ fun QuranScreen(
                     }
 
                     // Terakhir Dibaca Banner
-                    item {
-                        // using quranHistoryList
-                        val latestHist = quranHistoryList.firstOrNull()
-                        val bannerPage = latestHist?.pageNumber ?: lastReadPage
-                        val bannerSurahNum = latestHist?.surahNumber ?: QuranRepository.getSurahNumberForPage(bannerPage)
-                        val bannerSurah = latestHist?.surahName
-                            ?: QuranRepository.allSurahMeta.find { it.number == bannerSurahNum }?.name
-                            ?: lastReadSurah
+                    val latestHist = quranHistoryList.firstOrNull()
+                    val bannerPage = latestHist?.pageNumber ?: if (lastReadPage > 0) lastReadPage else null
+                    if (bannerPage != null && bannerPage > 0) {
+                        item {
+                            val bannerSurahNum = latestHist?.surahNumber ?: QuranRepository.getSurahNumberForPage(bannerPage)
+                            val bannerSurah = latestHist?.surahName
+                                ?: QuranRepository.allSurahMeta.find { it.number == bannerSurahNum }?.name
+                                ?: lastReadSurah
 
-                        Surface(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(14.dp))
-                                .clickable {
-                                    val targetSurah = QuranRepository.allSurahMeta.find { it.number == bannerSurahNum }
-                                        ?: QuranRepository.allSurahMeta.firstOrNull()
-                                    if (targetSurah != null) {
-                                        openSurah(targetSurah, bannerPage)
-                                    }
-                                },
-                            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f),
-                            shape = RoundedCornerShape(14.dp),
-                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.35f))
-                        ) {
-                            Row(
+                            Surface(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(horizontal = 14.dp, vertical = 10.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
+                                    .clip(RoundedCornerShape(14.dp))
+                                    .clickable {
+                                        val targetSurah = QuranRepository.allSurahMeta.find { it.number == bannerSurahNum }
+                                            ?: QuranRepository.allSurahMeta.firstOrNull()
+                                        if (targetSurah != null) {
+                                            openSurah(targetSurah, bannerPage)
+                                        }
+                                    },
+                                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f),
+                                shape = RoundedCornerShape(14.dp),
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.35f))
                             ) {
-                                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
-                                    Surface(
-                                        shape = CircleShape,
-                                        color = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(36.dp)
-                                    ) {
-                                        Box(contentAlignment = Alignment.Center) {
-                                            Icon(
-                                                imageVector = Icons.AutoMirrored.Filled.MenuBook,
-                                                contentDescription = null,
-                                                tint = Color.White,
-                                                modifier = Modifier.size(18.dp)
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                                        Surface(
+                                            shape = CircleShape,
+                                            color = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(36.dp)
+                                        ) {
+                                            Box(contentAlignment = Alignment.Center) {
+                                                Icon(
+                                                    imageVector = Icons.AutoMirrored.Filled.MenuBook,
+                                                    contentDescription = null,
+                                                    tint = Color.White,
+                                                    modifier = Modifier.size(18.dp)
+                                                )
+                                            }
+                                        }
+                                        Spacer(modifier = Modifier.width(10.dp))
+                                        Column {
+                                            Text(
+                                                text = "Terakhir Dibaca (Lanjutkan)",
+                                                fontSize = 11.sp,
+                                                fontWeight = FontWeight.SemiBold,
+                                                color = MaterialTheme.colorScheme.primary
+                                            )
+                                            Text(
+                                                text = "QS. $bannerSurah • Halaman $bannerPage",
+                                                fontSize = 13.5.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = MaterialTheme.colorScheme.onSurface
                                             )
                                         }
                                     }
-                                    Spacer(modifier = Modifier.width(10.dp))
-                                    Column {
-                                        Text(
-                                            text = "Terakhir Dibaca (Lanjutkan)",
-                                            fontSize = 11.sp,
-                                            fontWeight = FontWeight.SemiBold,
-                                            color = MaterialTheme.colorScheme.primary
-                                        )
-                                        Text(
-                                            text = "QS. $bannerSurah • Halaman $bannerPage",
-                                            fontSize = 13.5.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = MaterialTheme.colorScheme.onSurface
-                                        )
-                                    }
+                                    Text(
+                                        text = "Lanjut ›",
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
                                 }
-                                Text(
-                                    text = "Lanjut ›",
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
                             }
                         }
                     }
@@ -618,6 +617,41 @@ fun QuranScreen(
                                 }
                             }
                         } else {
+                            item {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 4.dp, vertical = 2.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "${historyItems.size} Riwayat Tersimpan",
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    TextButton(
+                                        onClick = { showConfirmClearQuranDialog = true },
+                                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
+                                        modifier = Modifier.height(28.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.DeleteSweep,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.error,
+                                            modifier = Modifier.size(15.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text(
+                                            text = "Hapus Riwayat",
+                                            fontSize = 11.5.sp,
+                                            color = MaterialTheme.colorScheme.error,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                }
+                            }
                             items(historyItems, key = { "${it.surahNumber}_${it.pageNumber}_${it.timestamp}" }) { item ->
                                 Card(
                                     modifier = Modifier
@@ -1996,6 +2030,46 @@ fun QuranScreen(
                 confirmButton = {
                     TextButton(onClick = { isDownloadingAllMushaf = false }) {
                         Text("Lanjutkan di Latar Belakang")
+                    }
+                }
+            )
+        }
+
+        // ==================== DIALOG 3: KONFIRMASI HAPUS RIWAYAT QURAN ====================
+        if (showConfirmClearQuranDialog) {
+            AlertDialog(
+                onDismissRequest = { showConfirmClearQuranDialog = false },
+                title = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.DeleteSweep, contentDescription = null, tint = MaterialTheme.colorScheme.error)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Hapus Riwayat Qur'an?", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    }
+                },
+                text = {
+                    Text(
+                        "Daftar riwayat bacaan Al-Qur'an dan penanda terakhir dibaca akan dibersihkan. Halaman favorit Anda tetap aman tersimpan.",
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            prefs.clearQuranReadingHistory()
+                            quranHistoryList = emptyList()
+                            lastReadPage = 0
+                            showConfirmClearQuranDialog = false
+                            Toast.makeText(context, "Riwayat Al-Qur'an telah dibersihkan", Toast.LENGTH_SHORT).show()
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                    ) {
+                        Text("Hapus", color = Color.White, fontWeight = FontWeight.Bold)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showConfirmClearQuranDialog = false }) {
+                        Text("Batal")
                     }
                 }
             )

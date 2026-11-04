@@ -33,7 +33,7 @@ data class DoaHistoryItem(
     val timestamp: Long = System.currentTimeMillis()
 )
 
-class PreferencesManager(context: Context) {
+class PreferencesManager(private val context: Context) {
     private val prefs: SharedPreferences =
         context.getSharedPreferences("doa_muslimin_prefs", Context.MODE_PRIVATE)
 
@@ -413,5 +413,31 @@ class PreferencesManager(context: Context) {
             })
         }
         prefs.edit().putString(KEY_DOA_HISTORY, array.toString()).apply()
+    }
+
+    // --- Reset & Hapus Riwayat Bacaan (Aman: Favorit Tetap Terjaga) ---
+    fun clearQuranReadingHistory(clearDailyStats: Boolean = false) {
+        val editor = prefs.edit().remove(KEY_QURAN_HISTORY)
+        if (clearDailyStats) {
+            editor.remove(KEY_QURAN_DAILY_READ_LOG)
+        }
+        editor.apply()
+
+        // Reset penanda halaman terakhir dibaca pada engine bacaan
+        val adzkarunaPrefs = context.getSharedPreferences("adzkaruna_quran_prefs", Context.MODE_PRIVATE)
+        adzkarunaPrefs.edit()
+            .remove("last_read_page")
+            .remove("last_read_surah")
+            .remove("last_read_surah_number")
+            .apply()
+    }
+
+    fun clearDoaReadingHistory() {
+        prefs.edit().remove(KEY_DOA_HISTORY).apply()
+    }
+
+    fun clearAllReadingHistory(clearDailyStats: Boolean = false) {
+        clearQuranReadingHistory(clearDailyStats)
+        clearDoaReadingHistory()
     }
 }

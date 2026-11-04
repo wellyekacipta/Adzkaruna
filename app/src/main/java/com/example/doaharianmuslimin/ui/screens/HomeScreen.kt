@@ -6,6 +6,7 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.ContextWrapper
 import android.content.Intent
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.animation.*
@@ -92,15 +93,17 @@ fun HomeScreen(
     var arabicFontSize by remember { mutableFloatStateOf(prefs.getArabicFontSize()) }
     var showLatin by remember { mutableStateOf(prefs.isShowLatin()) }
     val communityPrayers by communityRepo.prayersFlow.collectAsState()
-    val homeQuranHistory = remember(currentNavTab) { prefs.getQuranReadingHistory().firstOrNull() }
-    val homeDoaHistory = remember(currentNavTab) { prefs.getDoaReadingHistory().firstOrNull() }
-    val doaHistoryList = remember(currentNavTab, filterOnlyHistory) { prefs.getDoaReadingHistory() }
-    val quranWeeklyStats = remember(currentNavTab) { prefs.getQuranWeeklyStats() }
+    var historyRefreshKey by remember { mutableIntStateOf(0) }
+    val homeQuranHistory = remember(currentNavTab, historyRefreshKey) { prefs.getQuranReadingHistory().firstOrNull() }
+    val homeDoaHistory = remember(currentNavTab, historyRefreshKey) { prefs.getDoaReadingHistory().firstOrNull() }
+    val doaHistoryList = remember(currentNavTab, filterOnlyHistory, historyRefreshKey) { prefs.getDoaReadingHistory() }
+    val quranWeeklyStats = remember(currentNavTab, historyRefreshKey) { prefs.getQuranWeeklyStats() }
 
     var selectedDoaForDetail by remember { mutableStateOf<Doa?>(null) }
     var isQuranImmersive by remember { mutableStateOf(false) }
     var quranTargetPage by remember { mutableStateOf<Int?>(null) }
     var showExitConfirmationDialog by remember { mutableStateOf(false) }
+    var showConfirmClearDoaDialog by remember { mutableStateOf(false) }
 
     // Menangani tombol kembali sistem Android di seluruh aplikasi (kembali ke Home, lalu pop-up keluar)
     BackHandler(enabled = true) {
@@ -777,6 +780,41 @@ fun HomeScreen(
                                         }
                                     }
                                 } else {
+                                    item {
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(horizontal = 4.dp, vertical = 2.dp),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text(
+                                                text = "${doaHistoryList.size} Riwayat Tersimpan",
+                                                fontSize = 12.sp,
+                                                fontWeight = FontWeight.SemiBold,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                            TextButton(
+                                                onClick = { showConfirmClearDoaDialog = true },
+                                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
+                                                modifier = Modifier.height(28.dp)
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.DeleteSweep,
+                                                    contentDescription = null,
+                                                    tint = MaterialTheme.colorScheme.error,
+                                                    modifier = Modifier.size(15.dp)
+                                                )
+                                                Spacer(modifier = Modifier.width(4.dp))
+                                                Text(
+                                                    text = "Hapus Riwayat",
+                                                    fontSize = 11.5.sp,
+                                                    color = MaterialTheme.colorScheme.error,
+                                                    fontWeight = FontWeight.Bold
+                                                )
+                                            }
+                                        }
+                                    }
                                     items(doaHistoryList, key = { "${it.doaId}_${it.timestamp}" }) { item ->
                                         val foundDoa = DoaRepository.doaList.find { it.id == item.doaId }
                                         Card(
@@ -821,7 +859,7 @@ fun HomeScreen(
                                                             maxLines = 1,
                                                             overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                                                         )
-                                                        val sdf = SimpleDateFormat("dd MMM yyyy, HH:mm 'WIB'", Locale("id", "ID"))
+                                                        val sdf = SimpleDateFormat("dd MMM yyyy, HH:mm 'WIB'", Locale.forLanguageTag("id-ID"))
                                                         Text(
                                                             text = "Dibaca: ${sdf.format(Date(item.timestamp))}",
                                                             fontSize = 11.sp,
@@ -1016,6 +1054,45 @@ fun HomeScreen(
                 onToggleLatin = { newShow ->
                     showLatin = newShow
                     prefs.setShowLatin(newShow)
+                }
+            )
+        }
+
+        // Dialog Konfirmasi Hapus Riwayat Doa
+        if (showConfirmClearDoaDialog) {
+            AlertDialog(
+                onDismissRequest = { showConfirmClearDoaDialog = false },
+                title = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.DeleteSweep, contentDescription = null, tint = MaterialTheme.colorScheme.error)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Hapus Riwayat Doa?", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    }
+                },
+                text = {
+                    Text(
+                        "Semua daftar riwayat doa yang pernah Anda buka akan dibersihkan. Doa favorit Anda tetap aman tersimpan.",
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            prefs.clearDoaReadingHistory()
+                            historyRefreshKey++
+                            showConfirmClearDoaDialog = false
+                            Toast.makeText(context, "Riwayat Doa telah dibersihkan", Toast.LENGTH_SHORT).show()
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                    ) {
+                        Text("Hapus", color = Color.White, fontWeight = FontWeight.Bold)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showConfirmClearDoaDialog = false }) {
+                        Text("Batal")
+                    }
                 }
             )
         }

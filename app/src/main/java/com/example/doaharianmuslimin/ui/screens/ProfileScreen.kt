@@ -5,6 +5,7 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
@@ -14,6 +15,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -76,7 +78,7 @@ fun ProfileScreen(
             hours < 24 -> "$hours jam lalu"
             days < 7 -> "$days hari lalu"
             else -> {
-                val sdf = SimpleDateFormat("dd MMM yyyy", Locale("id", "ID"))
+                val sdf = SimpleDateFormat("dd MMM yyyy", Locale.forLanguageTag("id-ID"))
                 sdf.format(Date(timestamp))
             }
         }
@@ -675,10 +677,14 @@ fun ProfileScreen(
 
     // ==================== DIALOG RIWAYAT & FAVORIT ====================
     if (showHistoryFavoriteDialog) {
-        val quranHistory = remember { prefs.getQuranReadingHistory() }
-        val quranFavorites = remember { prefs.getQuranFavorites() }
-        val doaHistory = remember { prefs.getDoaReadingHistory() }
-        val doaFavoriteIds = remember { prefs.getFavoriteIds() }
+        var refreshKey by remember { mutableIntStateOf(0) }
+        var showConfirmClearQuranDialog by remember { mutableStateOf(false) }
+        var showConfirmClearDoaDialog by remember { mutableStateOf(false) }
+
+        val quranHistory = remember(refreshKey) { prefs.getQuranReadingHistory() }
+        val quranFavorites = remember(refreshKey) { prefs.getQuranFavorites() }
+        val doaHistory = remember(refreshKey) { prefs.getDoaReadingHistory() }
+        val doaFavoriteIds = remember(refreshKey) { prefs.getFavoriteIds() }
         val doaFavorites = remember(doaFavoriteIds) {
             DoaRepository.doaList.filter { doaFavoriteIds.contains(it.id) }
         }
@@ -707,7 +713,7 @@ fun ProfileScreen(
                             selected = historyFavoriteTab == 0,
                             onClick = { historyFavoriteTab = 0 },
                             text = { Text("Al-Qur'an", fontWeight = FontWeight.Bold, fontSize = 12.sp) },
-                            icon = { Icon(Icons.Default.MenuBook, contentDescription = null, modifier = Modifier.size(18.dp)) }
+                            icon = { Icon(Icons.AutoMirrored.Filled.MenuBook, contentDescription = null, modifier = Modifier.size(18.dp)) }
                         )
                         Tab(
                             selected = historyFavoriteTab == 1,
@@ -726,12 +732,39 @@ fun ProfileScreen(
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             item {
-                                Text(
-                                    text = "Riwayat Terakhir Dibaca",
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "Riwayat Terakhir Dibaca",
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                    if (quranHistory.isNotEmpty()) {
+                                        TextButton(
+                                            onClick = { showConfirmClearQuranDialog = true },
+                                            contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp),
+                                            modifier = Modifier.height(26.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.DeleteSweep,
+                                                contentDescription = null,
+                                                tint = MaterialTheme.colorScheme.error,
+                                                modifier = Modifier.size(14.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Text(
+                                                text = "Hapus Riwayat",
+                                                fontSize = 11.sp,
+                                                color = MaterialTheme.colorScheme.error,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
+                                    }
+                                }
                             }
 
                             if (quranHistory.isEmpty()) {
@@ -760,7 +793,7 @@ fun ProfileScreen(
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
                                             Icon(
-                                                Icons.Default.MenuBook,
+                                                Icons.AutoMirrored.Filled.MenuBook,
                                                 contentDescription = null,
                                                 tint = MaterialTheme.colorScheme.primary,
                                                 modifier = Modifier.size(16.dp)
@@ -915,12 +948,39 @@ fun ProfileScreen(
 
                             item {
                                 Spacer(modifier = Modifier.height(6.dp))
-                                Text(
-                                    text = "Riwayat Doa Terakhir Dibaca",
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "Riwayat Doa Terakhir Dibaca",
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                    if (doaHistory.isNotEmpty()) {
+                                        TextButton(
+                                            onClick = { showConfirmClearDoaDialog = true },
+                                            contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp),
+                                            modifier = Modifier.height(26.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.DeleteSweep,
+                                                contentDescription = null,
+                                                tint = MaterialTheme.colorScheme.error,
+                                                modifier = Modifier.size(14.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Text(
+                                                text = "Hapus Riwayat",
+                                                fontSize = 11.sp,
+                                                color = MaterialTheme.colorScheme.error,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
+                                    }
+                                }
                             }
 
                             if (doaHistory.isEmpty()) {
@@ -984,6 +1044,84 @@ fun ProfileScreen(
                 }
             }
         )
+
+        // Konfirmasi Hapus Riwayat Al-Qur'an
+        if (showConfirmClearQuranDialog) {
+            AlertDialog(
+                onDismissRequest = { showConfirmClearQuranDialog = false },
+                title = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.DeleteSweep, contentDescription = null, tint = MaterialTheme.colorScheme.error)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Hapus Riwayat Qur'an?", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    }
+                },
+                text = {
+                    Text(
+                        "Riwayat bacaan Al-Qur'an dan penanda terakhir dibaca akan dibersihkan. Halaman favorit Anda tetap aman tersimpan.",
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            prefs.clearQuranReadingHistory()
+                            refreshKey++
+                            showConfirmClearQuranDialog = false
+                            Toast.makeText(context, "Riwayat Al-Qur'an telah dibersihkan", Toast.LENGTH_SHORT).show()
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                    ) {
+                        Text("Hapus", color = Color.White, fontWeight = FontWeight.Bold)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showConfirmClearQuranDialog = false }) {
+                        Text("Batal")
+                    }
+                }
+            )
+        }
+
+        // Konfirmasi Hapus Riwayat Doa
+        if (showConfirmClearDoaDialog) {
+            AlertDialog(
+                onDismissRequest = { showConfirmClearDoaDialog = false },
+                title = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.DeleteSweep, contentDescription = null, tint = MaterialTheme.colorScheme.error)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Hapus Riwayat Doa?", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    }
+                },
+                text = {
+                    Text(
+                        "Riwayat doa yang pernah Anda buka akan dibersihkan. Doa favorit Anda tetap aman tersimpan.",
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            prefs.clearDoaReadingHistory()
+                            refreshKey++
+                            showConfirmClearDoaDialog = false
+                            Toast.makeText(context, "Riwayat Doa telah dibersihkan", Toast.LENGTH_SHORT).show()
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                    ) {
+                        Text("Hapus", color = Color.White, fontWeight = FontWeight.Bold)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showConfirmClearDoaDialog = false }) {
+                        Text("Batal")
+                    }
+                }
+            )
+        }
     }
 
     // ==================== DIALOG INFAQ & SEDEKAH ====================

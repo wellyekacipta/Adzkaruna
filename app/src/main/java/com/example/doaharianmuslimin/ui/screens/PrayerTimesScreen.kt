@@ -738,7 +738,7 @@ fun PrayerTimesScreen(
                             )
                         ) {
                             Icon(
-                                imageVector = if (currentlyPlayingVoice != null) Icons.Default.Stop else Icons.Default.VolumeUp,
+                                imageVector = if (currentlyPlayingVoice != null) Icons.Default.Stop else Icons.AutoMirrored.Filled.VolumeUp,
                                 contentDescription = null,
                                 modifier = Modifier.size(18.dp)
                             )
