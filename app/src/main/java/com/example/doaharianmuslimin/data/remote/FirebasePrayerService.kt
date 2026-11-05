@@ -5,11 +5,12 @@ import com.example.doaharianmuslimin.data.model.CommunityPrayer
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.Query
-import kotlinx.coroutines.tasks.await
 
 /**
  * Layanan Realtime Firebase Firestore & Otentikasi Anonim (Tanpa Login)
+ * Dioptimalkan dengan manajemen lifecycle ListenerRegistration untuk menghemat baterai secara drastis.
  */
 object FirebasePrayerService {
     private const val TAG = "FirebasePrayerService"
@@ -17,6 +18,9 @@ object FirebasePrayerService {
 
     private val auth by lazy { FirebaseAuth.getInstance() }
     private val firestore by lazy { FirebaseFirestore.getInstance() }
+
+    @Volatile
+    private var activeListener: ListenerRegistration? = null
 
     /**
      * Otentikasi Anonim: User langsung mendapat UID unik tanpa perlu input email/password
@@ -37,10 +41,16 @@ object FirebasePrayerService {
     }
 
     /**
-     * Memasang listener realtime untuk update doa otomatis detik itu juga
+     * Memasang listener realtime untuk update doa otomatis detik itu juga.
+     * Mencegah duplikasi listener dan hemat baterai.
      */
+    @Synchronized
     fun listenToPrayersRealtime(onPrayersUpdated: (List<CommunityPrayer>) -> Unit) {
-        firestore.collection(COLLECTION_PRAYERS)
+        if (activeListener != null) {
+            return // Sudah aktif mendengarkan, cegah koneksi ganda
+        }
+
+        activeListener = firestore.collection(COLLECTION_PRAYERS)
             .orderBy("createdAtTimestamp", Query.Direction.DESCENDING)
             .limit(50)
             .addSnapshotListener { snapshot, error ->
@@ -50,7 +60,7 @@ object FirebasePrayerService {
                 }
 
                 if (snapshot != null && !snapshot.isEmpty) {
-                    val list = mutableListOf<CommunityPrayer>()
+                    val list = ArrayList<CommunityPrayer>(snapshot.size())
                     for (doc in snapshot.documents) {
                         try {
                             val createdAt = doc.getLong("createdAtTimestamp")
@@ -76,6 +86,16 @@ object FirebasePrayerService {
                     onPrayersUpdated(list)
                 }
             }
+    }
+
+    /**
+     * Mematikan listener realtime saat aplikasi diminimalkan/background untuk menghemat baterai 100%.
+     */
+    @Synchronized
+    fun stopListeningRealtime() {
+        activeListener?.remove()
+        activeListener = null
+        Log.d(TAG, "Firestore Realtime Listener dihentikan untuk menghemat baterai.")
     }
 
     /**

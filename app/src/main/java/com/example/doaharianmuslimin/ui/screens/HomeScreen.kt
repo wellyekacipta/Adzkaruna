@@ -35,20 +35,19 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.example.doaharianmuslimin.R
 import com.example.doaharianmuslimin.data.AppThemeMode
 import com.example.doaharianmuslimin.data.CommunityPrayerRepository
 import com.example.doaharianmuslimin.data.DoaRepository
-import com.example.doaharianmuslimin.data.IslamicDateHelper
 import com.example.doaharianmuslimin.data.PreferencesManager
-import com.example.doaharianmuslimin.data.PrayerTimesRepository
 import com.example.doaharianmuslimin.data.model.Doa
 import com.example.doaharianmuslimin.data.model.DoaCategory
-import com.example.doaharianmuslimin.data.model.PrayerSchedule
 import com.example.doaharianmuslimin.ui.components.*
 import com.example.doaharianmuslimin.ui.theme.AccentGold
 import com.example.doaharianmuslimin.ui.theme.PrimaryTosca
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.Calendar
 import java.text.SimpleDateFormat
@@ -85,9 +84,26 @@ fun HomeScreen(
 ) {
     val context = LocalContext.current
     val prefs = remember { PreferencesManager(context) }
-    val communityRepo = remember { CommunityPrayerRepository(context) }
+    val communityRepo = remember { CommunityPrayerRepository.getInstance(context) }
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    // Lifecycle-aware Firestore Listener: Menghemat baterai saat aplikasi di background / minimize
+    DisposableEffect(lifecycleOwner, communityRepo) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_START || event == Lifecycle.Event.ON_RESUME) {
+                communityRepo.startListening()
+            } else if (event == Lifecycle.Event.ON_STOP) {
+                communityRepo.stopListening()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+            communityRepo.stopListening()
+        }
+    }
 
     var currentNavTab by remember { mutableStateOf(BottomNavTab.HOME) }
     var activeSubScreen by remember { mutableStateOf(ActiveSubScreen.NONE) }
@@ -329,7 +345,7 @@ fun HomeScreen(
                                 }
                             }
                             Text(
-                                text = "Doa & Dzikir Harian Muslimin v1.47.0",
+                                text = "Doa & Dzikir Harian Muslimin v1.48.0",
                                 fontSize = 11.sp,
                                 color = Color.White.copy(alpha = 0.85f)
                             )
@@ -564,7 +580,7 @@ fun HomeScreen(
                         // ==================== KHUSUS TAB HOME ====================
                         if (currentNavTab == BottomNavTab.HOME && searchQuery.isEmpty()) {
                             // 1. Doa Pilihan Hari Ini (Muncul berdasarkan apa yang difavoritkan user)
-                            item {
+                            item(key = "daily_featured_doa", contentType = "daily_featured_doa") {
                                 Column {
                                     if (isFeaturedFromFavorites) {
                                         Surface(
@@ -591,7 +607,7 @@ fun HomeScreen(
                                 }
                             }
 
-                            item {
+                            item(key = "main_menu_grid", contentType = "main_menu_grid") {
                                 MainMenuGrid(
                                     onMenuItemClick = { menuItem ->
                                         when (menuItem) {
@@ -612,10 +628,10 @@ fun HomeScreen(
                             }
 
                             // Quick Access: Terakhir Dibaca Al-Qur'an & Doa (Riwayat Nyata)
-                            item {
-                                val quranHist = homeQuranHistory
-                                val doaHist = homeDoaHistory
-                                if (quranHist != null || doaHist != null) {
+                            val quranHist = homeQuranHistory
+                            val doaHist = homeDoaHistory
+                            if (quranHist != null || doaHist != null) {
+                                item(key = "quick_access_history", contentType = "quick_access_history") {
                                     Surface(
                                         modifier = Modifier.fillMaxWidth(),
                                         color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f),
@@ -707,7 +723,7 @@ fun HomeScreen(
                             }
 
                             // Statistik Membaca Al-Qur'an (Senin - Ahad) - Di bawah Aktivitas Terakhir Dibaca
-                            item {
+                            item(key = "quran_weekly_stats", contentType = "quran_weekly_stats") {
                                 QuranWeeklyStatsCard(
                                     weeklyStats = quranWeeklyStats,
                                     onNavigateToQuran = {
@@ -717,7 +733,7 @@ fun HomeScreen(
                             }
 
                             // 4. Aamiinkan Doa Saudaramu (Dipindah ke bawah Menu Utama)
-                            item {
+                            item(key = "amiinkan_doa_section", contentType = "amiinkan_doa_section") {
                                 AmiinkanDoaSection(
                                     prayers = communityPrayers,
                                     onArrowClick = { showCreatePrayerSheet = true },

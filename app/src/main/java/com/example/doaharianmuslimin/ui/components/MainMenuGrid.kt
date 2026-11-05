@@ -33,6 +33,11 @@ enum class MainMenuItem(
     BELAJAR_ISLAM("Belajar Islam", "Perluas Wawasan Keislaman", Icons.Default.AutoAwesome)
 }
 
+// Static values to avoid re-allocations on every frame
+private val MenuCardShape = RoundedCornerShape(16.dp)
+private val MenuIconShape = RoundedCornerShape(12.dp)
+private val ChunkedMenuItems = MainMenuItem.entries.chunked(2)
+
 @Composable
 fun MainMenuGrid(
     onMenuItemClick: (MainMenuItem) -> Unit,
@@ -42,10 +47,7 @@ fun MainMenuGrid(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        val items = MainMenuItem.entries
-        val chunked = items.chunked(2)
-
-        chunked.forEach { rowItems ->
+        ChunkedMenuItems.forEach { rowItems ->
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -55,9 +57,9 @@ fun MainMenuGrid(
                         modifier = Modifier
                             .weight(1f)
                             .height(108.dp)
-                            .clip(RoundedCornerShape(16.dp))
+                            .clip(MenuCardShape)
                             .clickable { onMenuItemClick(item) },
-                        shape = RoundedCornerShape(16.dp),
+                        shape = MenuCardShape,
                         colors = CardDefaults.cardColors(
                             containerColor = MaterialTheme.colorScheme.surface
                         ),
@@ -73,7 +75,7 @@ fun MainMenuGrid(
                         ) {
                             Surface(
                                 color = MaterialTheme.colorScheme.primaryContainer,
-                                shape = RoundedCornerShape(12.dp),
+                                shape = MenuIconShape,
                                 modifier = Modifier.size(38.dp)
                             ) {
                                 Box(contentAlignment = Alignment.Center) {

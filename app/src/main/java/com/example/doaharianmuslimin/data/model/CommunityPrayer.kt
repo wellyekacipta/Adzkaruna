@@ -1,12 +1,12 @@
 package com.example.doaharianmuslimin.data.model
 
-import androidx.compose.runtime.Stable
+import androidx.compose.runtime.Immutable
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
-@Stable
+@Immutable
 data class CommunityPrayer(
     val id: String,
     val senderName: String,
@@ -14,23 +14,29 @@ data class CommunityPrayer(
     val prayerText: String,
     val timestamp: String,
     val createdAt: Long = 0L,
-    var aamiinCount: Int = 0,
-    var likeCount: Int = 0,
-    var isAamiined: Boolean = false,
-    var isLiked: Boolean = false
+    val aamiinCount: Int = 0,
+    val likeCount: Int = 0,
+    val isAamiined: Boolean = false,
+    val isLiked: Boolean = false,
+    val displayTime: String = computeDisplayTime(createdAt, timestamp, id)
 ) {
-    /**
-     * Menghasilkan teks waktu yang dinamis dan beradaptasi secara alami:
-     * - < 1 menit: "Baru saja"
-     * - < 60 menit: "X menit lalu"
-     * - Hari ini: "Hari ini, HH:mm WIB"
-     * - Kemarin: "Kemarin, HH:mm WIB"
-     * - Lebih lama: "dd MMM yyyy, HH:mm WIB"
-     *
-     * Dioptimalkan dengan ThreadLocal Formatter untuk performa scrolling 120 FPS tanpa GC freeze.
-     */
-    val displayTime: String
-        get() {
+    companion object {
+        private val timeFormatter = object : ThreadLocal<SimpleDateFormat>() {
+            override fun initialValue(): SimpleDateFormat {
+                return SimpleDateFormat("HH:mm 'WIB'", Locale.forLanguageTag("id-ID"))
+            }
+        }
+
+        private val fullFormatter = object : ThreadLocal<SimpleDateFormat>() {
+            override fun initialValue(): SimpleDateFormat {
+                return SimpleDateFormat("dd MMM yyyy, HH:mm 'WIB'", Locale.forLanguageTag("id-ID"))
+            }
+        }
+
+        /**
+         * Dihitung sekali saja saat pembuatan objek untuk menjamin scrolling 120 FPS tanpa lag / GC freeze.
+         */
+        fun computeDisplayTime(createdAt: Long, timestamp: String, id: String): String {
             val now = System.currentTimeMillis()
             val millis = when {
                 createdAt > 0L -> createdAt
@@ -43,6 +49,12 @@ data class CommunityPrayer(
             }
 
             val minutes = diff / 60_000L
+            if (diff < 60_000L) {
+                return "Baru saja"
+            }
+            if (minutes < 60L) {
+                return "$minutes menit lalu"
+            }
 
             val calNow = Calendar.getInstance()
             val calPrayer = Calendar.getInstance().apply { timeInMillis = millis }
@@ -58,24 +70,9 @@ data class CommunityPrayer(
             val fullFormat = fullFormatter.get() ?: SimpleDateFormat("dd MMM yyyy, HH:mm 'WIB'", Locale.forLanguageTag("id-ID"))
 
             return when {
-                diff < 60_000L -> "Baru saja"
-                minutes < 60L -> "$minutes menit lalu"
                 isSameDay -> "Hari ini, ${timeFormat.format(Date(millis))}"
                 isYesterday -> "Kemarin, ${timeFormat.format(Date(millis))}"
                 else -> fullFormat.format(Date(millis))
-            }
-        }
-
-    companion object {
-        private val timeFormatter = object : ThreadLocal<SimpleDateFormat>() {
-            override fun initialValue(): SimpleDateFormat {
-                return SimpleDateFormat("HH:mm 'WIB'", Locale.forLanguageTag("id-ID"))
-            }
-        }
-
-        private val fullFormatter = object : ThreadLocal<SimpleDateFormat>() {
-            override fun initialValue(): SimpleDateFormat {
-                return SimpleDateFormat("dd MMM yyyy, HH:mm 'WIB'", Locale.forLanguageTag("id-ID"))
             }
         }
 

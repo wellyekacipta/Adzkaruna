@@ -1,5 +1,8 @@
 package com.example.doaharianmuslimin.data.model
 
+import androidx.compose.runtime.Immutable
+
+@Immutable
 data class QuranDayStat(
     val dayIndex: Int,          // 0 = Senin, 1 = Selasa, ..., 6 = Ahad
     val dayName: String,         // "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Ahad"
@@ -12,6 +15,7 @@ data class QuranDayStat(
     val isFuture: Boolean        // Apakah hari di masa depan
 )
 
+@Immutable
 data class QuranWeeklyStats(
     val days: List<QuranDayStat>,
     val activeDaysCount: Int,

@@ -3,8 +3,6 @@ package com.example.doaharianmuslimin.data
 import android.content.Context
 import android.util.Log
 import com.example.doaharianmuslimin.data.model.CommunityPrayer
-import com.example.doaharianmuslimin.data.remote.CloudConfig
-import com.example.doaharianmuslimin.data.remote.CloudPrayerSync
 import com.example.doaharianmuslimin.data.remote.FirebasePrayerService
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -18,13 +16,23 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-class CommunityPrayerRepository(context: Context) {
-    private val prefs = context.getSharedPreferences("community_prayers_prefs", Context.MODE_PRIVATE)
+class CommunityPrayerRepository private constructor(context: Context) {
+    private val appContext = context.applicationContext
+    private val prefs = appContext.getSharedPreferences("community_prayers_prefs", Context.MODE_PRIVATE)
     private val scope = CoroutineScope(Dispatchers.Default)
 
     companion object {
         private const val TAG = "CommunityPrayerRepo"
         private const val KEY_PRAYERS_JSON = "prayers_json_list"
+
+        @Volatile
+        private var instance: CommunityPrayerRepository? = null
+
+        fun getInstance(context: Context): CommunityPrayerRepository {
+            return instance ?: synchronized(this) {
+                instance ?: CommunityPrayerRepository(context).also { instance = it }
+            }
+        }
     }
 
     // Doa awal resmi (Arif & Sitti) dengan timestamp asli Oktober 2026
@@ -57,20 +65,9 @@ class CommunityPrayerRepository(context: Context) {
     init {
         val loaded = loadPrayersFromStorage()
         _prayersFlow.value = loaded
-        syncWithCloud()
-        initFirebaseRealtime()
     }
 
-    private fun formatTimestampFromMillis(millis: Long): String {
-        val sdf = SimpleDateFormat("dd MMM yyyy, HH:mm 'WIB'", Locale.forLanguageTag("id-ID"))
-        return sdf.format(Date(millis))
-    }
-
-    private fun isDummyPrayer(prayer: CommunityPrayer): Boolean {
-        return prayer.id.startsWith("sim_") || prayer.id.startsWith("mock_")
-    }
-
-    private fun initFirebaseRealtime() {
+    fun startListening() {
         try {
             FirebasePrayerService.ensureAnonymousAuth()
             FirebasePrayerService.listenToPrayersRealtime { remotePrayers ->
@@ -86,22 +83,17 @@ class CommunityPrayerRepository(context: Context) {
         }
     }
 
-    private fun syncWithCloud() {
-        scope.launch {
-            if (CloudConfig.isCloudEnabled) {
-                try {
-                    val remote = CloudPrayerSync.fetchPrayersFromCloud()
-                    if (!remote.isNullOrEmpty()) {
-                        val valid = remote.filterNot { isDummyPrayer(it) }
-                        if (valid.isNotEmpty()) {
-                            mergeAndSavePrayers(valid)
-                        }
-                    }
-                } catch (e: Exception) {
-                    Log.e(TAG, "Gagal sync dengan Cloud", e)
-                }
-            }
-        }
+    fun stopListening() {
+        FirebasePrayerService.stopListeningRealtime()
+    }
+
+    private fun formatTimestampFromMillis(millis: Long): String {
+        val sdf = SimpleDateFormat("dd MMM yyyy, HH:mm 'WIB'", Locale.forLanguageTag("id-ID"))
+        return sdf.format(Date(millis))
+    }
+
+    private fun isDummyPrayer(prayer: CommunityPrayer): Boolean {
+        return prayer.id.startsWith("sim_") || prayer.id.startsWith("mock_")
     }
 
     private fun loadPrayersFromStorage(): List<CommunityPrayer> {
@@ -118,7 +110,7 @@ class CommunityPrayerRepository(context: Context) {
                 val id = obj.getString("id")
                 val sender = obj.getString("senderName")
 
-                // Hanya bersihkan ID dummy simulator jika ada
+                // Bersihkan ID dummy simulator jika ada
                 if (id.startsWith("sim_") || id.startsWith("mock_")) {
                     continue
                 }
@@ -167,24 +159,32 @@ class CommunityPrayerRepository(context: Context) {
 
     private fun savePrayers(list: List<CommunityPrayer>) {
         val distinctList = list.distinctBy { it.id }.sortedByDescending { it.createdAt }
-        val array = JSONArray()
-        for (item in distinctList) {
-            val obj = JSONObject().apply {
-                put("id", item.id)
-                put("senderName", item.senderName)
-                put("location", item.location)
-                put("prayerText", item.prayerText)
-                put("timestamp", item.timestamp)
-                put("createdAt", item.createdAt)
-                put("aamiinCount", item.aamiinCount)
-                put("likeCount", item.likeCount)
-                put("isAamiined", item.isAamiined)
-                put("isLiked", item.isLiked)
-            }
-            array.put(obj)
-        }
-        prefs.edit().putString(KEY_PRAYERS_JSON, array.toString()).apply()
         _prayersFlow.value = distinctList
+
+        // Tulis ke disk secara asynchronous di thread IO agar tidak memblokir UI thread
+        scope.launch(Dispatchers.IO) {
+            try {
+                val array = JSONArray()
+                for (item in distinctList) {
+                    val obj = JSONObject().apply {
+                        put("id", item.id)
+                        put("senderName", item.senderName)
+                        put("location", item.location)
+                        put("prayerText", item.prayerText)
+                        put("timestamp", item.timestamp)
+                        put("createdAt", item.createdAt)
+                        put("aamiinCount", item.aamiinCount)
+                        put("likeCount", item.likeCount)
+                        put("isAamiined", item.isAamiined)
+                        put("isLiked", item.isLiked)
+                    }
+                    array.put(obj)
+                }
+                prefs.edit().putString(KEY_PRAYERS_JSON, array.toString()).apply()
+            } catch (e: Exception) {
+                Log.e(TAG, "Gagal simpan doa ke storage", e)
+            }
+        }
     }
 
     /**
@@ -247,16 +247,11 @@ class CommunityPrayerRepository(context: Context) {
         current.add(0, newPrayer)
         savePrayers(current)
 
-        // Kirimkan ke Firebase & Cloud (asinkron tanpa menghalangi tampilan lokal)
+        // Kirimkan ke Firebase secara asinkron
         try {
             FirebasePrayerService.sendPrayer(newPrayer)
         } catch (e: Exception) {
             Log.e(TAG, "Gagal kirim doa baru ke Firebase", e)
-        }
-        scope.launch {
-            try {
-                CloudPrayerSync.postPrayerToCloud(newPrayer)
-            } catch (_: Exception) {}
         }
         return newPrayer
     }
@@ -278,11 +273,6 @@ class CommunityPrayerRepository(context: Context) {
                     FirebasePrayerService.decrementAamiin(prayerId)
                 }
             } catch (_: Exception) {}
-            scope.launch {
-                try {
-                    CloudPrayerSync.incrementAamiinInCloud(updatedItem.id, updatedItem.aamiinCount)
-                } catch (_: Exception) {}
-            }
         }
         return current
     }

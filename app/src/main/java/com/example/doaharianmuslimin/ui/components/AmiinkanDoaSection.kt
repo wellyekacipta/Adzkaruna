@@ -5,7 +5,6 @@ import android.content.Intent
 import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -35,6 +34,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.example.doaharianmuslimin.data.model.CommunityPrayer
+
+// Static shapes to prevent object allocation during scrolling
+private val HeaderCardShape = RoundedCornerShape(16.dp)
+private val PrayerCardShape = RoundedCornerShape(16.dp)
+private val AamiinButtonShape = RoundedCornerShape(10.dp)
+private val SenderAvatarShape = CircleShape
 
 @Composable
 fun AmiinkanDoaSection(
@@ -71,7 +76,7 @@ fun AmiinkanDoaSection(
         Surface(
             modifier = Modifier.fillMaxWidth(),
             color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f),
-            shape = RoundedCornerShape(16.dp),
+            shape = HeaderCardShape,
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
         ) {
             Row(
@@ -129,7 +134,11 @@ fun AmiinkanDoaSection(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            items(prayers, key = { it.id }) { prayer ->
+            items(
+                items = prayers,
+                key = { it.id },
+                contentType = { "CommunityPrayerCard" }
+            ) { prayer ->
                 CommunityPrayerCard(
                     prayer = prayer,
                     onClick = {
@@ -178,15 +187,12 @@ fun CommunityPrayerCard(
     onLikeClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val aamiinButtonColor by animateColorAsState(
-        targetValue = if (prayer.isAamiined) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primaryContainer,
-        label = "aamiinColor"
-    )
+    val aamiinButtonColor = if (prayer.isAamiined) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primaryContainer
 
     Card(
         onClick = onClick,
         modifier = modifier,
-        shape = RoundedCornerShape(16.dp),
+        shape = PrayerCardShape,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
@@ -206,7 +212,7 @@ fun CommunityPrayerCard(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Surface(
                         color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
-                        shape = CircleShape,
+                        shape = SenderAvatarShape,
                         modifier = Modifier.size(28.dp)
                     ) {
                         Box(contentAlignment = Alignment.Center) {
@@ -280,7 +286,7 @@ fun CommunityPrayerCard(
                         containerColor = aamiinButtonColor,
                         contentColor = if (prayer.isAamiined) Color.White else MaterialTheme.colorScheme.onPrimaryContainer
                     ),
-                    shape = RoundedCornerShape(10.dp),
+                    shape = AamiinButtonShape,
                     contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
                     modifier = Modifier.height(34.dp)
                 ) {

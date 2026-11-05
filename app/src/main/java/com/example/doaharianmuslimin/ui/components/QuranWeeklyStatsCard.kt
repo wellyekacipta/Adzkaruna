@@ -21,29 +21,36 @@ import com.example.doaharianmuslimin.data.model.QuranDayStat
 import com.example.doaharianmuslimin.data.model.QuranWeeklyStats
 import com.example.doaharianmuslimin.ui.theme.AccentGold
 
+// Static shapes to prevent object allocation during scrolling
+private val CardShape = RoundedCornerShape(16.dp)
+private val StatusShape = RoundedCornerShape(10.dp)
+private val ColumnShape = RoundedCornerShape(10.dp)
+private val BarOuterShape = RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp, bottomStart = 4.dp, bottomEnd = 4.dp)
+private val BarInnerShape = RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp, bottomStart = 4.dp, bottomEnd = 4.dp)
+
 @Composable
 fun QuranWeeklyStatsCard(
     weeklyStats: QuranWeeklyStats,
     onNavigateToQuran: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
-    val todayStat = weeklyStats.days.find { it.isToday } ?: weeklyStats.days.firstOrNull()
+    val todayStat = remember(weeklyStats) { weeklyStats.days.find { it.isToday } ?: weeklyStats.days.firstOrNull() }
     var selectedDayDetail by remember(weeklyStats) { mutableStateOf<QuranDayStat?>(null) }
     val activeDay = selectedDayDetail ?: todayStat
 
     // Skala tinggi grafik batang
-    val maxPages = (weeklyStats.days.maxOfOrNull { it.pagesRead } ?: 0).coerceAtLeast(1)
+    val maxPages = remember(weeklyStats) { (weeklyStats.days.maxOfOrNull { it.pagesRead } ?: 0).coerceAtLeast(1) }
     val chartMaxHeight = 90.dp
 
     Surface(
         modifier = modifier.fillMaxWidth(),
         color = MaterialTheme.colorScheme.surface,
-        shape = RoundedCornerShape(16.dp),
+        shape = CardShape,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.22f)),
         shadowElevation = 1.dp
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            // 1. Header Card: Judul & Badge Keaktifan Mingguan (X/7 Hari Aktif)
+            // 1. Header Card: Judul
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -84,7 +91,7 @@ fun QuranWeeklyStatsCard(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // 2. Teks Ringkas Status Membaca (Contoh: "Rabu sudah membaca 15 halaman")
+            // 2. Teks Ringkas Status Membaca
             val statusText = when {
                 activeDay != null && activeDay.pagesRead > 0 -> "${activeDay.dayName} sudah membaca ${activeDay.pagesRead} halaman"
                 activeDay != null && activeDay.isToday -> "${activeDay.dayName} belum membaca Al-Qur'an hari ini"
@@ -95,7 +102,7 @@ fun QuranWeeklyStatsCard(
 
             Surface(
                 color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f),
-                shape = RoundedCornerShape(10.dp),
+                shape = StatusShape,
                 border = BorderStroke(0.8.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.25f)),
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -166,7 +173,7 @@ private fun BarChartColumn(
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
-            .clip(RoundedCornerShape(10.dp))
+            .clip(ColumnShape)
             .clickable { onClick() }
             .padding(horizontal = 2.dp, vertical = 2.dp)
     ) {
@@ -188,7 +195,7 @@ private fun BarChartColumn(
             modifier = Modifier
                 .width(26.dp)
                 .height(maxHeight)
-                .clip(RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp, bottomStart = 4.dp, bottomEnd = 4.dp))
+                .clip(BarOuterShape)
                 .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)),
             contentAlignment = Alignment.BottomCenter
         ) {
@@ -198,7 +205,7 @@ private fun BarChartColumn(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(filledHeight)
-                        .clip(RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp, bottomStart = 4.dp, bottomEnd = 4.dp))
+                        .clip(BarInnerShape)
                         .background(barColor)
                 )
             }
@@ -206,7 +213,7 @@ private fun BarChartColumn(
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .clip(RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp, bottomStart = 4.dp, bottomEnd = 4.dp))
+                        .clip(BarOuterShape)
                         .background(AccentGold.copy(alpha = 0.15f))
                 )
             }
