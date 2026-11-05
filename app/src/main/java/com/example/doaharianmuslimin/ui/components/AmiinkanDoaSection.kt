@@ -34,7 +34,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.example.doaharianmuslimin.data.model.CommunityPrayer
-import com.example.doaharianmuslimin.ui.theme.LpmqFontFamily
 
 @Composable
 fun AmiinkanDoaSection(
@@ -67,85 +66,58 @@ fun AmiinkanDoaSection(
     }
 
     Column(modifier = modifier.fillMaxWidth()) {
-        // Header with + Button (Doakan Saudaramu & Hadits Mustajab)
+        // Header with + Button (Doakan Saudaramu)
         Surface(
             modifier = Modifier.fillMaxWidth(),
             color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f),
             shape = RoundedCornerShape(16.dp),
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
         ) {
-            Column(
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp)
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = "Doakan Saudaramu",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
                     )
-
-                    // Tombol + untuk menulis doa
-                    Surface(
-                        modifier = Modifier
-                            .size(36.dp)
-                            .clip(CircleShape)
-                            .clickable { onArrowClick() },
-                        color = MaterialTheme.colorScheme.primary,
-                        shape = CircleShape,
-                        shadowElevation = 2.dp
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(
-                                imageVector = Icons.Default.Add,
-                                contentDescription = "Tulis Doa Baru",
-                                tint = Color.White,
-                                modifier = Modifier.size(22.dp)
-                            )
-                        }
-                    }
+                    Spacer(modifier = Modifier.height(3.dp))
+                    Text(
+                        text = "“Sesungguhnya do’a seseorang kepada saudaranya karena Allah adalah do’a yang mustajab (terkabulkan).“ (HR. Muslim no. 2732)",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 10.sp,
+                        lineHeight = 14.5.sp
+                    )
                 }
 
-                Spacer(modifier = Modifier.height(6.dp))
+                Spacer(modifier = Modifier.width(12.dp))
 
-                // Kaligrafi Hadits Arab
-                Text(
-                    text = "إِنَّ دَعْوَةَ الأَخِ فِي اللَّهِ تُسْتَجَابُ",
-                    fontFamily = LpmqFontFamily,
-                    fontSize = 17.sp,
-                    fontWeight = FontWeight.Bold,
+                // Tombol + untuk menulis doa
+                Surface(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .clickable { onArrowClick() },
                     color = MaterialTheme.colorScheme.primary,
-                    lineHeight = 26.sp,
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                // Terjemah Hadits
-                Text(
-                    text = "“Sesungguhnya do’a seseorang kepada saudaranya karena Allah adalah do’a yang mustajab (terkabulkan).“",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    fontSize = 11.5.sp,
-                    lineHeight = 16.sp
-                )
-
-                Spacer(modifier = Modifier.height(3.dp))
-
-                // Sumber / Takhrij Hadits
-                Text(
-                    text = "(HR. Muslim no. 2732); dinyatakan oleh Az-Zarqani dalam Mukhtashar Al-Maqashid hlm. 458",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontSize = 10.sp,
-                    lineHeight = 14.sp
-                )
+                    shape = CircleShape,
+                    shadowElevation = 2.dp
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "Tulis Doa Baru",
+                            tint = Color.White,
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
+                }
             }
         }
 
