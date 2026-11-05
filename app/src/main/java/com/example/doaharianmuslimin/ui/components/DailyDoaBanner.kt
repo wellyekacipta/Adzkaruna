@@ -100,7 +100,10 @@ fun DailyDoaBanner(
                     text = doa.title,
                     style = MaterialTheme.typography.titleLarge,
                     color = Color.White,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -109,8 +112,8 @@ fun DailyDoaBanner(
                     text = doa.arabic,
                     color = Color.White,
                     fontFamily = UthmanicFontFamily,
-                    fontSize = 22.sp,
-                    lineHeight = 36.sp,
+                    fontSize = 20.sp,
+                    lineHeight = 34.sp,
                     textAlign = TextAlign.End,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
@@ -122,9 +125,9 @@ fun DailyDoaBanner(
                 Text(
                     text = "\"${doa.translation}\"",
                     color = Color.White.copy(alpha = 0.9f),
-                    fontSize = 13.sp,
+                    fontSize = 12.5.sp,
                     lineHeight = 18.sp,
-                    maxLines = 2,
+                    maxLines = 3,
                     overflow = TextOverflow.Ellipsis
                 )
 

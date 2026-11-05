@@ -12,6 +12,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -140,12 +142,16 @@ fun ProfileScreen(
                         text = "Profil & Pengaturan",
                         fontSize = 17.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color.White
+                        color = Color.White,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                     Text(
                         text = "Akun, Preferensi & Dukungan Pengembang",
                         fontSize = 11.sp,
-                        color = Color.White.copy(alpha = 0.85f)
+                        color = Color.White.copy(alpha = 0.85f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
             }
@@ -587,7 +593,7 @@ fun ProfileScreen(
                                         color = MaterialTheme.colorScheme.primary
                                     )
                                     Text(
-                                        text = "Doa & Dzikir Harian Muslimin v1.49.0",
+                                        text = "Doa & Dzikir Harian Muslimin v1.50.0",
                                         fontSize = 11.5.sp,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
@@ -1140,7 +1146,7 @@ fun ProfileScreen(
                 }
             },
             text = {
-                Column {
+                Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                     Text(
                         text = "Jazakumullah Khairan atas niat baik Anda untuk mendukung keberlangsungan aplikasi Adzkaruna agar tetap gratis dan bebas iklan selamanya.",
                         fontSize = 12.5.sp,

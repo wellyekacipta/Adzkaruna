@@ -59,16 +59,21 @@ fun DoaCard(
             ) {
                 Surface(
                     color = MaterialTheme.colorScheme.primaryContainer,
-                    shape = DoaTagShape
+                    shape = DoaTagShape,
+                    modifier = Modifier.weight(1f, fill = false)
                 ) {
                     Text(
                         text = if (doa.arabic.isBlank()) "📖 ${doa.category.title} • Keutamaan" else doa.category.title,
                         color = MaterialTheme.colorScheme.onPrimaryContainer,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                     )
                 }
+
+                Spacer(modifier = Modifier.width(6.dp))
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     IconButton(
@@ -149,25 +154,16 @@ fun DoaCard(
                 lineHeight = 20.sp
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Source & Detail hint
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+            // Source / Hadits (Maksimal 30 huruf, jika melebihi ditambahkan ...)
+            if (doa.source.isNotBlank()) {
+                Spacer(modifier = Modifier.height(8.dp))
+                val displaySource = if (doa.source.length > 30) "${doa.source.take(30)}..." else doa.source
                 Text(
-                    text = doa.source,
+                    text = displaySource,
                     fontSize = 11.sp,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-                )
-
-                Text(
-                    text = if (doa.arabic.isBlank()) "Baca Faedah Lengkap →" else "Selengkapnya →",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.primary
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
         }

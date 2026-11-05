@@ -10,6 +10,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -129,7 +131,16 @@ fun AmiinkanDoaSection(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // High-performance LazyRow dengan kartu seragam dan bisa di-klik untuk melihat detail
+        val screenWidth = androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp.dp
+        val cardWidth = remember(screenWidth) {
+            if (screenWidth < 360.dp) {
+                screenWidth - 48.dp
+            } else {
+                (screenWidth * 0.78f).coerceIn(265.dp, 310.dp)
+            }
+        }
+
+        // High-performance LazyRow dengan kartu seragam dan responsif
         LazyRow(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -153,8 +164,8 @@ fun AmiinkanDoaSection(
                         onToggleLike(prayer.id)
                     },
                     modifier = Modifier
-                        .width(285.dp)
-                        .height(190.dp) // Ukuran kotak seragam
+                        .width(cardWidth)
+                        .defaultMinSize(minHeight = 185.dp)
                 )
             }
         }
@@ -328,6 +339,7 @@ fun PrayerDetailDialog(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
                     .padding(22.dp)
             ) {
                 // Header Dialog: Nama Pengirim & Tombol Tutup

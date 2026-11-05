@@ -13,6 +13,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -36,18 +37,25 @@ enum class MainMenuItem(
 // Static values to avoid re-allocations on every frame
 private val MenuCardShape = RoundedCornerShape(16.dp)
 private val MenuIconShape = RoundedCornerShape(12.dp)
-private val ChunkedMenuItems = MainMenuItem.entries.chunked(2)
+private val ChunkedMenuItems2Col = MainMenuItem.entries.chunked(2)
+private val ChunkedMenuItems3Col = MainMenuItem.entries.chunked(3)
 
 @Composable
 fun MainMenuGrid(
     onMenuItemClick: (MainMenuItem) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val configuration = LocalConfiguration.current
+    val screenWidth = configuration.screenWidthDp.dp
+    // Responsif: 3 kolom untuk tablet / layar lebar (>= 600dp), 2 kolom untuk ponsel (< 600dp)
+    val columns = if (screenWidth >= 600.dp) 3 else 2
+    val chunkedMenuItems = if (columns == 3) ChunkedMenuItems3Col else ChunkedMenuItems2Col
+
     Column(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        ChunkedMenuItems.forEach { rowItems ->
+        chunkedMenuItems.forEach { rowItems ->
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -56,7 +64,7 @@ fun MainMenuGrid(
                     Card(
                         modifier = Modifier
                             .weight(1f)
-                            .height(108.dp)
+                            .defaultMinSize(minHeight = 104.dp)
                             .clip(MenuCardShape)
                             .clickable { onMenuItemClick(item) },
                         shape = MenuCardShape,
@@ -68,8 +76,8 @@ fun MainMenuGrid(
                     ) {
                         Column(
                             modifier = Modifier
-                                .fillMaxSize()
-                                .padding(10.dp),
+                                .fillMaxWidth()
+                                .padding(horizontal = 8.dp, vertical = 12.dp),
                             verticalArrangement = Arrangement.Center,
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
@@ -115,8 +123,11 @@ fun MainMenuGrid(
                     }
                 }
 
-                if (rowItems.size == 1) {
-                    Spacer(modifier = Modifier.weight(1f))
+                val remaining = columns - rowItems.size
+                if (remaining > 0) {
+                    repeat(remaining) {
+                        Spacer(modifier = Modifier.weight(1f))
+                    }
                 }
             }
         }

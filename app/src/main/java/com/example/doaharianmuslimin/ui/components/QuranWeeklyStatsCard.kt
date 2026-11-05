@@ -146,6 +146,7 @@ fun QuranWeeklyStatsCard(
                         fraction = fraction,
                         maxHeight = chartMaxHeight,
                         isSelected = isSelected,
+                        modifier = Modifier.weight(1f),
                         onClick = {
                             selectedDayDetail = dayStat
                         }
@@ -162,6 +163,7 @@ private fun BarChartColumn(
     fraction: Float,
     maxHeight: androidx.compose.ui.unit.Dp,
     isSelected: Boolean,
+    modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
     val barColor = when {
@@ -172,10 +174,10 @@ private fun BarChartColumn(
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier
+        modifier = modifier
             .clip(ColumnShape)
             .clickable { onClick() }
-            .padding(horizontal = 2.dp, vertical = 2.dp)
+            .padding(horizontal = 1.dp, vertical = 2.dp)
     ) {
         // Angka Halaman di Atas Batang
         Text(
@@ -185,15 +187,17 @@ private fun BarChartColumn(
             color = if (dayStat.pagesRead > 0)
                 MaterialTheme.colorScheme.primary
             else
-                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+            maxLines = 1
         )
 
         Spacer(modifier = Modifier.height(4.dp))
 
-        // Batang Vertikal (Bar)
+        // Batang Vertikal (Bar) Responsif
         Box(
             modifier = Modifier
-                .width(26.dp)
+                .widthIn(min = 16.dp, max = 28.dp)
+                .fillMaxWidth(0.68f)
                 .height(maxHeight)
                 .clip(BarOuterShape)
                 .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)),
