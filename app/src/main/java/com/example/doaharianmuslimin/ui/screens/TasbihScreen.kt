@@ -12,6 +12,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -34,12 +35,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.doaharianmuslimin.R
 import com.example.doaharianmuslimin.data.DoaRepository
 import com.example.doaharianmuslimin.data.model.Doa
 import com.example.doaharianmuslimin.data.model.DoaCategory
@@ -70,7 +73,6 @@ fun TasbihScreen(
 
     var selectedTab by remember { mutableIntStateOf(0) } // 0 = Dzikir Pagi & Petang, 1 = Tasbih Digital
     var searchQuery by remember { mutableStateOf("") }
-    var isSearchActive by remember { mutableStateOf(false) }
 
     fun vibrateShort() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -123,29 +125,6 @@ fun TasbihScreen(
                 ) {
                     TopAppBar(
                         windowInsets = WindowInsets(0.dp),
-                        title = {
-                            Column {
-                                Text(
-                                    text = "Dzikir & Tasbih Digital",
-                                    fontSize = 17.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.White,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                                Text(
-                                    text = if (selectedTab == 0) {
-                                        if (searchQuery.isNotBlank()) "Ditemukan ${filteredDzikirList.size} bacaan" else "Dzikir Pagi & Petang Sunnah"
-                                    } else {
-                                        "Tasbih Digital Penenang Jiwa"
-                                    },
-                                    fontSize = 11.sp,
-                                    color = Color.White.copy(alpha = 0.85f),
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                            }
-                        },
                         navigationIcon = {
                             IconButton(onClick = onBack) {
                                 Icon(
@@ -155,16 +134,40 @@ fun TasbihScreen(
                                 )
                             }
                         },
-                        actions = {
-                            if (selectedTab == 0) {
-                                IconButton(onClick = {
-                                    isSearchActive = !isSearchActive
-                                    if (!isSearchActive) searchQuery = ""
-                                }) {
-                                    Icon(
-                                        imageVector = if (isSearchActive) Icons.Default.Close else Icons.Default.Search,
-                                        contentDescription = "Cari Dzikir",
-                                        tint = Color.White
+                        title = {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Image(
+                                    painter = painterResource(id = R.drawable.app_logo_kufi),
+                                    contentDescription = "Logo",
+                                    modifier = Modifier.size(34.dp)
+                                )
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Column {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text(
+                                            text = "Adzkaruna",
+                                            fontSize = 18.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color.White
+                                        )
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Surface(
+                                            shape = RoundedCornerShape(4.dp),
+                                            color = AccentGold
+                                        ) {
+                                            Text(
+                                                text = "PRO",
+                                                fontSize = 8.5.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = Color.Black,
+                                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                                            )
+                                        }
+                                    }
+                                    Text(
+                                        text = "Doa & Dzikir Harian Muslimin v1.50.0",
+                                        fontSize = 11.sp,
+                                        color = Color.White.copy(alpha = 0.85f)
                                     )
                                 }
                             }
@@ -174,14 +177,44 @@ fun TasbihScreen(
                         )
                     )
 
-                    // Search Field Expandable untuk Tab Dzikir
-                    AnimatedVisibility(
-                        visible = isSearchActive && selectedTab == 0,
-                        enter = fadeIn(),
-                        exit = fadeOut()
+                    // Tab Navigation Row
+                    PrimaryTabRow(
+                        selectedTabIndex = selectedTab,
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        contentColor = MaterialTheme.colorScheme.primary
                     ) {
+                        Tab(
+                            selected = selectedTab == 0,
+                            onClick = { selectedTab = 0 },
+                            text = {
+                                Text(
+                                    "Dzikir Pagi & Petang",
+                                    fontWeight = if (selectedTab == 0) FontWeight.Bold else FontWeight.Normal,
+                                    fontSize = 12.sp
+                                )
+                            },
+                            icon = { Icon(Icons.AutoMirrored.Filled.MenuBook, contentDescription = null, modifier = Modifier.size(18.dp)) }
+                        )
+                        Tab(
+                            selected = selectedTab == 1,
+                            onClick = {
+                                selectedTab = 1
+                            },
+                            text = {
+                                Text(
+                                    "Tasbih Digital",
+                                    fontWeight = if (selectedTab == 1) FontWeight.Bold else FontWeight.Normal,
+                                    fontSize = 12.sp
+                                )
+                            },
+                            icon = { Icon(Icons.Default.Fingerprint, contentDescription = null, modifier = Modifier.size(18.dp)) }
+                        )
+                    }
+
+                    // Sticky / Pinned Search Field di atas konten Tab Dzikir
+                    if (selectedTab == 0) {
                         Surface(
-                            color = MaterialTheme.colorScheme.primary,
+                            color = MaterialTheme.colorScheme.surface,
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             OutlinedTextField(
@@ -211,9 +244,9 @@ fun TasbihScreen(
                                 singleLine = true,
                                 shape = SearchFieldShape,
                                 colors = OutlinedTextFieldDefaults.colors(
-                                    focusedContainerColor = MaterialTheme.colorScheme.surface,
-                                    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                                    focusedBorderColor = AccentGold,
+                                    focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
+                                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
+                                    focusedBorderColor = MaterialTheme.colorScheme.primary,
                                     unfocusedBorderColor = Color.Transparent
                                 ),
                                 modifier = Modifier
@@ -221,41 +254,6 @@ fun TasbihScreen(
                                     .padding(horizontal = 14.dp, vertical = 6.dp)
                             )
                         }
-                    }
-
-                    // Tab Navigation Row
-                    PrimaryTabRow(
-                        selectedTabIndex = selectedTab,
-                        containerColor = MaterialTheme.colorScheme.surface,
-                        contentColor = MaterialTheme.colorScheme.primary
-                    ) {
-                        Tab(
-                            selected = selectedTab == 0,
-                            onClick = { selectedTab = 0 },
-                            text = {
-                                Text(
-                                    "Dzikir Pagi & Petang",
-                                    fontWeight = if (selectedTab == 0) FontWeight.Bold else FontWeight.Normal,
-                                    fontSize = 12.sp
-                                )
-                            },
-                            icon = { Icon(Icons.AutoMirrored.Filled.MenuBook, contentDescription = null, modifier = Modifier.size(18.dp)) }
-                        )
-                        Tab(
-                            selected = selectedTab == 1,
-                            onClick = {
-                                selectedTab = 1
-                                isSearchActive = false
-                            },
-                            text = {
-                                Text(
-                                    "Tasbih Digital",
-                                    fontWeight = if (selectedTab == 1) FontWeight.Bold else FontWeight.Normal,
-                                    fontSize = 12.sp
-                                )
-                            },
-                            icon = { Icon(Icons.Default.Fingerprint, contentDescription = null, modifier = Modifier.size(18.dp)) }
-                        )
                     }
                 }
             }

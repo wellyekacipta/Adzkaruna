@@ -4,6 +4,8 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -18,12 +20,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.PlatformTextStyle
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.unit.sp
+import com.example.doaharianmuslimin.R
 import com.example.doaharianmuslimin.ui.theme.AccentGold
 
 @Immutable
@@ -129,163 +135,173 @@ fun ExploreScreen(
             .fillMaxSize()
             .navigationBarsPadding(),
         topBar = {
-            Surface(
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(
-                    modifier = if (onBack != null) Modifier.fillMaxWidth().statusBarsPadding() else Modifier.fillMaxWidth()
+            if (onBack != null) {
+                Surface(
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    TopAppBar(
-                        windowInsets = WindowInsets(0.dp),
-                        title = {
-                            Column {
-                                Text(
-                                    text = "Belajar Islam & Wawasan",
-                                    fontSize = 16.5.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.White,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                                Text(
-                                    text = if (query.isNotBlank()) "Ditemukan ${filteredInsights.size} pembahasan" else "Mutiara Hadits, Adab & Wawasan Keislaman",
-                                    fontSize = 11.sp,
-                                    color = Color.White.copy(alpha = 0.85f),
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                            }
-                        },
-                        navigationIcon = {
-                            if (onBack != null) {
-                                IconButton(onClick = {
-                                    if (isSearchActive) {
-                                        isSearchActive = false
-                                        searchQuery = ""
-                                    } else {
-                                        onBack()
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .statusBarsPadding()
+                    ) {
+                        TopAppBar(
+                            windowInsets = WindowInsets(0.dp),
+                            title = {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Image(
+                                        painter = painterResource(id = R.drawable.app_logo_kufi),
+                                        contentDescription = "Logo Adzkaruna",
+                                        modifier = Modifier.size(34.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(10.dp))
+                                    Column(modifier = Modifier.weight(1f, fill = false)) {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Text(
+                                                text = "Adzkaruna",
+                                                fontSize = 18.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = Color.White,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis
+                                            )
+                                            Spacer(modifier = Modifier.width(5.dp))
+                                            Box(
+                                                modifier = Modifier
+                                                    .background(AccentGold, shape = RoundedCornerShape(3.dp))
+                                                    .padding(horizontal = 3.dp, vertical = 0.5.dp),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                Text(
+                                                    text = "PRO",
+                                                    fontSize = 8.5.sp,
+                                                    fontWeight = FontWeight.Black,
+                                                    color = Color(0xFF3E2723),
+                                                    letterSpacing = 0.2.sp,
+                                                    style = TextStyle(
+                                                        platformStyle = PlatformTextStyle(includeFontPadding = false),
+                                                        lineHeight = 9.sp
+                                                    )
+                                                )
+                                            }
+                                        }
+                                        Text(
+                                            text = "Doa & Dzikir Harian Muslimin v1.50.0",
+                                            fontSize = 11.sp,
+                                            color = Color.White.copy(alpha = 0.85f),
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
                                     }
-                                }) {
+                                }
+                            },
+                            navigationIcon = {
+                                IconButton(onClick = onBack) {
                                     Icon(
                                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                         contentDescription = "Kembali",
                                         tint = Color.White
                                     )
                                 }
-                            }
-                        },
-                        actions = {
-                            IconButton(onClick = {
-                                isSearchActive = !isSearchActive
-                                if (!isSearchActive) searchQuery = ""
-                            }) {
-                                Icon(
-                                    imageVector = if (isSearchActive) Icons.Default.Close else Icons.Default.Search,
-                                    contentDescription = "Cari Wawasan",
-                                    tint = Color.White
-                                )
-                            }
-                        },
-                        colors = TopAppBarDefaults.topAppBarColors(
-                            containerColor = Color.Transparent
-                        )
-                    )
-
-                    // Search Bar Input Expandable
-                    AnimatedVisibility(
-                        visible = isSearchActive,
-                        enter = fadeIn(),
-                        exit = fadeOut()
-                    ) {
-                        Surface(
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            OutlinedTextField(
-                                value = searchQuery,
-                                onValueChange = { searchQuery = it },
-                                placeholder = {
-                                    Text(
-                                        text = "Cari materi (mustajab, adab, janji, dzikir...)",
-                                        fontSize = 12.5.sp,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-                                    )
-                                },
-                                singleLine = true,
-                                leadingIcon = {
-                                    Icon(Icons.Default.Search, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                                },
-                                trailingIcon = {
-                                    if (searchQuery.isNotBlank()) {
-                                        IconButton(onClick = { searchQuery = "" }) {
-                                            Icon(Icons.Default.Clear, contentDescription = "Hapus", tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                                        }
-                                    }
-                                },
-                                shape = RoundedCornerShape(12.dp),
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedContainerColor = MaterialTheme.colorScheme.surface,
-                                    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                                    focusedBorderColor = AccentGold,
-                                    unfocusedBorderColor = Color.Transparent
-                                ),
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 14.dp, vertical = 6.dp)
+                            },
+                            colors = TopAppBarDefaults.topAppBarColors(
+                                containerColor = Color.Transparent
                             )
-                        }
+                        )
                     }
                 }
             }
         }
     ) { innerPadding ->
-        if (filteredInsights.isEmpty() && !showPromisesCard && !showPrayerTimesCard && !showQiblaCard) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-                    .padding(24.dp),
-                contentAlignment = Alignment.Center
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+        ) {
+            // Kolom Pencarian Pinned (Tetap di atas saat di-scroll)
+            Surface(
+                color = MaterialTheme.colorScheme.surface,
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(
-                        imageVector = Icons.Default.SearchOff,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
-                        modifier = Modifier.size(64.dp)
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Text(
-                        text = "Materi Tidak Ditemukan",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 16.sp,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text(
-                        text = "Tidak ada materi Islam yang cocok dengan kata kunci \"$searchQuery\"",
-                        fontSize = 12.5.sp,
-                        textAlign = TextAlign.Center,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(modifier = Modifier.height(14.dp))
-                    OutlinedButton(
-                        onClick = { searchQuery = "" },
-                        shape = RoundedCornerShape(10.dp)
-                    ) {
-                        Text("Tampilkan Semua Wawasan")
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    placeholder = {
+                        Text(
+                            text = "Cari materi (mustajab, adab, janji, dzikir...)",
+                            fontSize = 12.5.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                        )
+                    },
+                    singleLine = true,
+                    leadingIcon = {
+                        Icon(Icons.Default.Search, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                    },
+                    trailingIcon = {
+                        if (searchQuery.isNotBlank()) {
+                            IconButton(onClick = { searchQuery = "" }) {
+                                Icon(Icons.Default.Clear, contentDescription = "Hapus", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+                    },
+                    shape = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedContainerColor = MaterialTheme.colorScheme.surface,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.4f)
+                    ),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 14.dp, vertical = 8.dp)
+                )
+            }
+
+            if (filteredInsights.isEmpty() && !showPromisesCard && !showPrayerTimesCard && !showQiblaCard) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(24.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(
+                            imageVector = Icons.Default.SearchOff,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+                            modifier = Modifier.size(64.dp)
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            text = "Materi Tidak Ditemukan",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = "Tidak ada materi Islam yang cocok dengan kata kunci \"$searchQuery\"",
+                            fontSize = 12.5.sp,
+                            textAlign = TextAlign.Center,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(14.dp))
+                        OutlinedButton(
+                            onClick = { searchQuery = "" },
+                            shape = RoundedCornerShape(10.dp)
+                        ) {
+                            Text("Tampilkan Semua Wawasan")
+                        }
                     }
                 }
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding),
-                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
+            } else {
+                LazyColumn(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth(),
+                    contentPadding = PaddingValues(start = 14.dp, end = 14.dp, top = 4.dp, bottom = 14.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
                 // Interactive Shortcut: Janji-Janji Allah
                 if (showPromisesCard) {
                     item {
@@ -547,4 +563,5 @@ fun ExploreScreen(
             }
         }
     }
+}
 }

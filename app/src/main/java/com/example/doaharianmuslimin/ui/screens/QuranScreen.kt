@@ -414,34 +414,42 @@ fun QuranScreen(
         Column(modifier = Modifier.fillMaxSize()) {
             if (selectedSurah == null) {
                 // ==================== LIST OF ALL 114 SURAHS ====================
+                // Kolom Pencarian Surat Pinned (Tetap di atas saat di-scroll)
                 Surface(
-                    color = MaterialTheme.colorScheme.primary,
+                    color = MaterialTheme.colorScheme.surface,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Column(
+                    OutlinedTextField(
+                        value = searchQuery,
+                        onValueChange = { searchQuery = it },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 8.dp)
-                    ) {
-                        Text(
-                            text = "Al-Qur'anul Karim (114 Surat)",
-                            fontSize = 17.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
+                            .padding(horizontal = 14.dp, vertical = 8.dp),
+                        placeholder = { Text("Cari surat (contoh: Al-Baqarah, 36, Yasin)...", fontSize = 13.sp) },
+                        leadingIcon = {
+                            Icon(Icons.Default.Search, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                        },
+                        trailingIcon = {
+                            if (searchQuery.isNotEmpty()) {
+                                IconButton(onClick = { searchQuery = "" }) {
+                                    Icon(Icons.Default.Clear, contentDescription = "Hapus")
+                                }
+                            }
+                        },
+                        shape = RoundedCornerShape(14.dp),
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
                         )
-                        Text(
-                            text = "Mushaf Standar Kemenag RI & Tafsir Resmi",
-                            fontSize = 11.sp,
-                            color = Color.White.copy(alpha = 0.85f)
-                        )
-                    }
+                    )
                 }
 
                 LazyColumn(
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxWidth(),
-                    contentPadding = PaddingValues(start = 14.dp, end = 14.dp, top = 10.dp, bottom = 12.dp),
+                    contentPadding = PaddingValues(start = 14.dp, end = 14.dp, top = 4.dp, bottom = 12.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     // Header Banner Info
@@ -478,32 +486,6 @@ fun QuranScreen(
                                 }
                             }
                         }
-                    }
-
-                    // Search Bar
-                    item {
-                        OutlinedTextField(
-                            value = searchQuery,
-                            onValueChange = { searchQuery = it },
-                            modifier = Modifier.fillMaxWidth(),
-                            placeholder = { Text("Cari surat (contoh: Al-Baqarah, 36, Yasin)...", fontSize = 13.sp) },
-                            leadingIcon = {
-                                Icon(Icons.Default.Search, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                            },
-                            trailingIcon = {
-                                if (searchQuery.isNotEmpty()) {
-                                    IconButton(onClick = { searchQuery = "" }) {
-                                        Icon(Icons.Default.Clear, contentDescription = "Hapus")
-                                    }
-                                }
-                            },
-                            shape = RoundedCornerShape(14.dp),
-                            singleLine = true,
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
-                            )
-                        )
                     }
 
                     // Terakhir Dibaca Banner
