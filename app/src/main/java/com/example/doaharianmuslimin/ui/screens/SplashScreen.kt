@@ -25,7 +25,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.doaharianmuslimin.R
-import com.example.doaharianmuslimin.ui.theme.LpmqFontFamily
 import kotlinx.coroutines.delay
 
 @Composable
@@ -77,7 +76,7 @@ fun SplashScreen(
                 )
             )
     ) {
-        // Konten Tengah: Logo Adzkaruna Putih dengan Animasi Fade
+        // Konten Tengah: Logo Adzkaruna Putih & Nama Adzkaruna
         Column(
             modifier = Modifier
                 .align(Alignment.Center)
@@ -121,29 +120,19 @@ fun SplashScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(22.dp))
 
-            // Nama & Kaligrafi Aplikasi
+            // Nama Aplikasi (Clean Adzkaruna)
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier.alpha(textFadeAlpha)
             ) {
-                Text(
-                    text = "أَذْكَارُنَا",
-                    fontFamily = LpmqFontFamily,
-                    fontSize = 32.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
-
-                Spacer(modifier = Modifier.height(4.dp))
-
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = "ADZKARUNA",
-                        fontSize = 21.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        letterSpacing = 3.sp,
+                        text = "Adzkaruna",
+                        fontSize = 26.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.sp,
                         color = Color.White
                     )
                     Spacer(modifier = Modifier.width(6.dp))
@@ -193,7 +182,7 @@ fun SplashScreen(
             Spacer(modifier = Modifier.height(4.dp))
 
             Text(
-                text = "Versi: 1.47.0",
+                text = "Versi 1.47.0",
                 fontSize = 11.sp,
                 color = Color.White.copy(alpha = 0.8f),
                 fontWeight = FontWeight.Normal,
