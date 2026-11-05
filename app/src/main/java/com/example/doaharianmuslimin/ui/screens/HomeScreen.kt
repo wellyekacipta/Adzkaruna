@@ -112,18 +112,6 @@ fun HomeScreen(
     var showExitConfirmationDialog by remember { mutableStateOf(false) }
     var showConfirmClearDoaDialog by remember { mutableStateOf(false) }
 
-    // Tanggal Hari Ini (Masehi & Hijriyah) serta Countdown Sholat Berikutnya
-    val todayMasehiDate = remember { IslamicDateHelper.getTodayMasehi() }
-    val todayHijriDate = remember { IslamicDateHelper.getTodayHijri() }
-
-    var homePrayerSchedule by remember { mutableStateOf<PrayerSchedule?>(null) }
-
-    LaunchedEffect(Unit) {
-        val cityId = prefs.getSavedCityId()
-        val cityName = prefs.getSavedCityName()
-        homePrayerSchedule = PrayerTimesRepository.fetchKemenagSchedule(cityId, cityName)
-    }
-
     // Menangani tombol kembali sistem Android di seluruh aplikasi (kembali ke Home, lalu pop-up keluar)
     BackHandler(enabled = true) {
         when {
@@ -576,66 +564,6 @@ fun HomeScreen(
                                         onFavoriteToggle = { toggleFavorite(dailyFeaturedDoa.id) },
                                         onClick = { selectedDoaForDetail = dailyFeaturedDoa }
                                     )
-                                }
-                            }
-
-                            // 2. Banner Tanggal Hari Ini (Masehi & Hijriyah) & Hitungan Mundur Sholat Berikutnya (Pengganti Tulisan "Menu Utama")
-                            item {
-                                Surface(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(top = 4.dp, bottom = 2.dp)
-                                        .clip(RoundedCornerShape(14.dp))
-                                        .clickable { activeSubScreen = ActiveSubScreen.WAKTU_SHOLAT },
-                                    color = MaterialTheme.colorScheme.surface,
-                                    shape = RoundedCornerShape(14.dp),
-                                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.35f)),
-                                    shadowElevation = 0.5.dp
-                                ) {
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(horizontal = 14.dp, vertical = 10.dp),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        // Bagian Kiri: Tanggal Masehi & Tanggal Hijriyah
-                                        Column(modifier = Modifier.weight(1f)) {
-                                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                                Icon(
-                                                    imageVector = Icons.Default.CalendarToday,
-                                                    contentDescription = null,
-                                                    tint = MaterialTheme.colorScheme.primary,
-                                                    modifier = Modifier.size(13.dp)
-                                                )
-                                                Spacer(modifier = Modifier.width(5.dp))
-                                                Text(
-                                                    text = todayMasehiDate,
-                                                    fontSize = 12.sp,
-                                                    fontWeight = FontWeight.Bold,
-                                                    color = MaterialTheme.colorScheme.onSurface,
-                                                    maxLines = 1,
-                                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-                                                )
-                                            }
-                                            Spacer(modifier = Modifier.height(2.dp))
-                                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                                Text(
-                                                    text = "🌙 $todayHijriDate",
-                                                    fontSize = 11.sp,
-                                                    fontWeight = FontWeight.SemiBold,
-                                                    color = AccentGold,
-                                                    maxLines = 1,
-                                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-                                                )
-                                            }
-                                        }
-
-                                        Spacer(modifier = Modifier.width(8.dp))
-
-                                        // Bagian Kanan: Hitungan Waktu Mundur Sholat Berikutnya (Terisolasi Recomposition)
-                                        LivePrayerCountdown(schedule = homePrayerSchedule)
-                                    }
                                 }
                             }
 
@@ -1263,62 +1191,6 @@ fun HomeScreen(
                 shape = RoundedCornerShape(20.dp),
                 containerColor = MaterialTheme.colorScheme.surface
             )
-        }
-    }
-}
-
-/**
- * Komponen terisolasi untuk Countdown Waktu Sholat berikutnya.
- * Mengisolasi loop 1-detik agar TIDAK memicu recomposition HomeScreen dan daftar 552 doa,
- * menghasilkan scrolling 60-120 FPS yang mulus tanpa jank/stutter.
- */
-@Composable
-private fun LivePrayerCountdown(
-    schedule: com.example.doaharianmuslimin.data.model.PrayerSchedule?
-) {
-    var countdown by remember { mutableStateOf("00:00:00") }
-    var prayerName by remember { mutableStateOf("Subuh") }
-
-    LaunchedEffect(schedule) {
-        while (true) {
-            val (cd, name) = com.example.doaharianmuslimin.data.PrayerTimesRepository.getCountdownToNextPrayer(schedule)
-            countdown = cd
-            prayerName = name
-            kotlinx.coroutines.delay(1000)
-        }
-    }
-
-    Surface(
-        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f),
-        shape = RoundedCornerShape(10.dp),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector = Icons.Default.AccessTime,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(15.dp)
-            )
-            Spacer(modifier = Modifier.width(5.dp))
-            Column(horizontalAlignment = Alignment.End) {
-                Text(
-                    text = "Menuju $prayerName",
-                    fontSize = 9.5.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                Text(
-                    text = countdown.ifBlank { "00:00:00" },
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                    letterSpacing = 0.5.sp
-                )
-            }
         }
     }
 }

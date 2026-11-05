@@ -73,27 +73,12 @@ fun QuranWeeklyStatsCard(
                             color = MaterialTheme.colorScheme.primary
                         )
                         Text(
-                            text = "Aktivitas Mingguan (Senin — Ahad)",
+                            text = "Senin - Ahad",
                             style = MaterialTheme.typography.bodySmall,
                             fontSize = 11.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                }
-
-                // Badge Keaktifan Hari Berjalan (Senin = 1/7, Rabu = 3/7, dst.)
-                Surface(
-                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f),
-                    shape = RoundedCornerShape(8.dp),
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
-                ) {
-                    Text(
-                        text = "${weeklyStats.currentDayOfWeek}/7 Hari Aktif",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                    )
                 }
             }
 

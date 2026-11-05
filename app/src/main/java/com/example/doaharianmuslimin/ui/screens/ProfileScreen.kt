@@ -636,7 +636,7 @@ fun ProfileScreen(
             text = {
                 Column {
                     Text(
-                        text = "Nama ini akan ditampilkan saat Anda mengirimkan doa di fitur 'Aamiinkan Doa Saudaramu'.",
+                        text = "Nama ini akan ditampilkan saat Anda mengirimkan doa di fitur 'Doakan Saudaramu'.",
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
