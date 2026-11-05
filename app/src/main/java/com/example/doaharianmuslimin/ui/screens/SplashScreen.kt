@@ -20,6 +20,8 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.PlatformTextStyle
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -136,17 +138,22 @@ fun SplashScreen(
                         color = Color.White
                     )
                     Spacer(modifier = Modifier.width(5.dp))
-                    Surface(
-                        color = Color(0xFFFFB300),
-                        shape = RoundedCornerShape(4.dp)
+                    Box(
+                        modifier = Modifier
+                            .background(Color(0xFFFFB300), shape = RoundedCornerShape(3.dp))
+                            .padding(horizontal = 3.dp, vertical = 0.5.dp),
+                        contentAlignment = Alignment.Center
                     ) {
                         Text(
                             text = "PRO",
-                            fontSize = 9.sp,
-                            fontWeight = FontWeight.ExtraBold,
+                            fontSize = 8.5.sp,
+                            fontWeight = FontWeight.Black,
                             color = Color(0xFF3E2723),
                             letterSpacing = 0.2.sp,
-                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                            style = TextStyle(
+                                platformStyle = PlatformTextStyle(includeFontPadding = false),
+                                lineHeight = 9.sp
+                            )
                         )
                     }
                 }

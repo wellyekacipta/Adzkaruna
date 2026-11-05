@@ -11,6 +11,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.animation.*
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -28,6 +29,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.PlatformTextStyle
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -306,17 +309,22 @@ fun HomeScreen(
                                     color = Color.White
                                 )
                                 Spacer(modifier = Modifier.width(5.dp))
-                                Surface(
-                                    color = AccentGold,
-                                    shape = RoundedCornerShape(4.dp)
+                                Box(
+                                    modifier = Modifier
+                                        .background(AccentGold, shape = RoundedCornerShape(3.dp))
+                                        .padding(horizontal = 3.dp, vertical = 0.5.dp),
+                                    contentAlignment = Alignment.Center
                                 ) {
                                     Text(
                                         text = "PRO",
-                                        fontSize = 9.sp,
-                                        fontWeight = FontWeight.ExtraBold,
+                                        fontSize = 8.5.sp,
+                                        fontWeight = FontWeight.Black,
                                         color = Color(0xFF3E2723),
                                         letterSpacing = 0.2.sp,
-                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                                        style = TextStyle(
+                                            platformStyle = PlatformTextStyle(includeFontPadding = false),
+                                            lineHeight = 9.sp
+                                        )
                                     )
                                 }
                             }
