@@ -126,97 +126,21 @@ fun ProfileScreen(
         }
     }
 
-    var profileSearchQuery by remember { mutableStateOf("") }
-    val pQuery = profileSearchQuery.trim().lowercase()
-
-    val showAccount = pQuery.isBlank() || listOf("akun", "nama", "google", "profil", "tamu", "user").any { it.contains(pQuery) } || currentUserName.lowercase().contains(pQuery)
-    val showHistoryFav = pQuery.isBlank() || listOf("riwayat", "favorit", "baca", "surat", "tersimpan", "qur'an", "doa").any { it.contains(pQuery) }
-    val showSupport = pQuery.isBlank() || listOf("dukungan", "infaq", "sedekah", "donasi", "developer", "bsi", "pengembang", "rating", "bintang", "play store", "bagikan", "share", "saran", "masukan", "wa", "whatsapp").any { it.contains(pQuery) }
-    val showSettings = pQuery.isBlank() || listOf("pengaturan", "tema", "warna", "mode", "tampilan", "gelap", "terang", "font", "arab", "uthmanic").any { it.contains(pQuery) }
-    val showAbout = pQuery.isBlank() || listOf("tentang", "versi", "aplikasi", "adzkaruna", "info").any { it.contains(pQuery) }
-
     Box(modifier = modifier.fillMaxSize()) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            // Kolom Pencarian Pengaturan Pinned (Tetap di atas saat di-scroll)
-            Surface(
-                color = MaterialTheme.colorScheme.surface,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                OutlinedTextField(
-                    value = profileSearchQuery,
-                    onValueChange = { profileSearchQuery = it },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 14.dp, vertical = 8.dp),
-                    placeholder = { Text("Cari pengaturan atau fitur (akun, tema, infaq...)", fontSize = 12.5.sp) },
-                    leadingIcon = {
-                        Icon(Icons.Default.Search, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                    },
-                    trailingIcon = {
-                        if (profileSearchQuery.isNotEmpty()) {
-                            IconButton(onClick = { profileSearchQuery = "" }) {
-                                Icon(Icons.Default.Clear, contentDescription = "Hapus")
-                            }
-                        }
-                    },
-                    shape = RoundedCornerShape(14.dp),
-                    singleLine = true,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.4f)
-                    )
-                )
-            }
-
-            // Content scrolling cleanly down to footer menu
-            LazyColumn(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth(),
-                contentPadding = PaddingValues(start = 14.dp, end = 14.dp, top = 4.dp, bottom = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp)
-            ) {
-                if (!showAccount && !showHistoryFav && !showSupport && !showSettings && !showAbout) {
-                    item {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 40.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Icon(
-                                    imageVector = Icons.Default.SearchOff,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
-                                    modifier = Modifier.size(54.dp)
-                                )
-                                Spacer(modifier = Modifier.height(10.dp))
-                                Text("Pengaturan Tidak Ditemukan", fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text(
-                                    text = "Tidak ada pengaturan yang cocok dengan \"$profileSearchQuery\"",
-                                    fontSize = 12.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Spacer(modifier = Modifier.height(12.dp))
-                                OutlinedButton(onClick = { profileSearchQuery = "" }) {
-                                    Text("Tampilkan Semua")
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // Profile & Guest Account Card
-                if (showAccount) {
-                    item {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(20.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f))
-                    ) {
+        // Content scrolling cleanly down to footer menu
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(start = 14.dp, end = 14.dp, top = 12.dp, bottom = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            // Profile & Guest Account Card
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f))
+                ) {
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -397,280 +321,270 @@ fun ProfileScreen(
                         }
                     }
                 }
+
+            // ==================== RIWAYAT & FAVORIT ====================
+            item {
+                Text(
+                    text = "Aktivitas Ibadah Saya",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(start = 4.dp, top = 4.dp)
+                )
             }
 
-                // ==================== RIWAYAT & FAVORIT ====================
-                if (showHistoryFav) {
-                    item {
-                        Text(
-                            text = "Aktivitas Ibadah Saya",
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.padding(start = 4.dp, top = 4.dp)
-                        )
-                    }
-
-                    item {
-                        Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(16.dp))
-                                .clickable { showHistoryFavoriteDialog = true },
-                            shape = RoundedCornerShape(16.dp),
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f))
+            item {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(16.dp))
+                        .clickable { showHistoryFavoriteDialog = true },
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f))
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.weight(1f)
                         ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(16.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
+                            Surface(
+                                shape = CircleShape,
+                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                                modifier = Modifier.size(42.dp)
                             ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.weight(1f)
-                                ) {
-                                    Surface(
-                                        shape = CircleShape,
-                                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
-                                        modifier = Modifier.size(42.dp)
-                                    ) {
-                                        Box(contentAlignment = Alignment.Center) {
-                                            Icon(
-                                                imageVector = Icons.Default.Bookmarks,
-                                                contentDescription = null,
-                                                tint = MaterialTheme.colorScheme.primary,
-                                                modifier = Modifier.size(22.dp)
-                                            )
-                                        }
-                                    }
-                                    Spacer(modifier = Modifier.width(12.dp))
-                                    Column {
-                                        Text(
-                                            text = "Riwayat & Favorit",
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = 14.sp,
-                                            color = MaterialTheme.colorScheme.onSurface
-                                        )
-                                        Text(
-                                            text = "Riwayat Al-Qur'an & Doa yang tersimpan",
-                                            fontSize = 11.5.sp,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
-                                }
-                                Icon(
-                                    imageVector = Icons.Default.ChevronRight,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
-                            }
-                        }
-                    }
-                }
-
-                // ==================== DUKUNGAN UNTUK DEVELOPER ====================
-                if (showSupport) {
-                    item {
-                        Text(
-                            text = "Dukungan Pengembang (Infaq & Support)",
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.padding(start = 4.dp, top = 4.dp)
-                        )
-                    }
-
-                    // Infaq & Sedekah Card
-                    item {
-                        Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(16.dp))
-                                .clickable { showInfaqDialog = true },
-                            shape = RoundedCornerShape(16.dp),
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f)),
-                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.4f))
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(16.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.weight(1f)
-                                ) {
-                                    Surface(
-                                        shape = CircleShape,
-                                        color = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(42.dp)
-                                    ) {
-                                        Box(contentAlignment = Alignment.Center) {
-                                            Icon(
-                                                imageVector = Icons.Default.VolunteerActivism,
-                                                contentDescription = null,
-                                                tint = Color.White,
-                                                modifier = Modifier.size(22.dp)
-                                            )
-                                        }
-                                    }
-                                    Spacer(modifier = Modifier.width(12.dp))
-                                    Column {
-                                        Text(
-                                            text = "Infaq & Sedekah Pengembangan",
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = 13.5.sp,
-                                            color = MaterialTheme.colorScheme.onSurface
-                                        )
-                                        Text(
-                                            text = "Dukung operasional server API & amal jariyah",
-                                            fontSize = 11.sp,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
-                                }
-                                Icon(Icons.Default.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                            }
-                        }
-                    }
-
-                    // Beri Rating di Play Store
-                    item {
-                        SettingTile(
-                            title = "Beri Rating Bintang 5 di Play Store",
-                            subtitle = "Bantu Adzkaruna menjangkau lebih banyak muslim",
-                            icon = Icons.Default.Star,
-                            onClick = { openPlayStore() }
-                        )
-                    }
-
-                    // Bagikan Aplikasi
-                    item {
-                        SettingTile(
-                            title = "Bagikan Aplikasi Adzkaruna",
-                            subtitle = "Sebarkan kebaikan, raih pahala jariyah bersama",
-                            icon = Icons.Default.Share,
-                            onClick = { shareApp() }
-                        )
-                    }
-
-                    // Kirim Saran & Masukan ke Developer
-                    item {
-                        SettingTile(
-                            title = "Kirim Masukan & Saran",
-                            subtitle = "Hubungi pengembang melalui WhatsApp / Email",
-                            icon = Icons.Default.Feedback,
-                            onClick = { openWhatsAppFeedback() }
-                        )
-                    }
-                }
-
-                // ==================== PENGATURAN APLIKASI ====================
-                if (showSettings) {
-                    item {
-                        Text(
-                            text = "Pengaturan Aplikasi",
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.padding(start = 4.dp, top = 4.dp)
-                        )
-                    }
-
-                    // Mode Gelap & Terang Setting Tile
-                    item {
-                        SettingTile(
-                            title = "Mode Tampilan",
-                            subtitle = currentThemeMode.title,
-                            icon = when (currentThemeMode) {
-                                AppThemeMode.LIGHT -> Icons.Default.LightMode
-                                AppThemeMode.DARK -> Icons.Default.DarkMode
-                                AppThemeMode.RED -> Icons.Default.Palette
-                                AppThemeMode.BLUE -> Icons.Default.Palette
-                                AppThemeMode.SYSTEM -> Icons.Default.BrightnessAuto
-                            },
-                            onClick = onOpenThemeDialog
-                        )
-                    }
-
-                    // Font Arabic Info
-                    item {
-                        SettingTile(
-                            title = "Font Teks Arab",
-                            subtitle = "Uthmanic Naskh (Standar Asli Mushaf Madinah)",
-                            icon = Icons.Default.FontDownload,
-                            onClick = {}
-                        )
-                    }
-                }
-
-                // ==================== TENTANG APLIKASI ====================
-                if (showAbout) {
-                    item {
-                        Text(
-                            text = "Tentang Aplikasi",
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.padding(start = 4.dp, top = 4.dp)
-                        )
-                    }
-
-                    item {
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(16.dp),
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f))
-                        ) {
-                            Column(modifier = Modifier.padding(16.dp)) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Image(
-                                        painter = painterResource(id = R.drawable.app_logo),
-                                        contentDescription = "Logo Adzkaruna",
-                                        modifier = Modifier
-                                            .size(38.dp)
-                                            .clip(RoundedCornerShape(8.dp))
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        imageVector = Icons.Default.Bookmarks,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(22.dp)
                                     )
-                                    Spacer(modifier = Modifier.width(10.dp))
-                                    Column {
-                                        Text(
-                                            text = "Adzkaruna",
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = 15.sp,
-                                            color = MaterialTheme.colorScheme.primary
-                                        )
-                                        Text(
-                                            text = "Doa & Dzikir Harian Muslimin v1.50.0",
-                                            fontSize = 11.5.sp,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
                                 }
-
-                                Spacer(modifier = Modifier.height(10.dp))
-
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column {
                                 Text(
-                                    text = "Aplikasi islami komprehensif tanpa iklan mengganggu: kumpulan doa harian shahih, 114 surat Al-Qur'an Mushaf Madinah, arah kiblat akurasi sensor, dan jadwal sholat resmi Kemenag RI.",
-                                    fontSize = 12.sp,
-                                    lineHeight = 17.sp,
+                                    text = "Riwayat & Favorit",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 14.sp,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Text(
+                                    text = "Riwayat Al-Qur'an & Doa yang tersimpan",
+                                    fontSize = 11.5.sp,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
+                            }
+                        }
+                        Icon(
+                            imageVector = Icons.Default.ChevronRight,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+            }
 
-                                Spacer(modifier = Modifier.height(10.dp))
+            // ==================== DUKUNGAN UNTUK DEVELOPER ====================
+            item {
+                Text(
+                    text = "Dukungan Pengembang (Infaq & Support)",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(start = 4.dp, top = 4.dp)
+                )
+            }
 
+            // Infaq & Sedekah Card
+            item {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(16.dp))
+                        .clickable { showInfaqDialog = true },
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f)),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.4f))
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Surface(
+                                shape = CircleShape,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(42.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        imageVector = Icons.Default.VolunteerActivism,
+                                        contentDescription = null,
+                                        tint = Color.White,
+                                        modifier = Modifier.size(22.dp)
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column {
                                 Text(
-                                    text = "© 2026 Adzkaruna • Dibuat dengan niat ibadah & amal jariyah.",
-                                    fontSize = 10.5.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                                    text = "Infaq & Sedekah Pengembangan",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 13.5.sp,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Text(
+                                    text = "Dukung operasional server API & amal jariyah",
+                                    fontSize = 11.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
                         }
+                        Icon(Icons.Default.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                    }
+                }
+            }
+
+            // Beri Rating di Play Store
+            item {
+                SettingTile(
+                    title = "Beri Rating Bintang 5 di Play Store",
+                    subtitle = "Bantu Adzkaruna menjangkau lebih banyak muslim",
+                    icon = Icons.Default.Star,
+                    onClick = { openPlayStore() }
+                )
+            }
+
+            // Bagikan Aplikasi
+            item {
+                SettingTile(
+                    title = "Bagikan Aplikasi Adzkaruna",
+                    subtitle = "Sebarkan kebaikan, raih pahala jariyah bersama",
+                    icon = Icons.Default.Share,
+                    onClick = { shareApp() }
+                )
+            }
+
+            // Kirim Saran & Masukan ke Developer
+            item {
+                SettingTile(
+                    title = "Kirim Masukan & Saran",
+                    subtitle = "Hubungi pengembang melalui WhatsApp / Email",
+                    icon = Icons.Default.Feedback,
+                    onClick = { openWhatsAppFeedback() }
+                )
+            }
+
+            // ==================== PENGATURAN APLIKASI ====================
+            item {
+                Text(
+                    text = "Pengaturan Aplikasi",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(start = 4.dp, top = 4.dp)
+                )
+            }
+
+            // Mode Gelap & Terang Setting Tile
+            item {
+                SettingTile(
+                    title = "Mode Tampilan",
+                    subtitle = currentThemeMode.title,
+                    icon = when (currentThemeMode) {
+                        AppThemeMode.LIGHT -> Icons.Default.LightMode
+                        AppThemeMode.DARK -> Icons.Default.DarkMode
+                        AppThemeMode.RED -> Icons.Default.Palette
+                        AppThemeMode.BLUE -> Icons.Default.Palette
+                        AppThemeMode.SYSTEM -> Icons.Default.BrightnessAuto
+                    },
+                    onClick = onOpenThemeDialog
+                )
+            }
+
+            // Font Arabic Info
+            item {
+                SettingTile(
+                    title = "Font Teks Arab",
+                    subtitle = "Uthmanic Naskh (Standar Asli Mushaf Madinah)",
+                    icon = Icons.Default.FontDownload,
+                    onClick = {}
+                )
+            }
+
+            // ==================== TENTANG APLIKASI ====================
+            item {
+                Text(
+                    text = "Tentang Aplikasi",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(start = 4.dp, top = 4.dp)
+                )
+            }
+
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f))
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Image(
+                                painter = painterResource(id = R.drawable.app_logo),
+                                contentDescription = "Logo Adzkaruna",
+                                modifier = Modifier
+                                    .size(38.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                            )
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column {
+                                Text(
+                                    text = "Adzkaruna",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 15.sp,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                                Text(
+                                    text = "Doa & Dzikir Harian Muslimin v1.50.0",
+                                    fontSize = 11.5.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        Text(
+                            text = "Aplikasi islami komprehensif tanpa iklan mengganggu: kumpulan doa harian shahih, 114 surat Al-Qur'an Mushaf Madinah, arah kiblat akurasi sensor, dan jadwal sholat resmi Kemenag RI.",
+                            fontSize = 12.sp,
+                            lineHeight = 17.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        Text(
+                            text = "© 2026 Adzkaruna • Dibuat dengan niat ibadah & amal jariyah.",
+                            fontSize = 10.5.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                        )
                     }
                 }
             }

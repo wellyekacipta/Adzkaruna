@@ -107,7 +107,6 @@ fun ExploreScreen(
     modifier: Modifier = Modifier
 ) {
     var searchQuery by remember { mutableStateOf("") }
-    var isSearchActive by remember { mutableStateOf(false) }
 
     val insights = StaticInsights
 
@@ -130,12 +129,13 @@ fun ExploreScreen(
     val showPrayerTimesCard = query.isBlank() || "sholat jadwal waktu adzan kemenag hitung mundur".contains(query)
     val showQiblaCard = query.isBlank() || "kiblat qiblat kompas ka'bah ka'bah arah mekkah".contains(query)
 
-    Scaffold(
-        modifier = modifier
-            .fillMaxSize()
-            .navigationBarsPadding(),
-        topBar = {
-            if (onBack != null) {
+    if (onBack != null) {
+        Scaffold(
+            modifier = modifier
+                .fillMaxSize()
+                .navigationBarsPadding(),
+            containerColor = MaterialTheme.colorScheme.background,
+            topBar = {
                 Surface(
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.fillMaxWidth()
@@ -211,97 +211,137 @@ fun ExploreScreen(
                     }
                 }
             }
+        ) { innerPadding ->
+            ExploreBody(
+                searchQuery = searchQuery,
+                onSearchQueryChange = { searchQuery = it },
+                filteredInsights = filteredInsights,
+                showPromisesCard = showPromisesCard,
+                showPrayerTimesCard = showPrayerTimesCard,
+                showQiblaCard = showQiblaCard,
+                onNavigateToPromises = onNavigateToPromises,
+                onNavigateToPrayerTimes = onNavigateToPrayerTimes,
+                onNavigateToQibla = onNavigateToQibla,
+                modifier = Modifier.padding(innerPadding)
+            )
         }
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-        ) {
-            // Kolom Pencarian Pinned (Tetap di atas saat di-scroll)
-            Surface(
-                color = MaterialTheme.colorScheme.surface,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                OutlinedTextField(
-                    value = searchQuery,
-                    onValueChange = { searchQuery = it },
-                    placeholder = {
-                        Text(
-                            text = "Cari materi (mustajab, adab, janji, dzikir...)",
-                            fontSize = 12.5.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-                        )
-                    },
-                    singleLine = true,
-                    leadingIcon = {
-                        Icon(Icons.Default.Search, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                    },
-                    trailingIcon = {
-                        if (searchQuery.isNotBlank()) {
-                            IconButton(onClick = { searchQuery = "" }) {
-                                Icon(Icons.Default.Clear, contentDescription = "Hapus", tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                            }
-                        }
-                    },
-                    shape = RoundedCornerShape(12.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedContainerColor = MaterialTheme.colorScheme.surface,
-                        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.4f)
-                    ),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 14.dp, vertical = 8.dp)
-                )
-            }
+    } else {
+        Box(modifier = modifier.fillMaxSize()) {
+            ExploreBody(
+                searchQuery = searchQuery,
+                onSearchQueryChange = { searchQuery = it },
+                filteredInsights = filteredInsights,
+                showPromisesCard = showPromisesCard,
+                showPrayerTimesCard = showPrayerTimesCard,
+                showQiblaCard = showQiblaCard,
+                onNavigateToPromises = onNavigateToPromises,
+                onNavigateToPrayerTimes = onNavigateToPrayerTimes,
+                onNavigateToQibla = onNavigateToQibla
+            )
+        }
+    }
+}
 
-            if (filteredInsights.isEmpty() && !showPromisesCard && !showPrayerTimesCard && !showQiblaCard) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(24.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(
-                            imageVector = Icons.Default.SearchOff,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
-                            modifier = Modifier.size(64.dp)
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Text(
-                            text = "Materi Tidak Ditemukan",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 16.sp,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Text(
-                            text = "Tidak ada materi Islam yang cocok dengan kata kunci \"$searchQuery\"",
-                            fontSize = 12.5.sp,
-                            textAlign = TextAlign.Center,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Spacer(modifier = Modifier.height(14.dp))
-                        OutlinedButton(
-                            onClick = { searchQuery = "" },
-                            shape = RoundedCornerShape(10.dp)
-                        ) {
-                            Text("Tampilkan Semua Wawasan")
+@Composable
+private fun ExploreBody(
+    searchQuery: String,
+    onSearchQueryChange: (String) -> Unit,
+    filteredInsights: List<IslamicInsight>,
+    showPromisesCard: Boolean,
+    showPrayerTimesCard: Boolean,
+    showQiblaCard: Boolean,
+    onNavigateToPromises: () -> Unit,
+    onNavigateToPrayerTimes: () -> Unit,
+    onNavigateToQibla: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier.fillMaxSize()
+    ) {
+        // Kolom Pencarian Pinned (Tetap di atas saat di-scroll)
+        Surface(
+            color = MaterialTheme.colorScheme.surface,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = onSearchQueryChange,
+                placeholder = {
+                    Text(
+                        text = "Cari materi (mustajab, adab, janji, dzikir...)",
+                        fontSize = 12.5.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                    )
+                },
+                singleLine = true,
+                leadingIcon = {
+                    Icon(Icons.Default.Search, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                },
+                trailingIcon = {
+                    if (searchQuery.isNotBlank()) {
+                        IconButton(onClick = { onSearchQueryChange("") }) {
+                            Icon(Icons.Default.Clear, contentDescription = "Hapus", tint = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
+                },
+                shape = RoundedCornerShape(12.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedContainerColor = MaterialTheme.colorScheme.surface,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.4f)
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 14.dp, vertical = 8.dp)
+            )
+        }
+
+        if (filteredInsights.isEmpty() && !showPromisesCard && !showPrayerTimesCard && !showQiblaCard) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(24.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(
+                        imageVector = Icons.Default.SearchOff,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+                        modifier = Modifier.size(64.dp)
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = "Materi Tidak Ditemukan",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = "Tidak ada materi Islam yang cocok dengan kata kunci \"$searchQuery\"",
+                        fontSize = 12.5.sp,
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(14.dp))
+                    OutlinedButton(
+                        onClick = { onSearchQueryChange("") },
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Text("Tampilkan Semua Wawasan")
+                    }
                 }
-            } else {
-                LazyColumn(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxWidth(),
-                    contentPadding = PaddingValues(start = 14.dp, end = 14.dp, top = 4.dp, bottom = 14.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+                contentPadding = PaddingValues(start = 14.dp, end = 14.dp, top = 4.dp, bottom = 14.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
                 // Interactive Shortcut: Janji-Janji Allah
                 if (showPromisesCard) {
                     item {
@@ -563,5 +603,4 @@ fun ExploreScreen(
             }
         }
     }
-}
 }
