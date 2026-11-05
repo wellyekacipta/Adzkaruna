@@ -549,7 +549,7 @@ fun HomeScreen(
                                             modifier = Modifier.padding(bottom = 6.dp)
                                         ) {
                                             Text(
-                                                text = "⭐ Dipilih Otomatis dari Koleksi Favorit Anda",
+                                                text = "⭐ Doa Favorit Anda",
                                                 color = MaterialTheme.colorScheme.onSurface,
                                                 fontSize = 11.sp,
                                                 fontWeight = FontWeight.SemiBold,

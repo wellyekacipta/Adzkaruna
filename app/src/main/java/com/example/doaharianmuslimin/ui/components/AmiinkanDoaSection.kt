@@ -89,11 +89,11 @@ fun AmiinkanDoaSection(
                     )
                     Spacer(modifier = Modifier.height(3.dp))
                     Text(
-                        text = "“Sesungguhnya do’a seseorang kepada saudaranya karena Allah adalah do’a yang mustajab (terkabulkan).“ (HR. Muslim no. 2732)",
+                        text = "Sesungguhnya doa seseorang kepada saudaranya karena Allah adalah doa yang Mustajab.│HR. Muslim no. 2732",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontSize = 10.sp,
-                        lineHeight = 14.5.sp
+                        fontSize = 9.sp,
+                        lineHeight = 13.sp
                     )
                 }
 
