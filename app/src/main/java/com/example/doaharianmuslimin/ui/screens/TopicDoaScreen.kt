@@ -36,6 +36,21 @@ data class TopicItem(
     val keyword: String? = null
 )
 
+// Static topics & shapes to prevent re-allocation on every recomposition
+private val StaticTopics = listOf(
+    TopicItem("Rezeki & Pekerjaan", "Kemudahan rizki halal & berkah", Icons.Default.MonetizationOn, keyword = "rezeki"),
+    TopicItem("Kesehatan & Kesembuhan", "Menjenguk orang sakit dan kesehatan", Icons.Default.Healing, keyword = "sakit"),
+    TopicItem("Ketenangan & Hilang Cemas", "Terhindar dari kesedihan & kegelisahan", Icons.Default.Spa, keyword = "hazan"),
+    TopicItem("Ujian & Kesabaran", "Saat tertimpa musibah & keteguhan hati", Icons.Default.Shield, keyword = "musibah"),
+    TopicItem("Keluarga & Anak Shalih", "Orang tua, pasangan & keturunan shalih", Icons.Default.FamilyRestroom, matchingCategory = DoaCategory.KELUARGA),
+    TopicItem("Sholat & Wudhu", "Adzan, qunut, setelah sholat & dhuha", Icons.Default.Mosque, matchingCategory = DoaCategory.SHOLAT),
+    TopicItem("Aktivitas Harian", "Tidur, makan, rumah & bepergian", Icons.Default.Today, matchingCategory = DoaCategory.AKTIVITAS)
+)
+
+private val TopicCardShape = RoundedCornerShape(14.dp)
+private val TopicIconShape = RoundedCornerShape(12.dp)
+private val SearchShape = RoundedCornerShape(12.dp)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TopicDoaScreen(
@@ -51,17 +66,7 @@ fun TopicDoaScreen(
     var searchQuery by remember { mutableStateOf("") }
     var isSearchActive by remember { mutableStateOf(false) }
 
-    val topics = remember {
-        listOf(
-            TopicItem("Rezeki & Pekerjaan", "Kemudahan rizki halal & berkah", Icons.Default.MonetizationOn, keyword = "rezeki"),
-            TopicItem("Kesehatan & Kesembuhan", "Menjenguk orang sakit dan kesehatan", Icons.Default.Healing, keyword = "sakit"),
-            TopicItem("Ketenangan & Hilang Cemas", "Terhindar dari kesedihan & kegelisahan", Icons.Default.Spa, keyword = "hazan"),
-            TopicItem("Ujian & Kesabaran", "Saat tertimpa musibah & keteguhan hati", Icons.Default.Shield, keyword = "musibah"),
-            TopicItem("Keluarga & Anak Shalih", "Orang tua, pasangan & keturunan shalih", Icons.Default.FamilyRestroom, matchingCategory = DoaCategory.KELUARGA),
-            TopicItem("Sholat & Wudhu", "Adzan, qunut, setelah sholat & dhuha", Icons.Default.Mosque, matchingCategory = DoaCategory.SHOLAT),
-            TopicItem("Aktivitas Harian", "Tidur, makan, rumah & bepergian", Icons.Default.Today, matchingCategory = DoaCategory.AKTIVITAS)
-        )
-    }
+    val topics = StaticTopics
 
     Scaffold(
         modifier = modifier
@@ -216,7 +221,11 @@ fun TopicDoaScreen(
                             modifier = Modifier.padding(bottom = 4.dp)
                         )
                     }
-                    items(matchingDoas, key = { it.id }) { doa ->
+                    items(
+                        items = matchingDoas,
+                        key = { it.id },
+                        contentType = { "DoaCard" }
+                    ) { doa ->
                         DoaCard(
                             doa = doa,
                             isFavorite = favoriteIds.contains(doa.id),
@@ -238,17 +247,21 @@ fun TopicDoaScreen(
                     }
                 }
 
-                items(filteredTopics) { topic ->
+                items(
+                    items = filteredTopics,
+                    key = { it.title },
+                    contentType = { "TopicItem" }
+                ) { topic ->
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(14.dp))
+                            .clip(TopicCardShape)
                             .clickable {
                                 selectedTopic = topic
                                 searchQuery = ""
                                 isSearchActive = false
                             },
-                        shape = RoundedCornerShape(14.dp),
+                        shape = TopicCardShape,
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
                     ) {
@@ -260,7 +273,7 @@ fun TopicDoaScreen(
                         ) {
                             Surface(
                                 color = MaterialTheme.colorScheme.primaryContainer,
-                                shape = RoundedCornerShape(12.dp),
+                                shape = TopicIconShape,
                                 modifier = Modifier.size(44.dp)
                             ) {
                                 Box(contentAlignment = Alignment.Center) {

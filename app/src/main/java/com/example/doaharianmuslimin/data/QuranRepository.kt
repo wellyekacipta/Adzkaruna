@@ -718,12 +718,9 @@ object QuranRepository {
 
     fun countCachedPages(context: Context): Int {
         val dir = File(context.cacheDir, "mushaf_tajweed_pages")
-        if (!dir.exists()) return 0
-        return (1..604).count { page ->
-            val padded = String.format(Locale.US, "%03d", page)
-            val cacheFile = File(dir, "tajweed_page$padded.png")
-            cacheFile.exists() && cacheFile.length() > 5000
-        }
+        if (!dir.exists() || !dir.isDirectory) return 0
+        val files = dir.listFiles { _, name -> name.startsWith("tajweed_page") && name.endsWith(".png") }
+        return files?.count { it.length() > 5000 } ?: 0
     }
 
     suspend fun downloadAllMushafPages(

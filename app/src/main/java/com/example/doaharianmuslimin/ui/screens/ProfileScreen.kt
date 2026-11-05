@@ -587,7 +587,7 @@ fun ProfileScreen(
                                         color = MaterialTheme.colorScheme.primary
                                     )
                                     Text(
-                                        text = "Doa & Dzikir Harian Muslimin v1.48.0",
+                                        text = "Doa & Dzikir Harian Muslimin v1.49.0",
                                         fontSize = 11.5.sp,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
@@ -704,7 +704,7 @@ fun ProfileScreen(
             },
             text = {
                 Column(modifier = Modifier.fillMaxWidth().heightIn(max = 450.dp)) {
-                    TabRow(
+                    PrimaryTabRow(
                         selectedTabIndex = historyFavoriteTab,
                         containerColor = MaterialTheme.colorScheme.surface,
                         contentColor = MaterialTheme.colorScheme.primary

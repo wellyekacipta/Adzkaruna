@@ -47,6 +47,10 @@ import com.example.doaharianmuslimin.ui.theme.AccentGold
 import com.example.doaharianmuslimin.ui.theme.LpmqFontFamily
 import com.example.doaharianmuslimin.ui.theme.UthmanicFontFamily
 
+private val DzikirCardShape = RoundedCornerShape(14.dp)
+private val DzikirBannerShape = RoundedCornerShape(12.dp)
+private val SearchFieldShape = RoundedCornerShape(12.dp)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TasbihScreen(
@@ -86,10 +90,7 @@ fun TasbihScreen(
         }
     }
 
-    val allDzikirList = remember {
-        val pagiPetang = DoaRepository.doaList.filter { it.category == DoaCategory.PAGI_PETANG }
-        if (pagiPetang.isNotEmpty()) pagiPetang else DoaRepository.doaList.take(20)
-    }
+    val allDzikirList = remember { DoaRepository.dzikirList }
 
     val filteredDzikirList = remember(allDzikirList, searchQuery) {
         if (searchQuery.isBlank()) {
@@ -208,7 +209,7 @@ fun TasbihScreen(
                                     }
                                 },
                                 singleLine = true,
-                                shape = RoundedCornerShape(12.dp),
+                                shape = SearchFieldShape,
                                 colors = OutlinedTextFieldDefaults.colors(
                                     focusedContainerColor = MaterialTheme.colorScheme.surface,
                                     unfocusedContainerColor = MaterialTheme.colorScheme.surface,
@@ -223,7 +224,7 @@ fun TasbihScreen(
                     }
 
                     // Tab Navigation Row
-                    TabRow(
+                    PrimaryTabRow(
                         selectedTabIndex = selectedTab,
                         containerColor = MaterialTheme.colorScheme.surface,
                         contentColor = MaterialTheme.colorScheme.primary
@@ -346,7 +347,7 @@ fun TasbihScreen(
                             item {
                                 Surface(
                                     color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f),
-                                    shape = RoundedCornerShape(12.dp),
+                                    shape = DzikirBannerShape,
                                     border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)),
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
@@ -383,7 +384,7 @@ fun TasbihScreen(
 
                             Card(
                                 modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(14.dp),
+                                shape = DzikirCardShape,
                                 colors = CardDefaults.cardColors(
                                     containerColor = if (isCompleted) AccentGold.copy(alpha = 0.08f) else MaterialTheme.colorScheme.surface
                                 ),

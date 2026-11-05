@@ -384,6 +384,12 @@ Di saat anda tidur, anda sangat butuh pertolongan dan pengamanan dari Allah. Unt
         )
     )
 
+    // Precomputed list untuk Dzikir Pagi & Petang agar pembukaan TasbihScreen instan (0ms)
+    val dzikirList: List<Doa> by lazy {
+        val filtered = doaList.filter { it.category == DoaCategory.PAGI_PETANG }
+        if (filtered.isNotEmpty()) filtered else doaList.take(20)
+    }
+
     fun getDoaById(id: Int): Doa? = doaList.find { it.id == id }
 
     fun getDailyFeaturedDoa(): Doa {

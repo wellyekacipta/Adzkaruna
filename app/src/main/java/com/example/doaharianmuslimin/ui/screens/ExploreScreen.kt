@@ -22,9 +22,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.runtime.Immutable
 import androidx.compose.ui.unit.sp
 import com.example.doaharianmuslimin.ui.theme.AccentGold
 
+@Immutable
 data class IslamicInsight(
     val id: String,
     val title: String,
@@ -33,6 +35,61 @@ data class IslamicInsight(
     val source: String,
     val keywords: List<String>
 )
+
+private val StaticInsights = listOf(
+    IslamicInsight(
+        id = "hadits_senjata",
+        title = "Doa Adalah Senjata Mukmin",
+        category = "Mutiara Hadits",
+        content = "\"Doa adalah senjata orang mukmin, tiang penyangga agama, dan cahaya penerang langit dan bumi.\"",
+        source = "HR. Abu Ya'la, Al-Hakim, & Al-Qudha'i",
+        keywords = listOf("senjata", "mukmin", "tiang", "agama", "cahaya", "langit", "bumi", "hadits")
+    ),
+    IslamicInsight(
+        id = "mustajab_waktu",
+        title = "5 Waktu Paling Mustajab Berdoa",
+        category = "Waktu Utama",
+        content = "1. Sepertiga malam terakhir (Waktu Shalat Tahajjud)\n2. Di antara Adzan dan Iqamah\n3. Saat sujud dalam shalat fardhu maupun sunnah\n4. Saat turun hujan lebat membawa rahmat\n5. Menjelang berbuka puasa dan di hari Jum'at bakda Ashar",
+        source = "Berdasarkan Hadits Shahih Bukhari & Muslim",
+        keywords = listOf("mustajab", "waktu", "tahajjud", "malam", "adzan", "iqamah", "sujud", "hujan", "puasa", "jumat")
+    ),
+    IslamicInsight(
+        id = "adab_berdoa",
+        title = "4 Adab Pokok Saat Berdoa",
+        category = "Adab & Sunnah",
+        content = "1. Ikhlas & menghadap arah kiblat\n2. Memulai dengan memuji Allah (Hamdalah) & bershalawat kepada Nabi SAW\n3. Mengangkat kedua telapak tangan setinggi dada\n4. Merendahkan suara dengan penuh harap (khauf wa raja') dan yakin dikabulkan",
+        source = "Tuntunan Rasulullah SAW",
+        keywords = listOf("adab", "sunnah", "kiblat", "shalawat", "hamdalah", "tangan", "yakin", "ikhlas")
+    ),
+    IslamicInsight(
+        id = "dzikir_perisai",
+        title = "Perisai & Ketenangan Jiwa Melalui Dzikir",
+        category = "Keutamaan Dzikir",
+        content = "\"Ingatlah, hanya dengan mengingat Allah hati akan menjadi tentram dan tenang.\" Dzikir pagi dan petang melindungi seorang muslim dari godaan syaitan, marabahaya, serta kegelisahan batin.",
+        source = "QS. Ar-Ra'd: 28",
+        keywords = listOf("perisai", "dzikir", "tentram", "tenang", "hati", "pagi", "petang", "syaitan", "ar-ra'd")
+    ),
+    IslamicInsight(
+        id = "janji_ijabah",
+        title = "Janji Allah: Setiap Doa Pasti Dijawab",
+        category = "Janji Allah",
+        content = "\"Dan Tuhanmu berfirman: Berdoalah kepada-Ku, niscaya akan Kuperkenankan bagimu.\" Jawaban doa Allah berikan dalam bentuk langsung dikabulkan, disimpan sebagai pahala akhirat, atau dihindarkan dari keburukan yang setimpal.",
+        source = "QS. Ghafir: 60 & HR. Ahmad",
+        keywords = listOf("janji", "ijabah", "kabul", "ghafir", "allah", "doa", "pahala", "akhirat")
+    ),
+    IslamicInsight(
+        id = "janji_kemudahan",
+        title = "Janji Allah: Kemudahan di Balik Setiap Kesulitan",
+        category = "Janji Allah",
+        content = "\"Maka sesungguhnya bersama kesulitan ada kemudahan, sesungguhnya bersama kesulitan ada kemudahan.\" Satu kesulitan tidak akan mampu mengalahkan dua kemudahan yang Allah bentangkan.",
+        source = "QS. Al-Insyirah: 5-6",
+        keywords = listOf("kesulitan", "kemudahan", "insyirah", "janji", "lapang", "beban")
+    )
+)
+
+private val InsightCardShape = RoundedCornerShape(14.dp)
+private val InsightTagShape = RoundedCornerShape(6.dp)
+private val InsightBoxShape = RoundedCornerShape(10.dp)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -46,58 +103,7 @@ fun ExploreScreen(
     var searchQuery by remember { mutableStateOf("") }
     var isSearchActive by remember { mutableStateOf(false) }
 
-    val insights = remember {
-        listOf(
-            IslamicInsight(
-                id = "hadits_senjata",
-                title = "Doa Adalah Senjata Mukmin",
-                category = "Mutiara Hadits",
-                content = "\"Doa adalah senjata orang mukmin, tiang penyangga agama, dan cahaya penerang langit dan bumi.\"",
-                source = "HR. Abu Ya'la, Al-Hakim, & Al-Qudha'i",
-                keywords = listOf("senjata", "mukmin", "tiang", "agama", "cahaya", "langit", "bumi", "hadits")
-            ),
-            IslamicInsight(
-                id = "mustajab_waktu",
-                title = "5 Waktu Paling Mustajab Berdoa",
-                category = "Waktu Utama",
-                content = "1. Sepertiga malam terakhir (Waktu Shalat Tahajjud)\n2. Di antara Adzan dan Iqamah\n3. Saat sujud dalam shalat fardhu maupun sunnah\n4. Saat turun hujan lebat membawa rahmat\n5. Menjelang berbuka puasa dan di hari Jum'at bakda Ashar",
-                source = "Berdasarkan Hadits Shahih Bukhari & Muslim",
-                keywords = listOf("mustajab", "waktu", "tahajjud", "malam", "adzan", "iqamah", "sujud", "hujan", "puasa", "jumat")
-            ),
-            IslamicInsight(
-                id = "adab_berdoa",
-                title = "4 Adab Pokok Saat Berdoa",
-                category = "Adab & Sunnah",
-                content = "1. Ikhlas & menghadap arah kiblat\n2. Memulai dengan memuji Allah (Hamdalah) & bershalawat kepada Nabi SAW\n3. Mengangkat kedua telapak tangan setinggi dada\n4. Merendahkan suara dengan penuh harap (khauf wa raja') dan yakin dikabulkan",
-                source = "Tuntunan Rasulullah SAW",
-                keywords = listOf("adab", "sunnah", "kiblat", "shalawat", "hamdalah", "tangan", "yakin", "ikhlas")
-            ),
-            IslamicInsight(
-                id = "dzikir_perisai",
-                title = "Perisai & Ketenangan Jiwa Melalui Dzikir",
-                category = "Keutamaan Dzikir",
-                content = "\"Ingatlah, hanya dengan mengingat Allah hati akan menjadi tentram dan tenang.\" Dzikir pagi dan petang melindungi seorang muslim dari godaan syaitan, marabahaya, serta kegelisahan batin.",
-                source = "QS. Ar-Ra'd: 28",
-                keywords = listOf("perisai", "dzikir", "tentram", "tenang", "hati", "pagi", "petang", "syaitan", "ar-ra'd")
-            ),
-            IslamicInsight(
-                id = "janji_ijabah",
-                title = "Janji Allah: Setiap Doa Pasti Dijawab",
-                category = "Janji Allah",
-                content = "\"Dan Tuhanmu berfirman: Berdoalah kepada-Ku, niscaya akan Kuperkenankan bagimu.\" Jawaban doa Allah berikan dalam bentuk langsung dikabulkan, disimpan sebagai pahala akhirat, atau dihindarkan dari keburukan yang setimpal.",
-                source = "QS. Ghafir: 60 & HR. Ahmad",
-                keywords = listOf("janji", "ijabah", "kabul", "ghafir", "allah", "doa", "pahala", "akhirat")
-            ),
-            IslamicInsight(
-                id = "janji_kemudahan",
-                title = "Janji Allah: Kemudahan di Balik Setiap Kesulitan",
-                category = "Janji Allah",
-                content = "\"Maka sesungguhnya bersama kesulitan ada kemudahan, sesungguhnya bersama kesulitan ada kemudahan.\" Satu kesulitan tidak akan mampu mengalahkan dua kemudahan yang Allah bentangkan.",
-                source = "QS. Al-Insyirah: 5-6",
-                keywords = listOf("kesulitan", "kemudahan", "insyirah", "janji", "lapang", "beban")
-            )
-        )
-    }
+    val insights = StaticInsights
 
     val query = searchQuery.trim().lowercase()
     val filteredInsights = remember(query) {
@@ -471,7 +477,7 @@ fun ExploreScreen(
                 ) { item ->
                     Card(
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(14.dp),
+                        shape = InsightCardShape,
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
                     ) {
@@ -483,7 +489,7 @@ fun ExploreScreen(
                             ) {
                                 Surface(
                                     color = MaterialTheme.colorScheme.primaryContainer,
-                                    shape = RoundedCornerShape(6.dp)
+                                    shape = InsightTagShape
                                 ) {
                                     Text(
                                         text = item.category,

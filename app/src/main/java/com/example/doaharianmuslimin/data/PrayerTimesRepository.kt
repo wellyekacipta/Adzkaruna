@@ -30,6 +30,10 @@ object PrayerTimesRepository {
     // Cached all 518 cities in Indonesia
     private var allCitiesCache: List<CityOption> = emptyList()
 
+    // In-memory cache for today's prayer schedule to make opening Waktu Sholat 0ms instant
+    private var cachedScheduleKey: String? = null
+    private var cachedScheduleData: PrayerSchedule? = null
+
     val popularCities = listOf(
         CityOption("1301", "KOTA JAKARTA"),
         CityOption("1201", "KOTA BANDUNG"),
@@ -138,7 +142,7 @@ object PrayerTimesRepository {
     }
 
     /**
-     * Fetch prayer schedule from Kemenag API for specified city
+     * Fetch prayer schedule from Kemenag API for specified city (dengan in-memory cache)
      */
     suspend fun fetchKemenagSchedule(cityId: String = "1301", cityName: String = "KOTA JAKARTA"): PrayerSchedule {
         return withContext(Dispatchers.IO) {
@@ -146,6 +150,14 @@ object PrayerTimesRepository {
             val year = cal.get(Calendar.YEAR)
             val month = String.format(Locale.ROOT, "%02d", cal.get(Calendar.MONTH) + 1)
             val day = String.format(Locale.ROOT, "%02d", cal.get(Calendar.DAY_OF_MONTH))
+
+            val cacheKey = "$cityId-$year-$month-$day"
+            val cached = cachedScheduleData
+            if (cachedScheduleKey == cacheKey && cached != null) {
+                // Perbarui status waktu sholat berikutnya secara dinamis dari jam sekarang
+                val updatedItems = calculateNextPrayerStatus(cached.items)
+                return@withContext cached.copy(items = updatedItems)
+            }
 
             val urlString = "https://api.myquran.com/v2/sholat/jadwal/$cityId/$year/$month/$day"
             try {
@@ -187,12 +199,15 @@ object PrayerTimesRepository {
                         // Calculate which prayer is truly next based on current live time
                         val items = calculateNextPrayerStatus(rawItems)
 
-                        return@withContext PrayerSchedule(
+                        val schedule = PrayerSchedule(
                             city = "$lokasi (Kemenag RI)",
                             date = tanggal,
                             hijriDate = "Jadwal Resmi Kemenag",
                             items = items
                         )
+                        cachedScheduleKey = cacheKey
+                        cachedScheduleData = schedule
+                        return@withContext schedule
                     }
                 }
             } catch (_: Exception) {}

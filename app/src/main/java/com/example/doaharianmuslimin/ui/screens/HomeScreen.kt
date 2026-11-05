@@ -120,10 +120,10 @@ fun HomeScreen(
     var showLatin by remember { mutableStateOf(prefs.isShowLatin()) }
     val communityPrayers by communityRepo.prayersFlow.collectAsState()
     var historyRefreshKey by remember { mutableIntStateOf(0) }
-    val homeQuranHistory = remember(currentNavTab, historyRefreshKey) { prefs.getQuranReadingHistory().firstOrNull() }
-    val homeDoaHistory = remember(currentNavTab, historyRefreshKey) { prefs.getDoaReadingHistory().firstOrNull() }
-    val doaHistoryList = remember(currentNavTab, filterOnlyHistory, historyRefreshKey) { prefs.getDoaReadingHistory() }
-    val quranWeeklyStats = remember(currentNavTab, historyRefreshKey) { prefs.getQuranWeeklyStats() }
+    val homeQuranHistory = remember(historyRefreshKey) { prefs.getQuranReadingHistory().firstOrNull() }
+    val homeDoaHistory = remember(historyRefreshKey) { prefs.getDoaReadingHistory().firstOrNull() }
+    val doaHistoryList = remember(historyRefreshKey) { prefs.getDoaReadingHistory() }
+    val quranWeeklyStats = remember(historyRefreshKey) { prefs.getQuranWeeklyStats() }
 
     var selectedDoaForDetail by remember { mutableStateOf<Doa?>(null) }
     var isQuranImmersive by remember { mutableStateOf(false) }
@@ -221,8 +221,8 @@ fun HomeScreen(
         context.startActivity(Intent.createChooser(sendIntent, "Bagikan Doa Melalui"))
     }
 
-    // Filter list according to category, search, and favorites
-    val displayedDoas = remember(currentNavTab, selectedCategory, searchQuery, favoriteIds, filterOnlyFavorites) {
+    // Filter list according to category, search, and favorites (di-cache tanpa re-filter saat ganti tab)
+    val displayedDoas = remember(selectedCategory, searchQuery, favoriteIds, filterOnlyFavorites) {
         val baseList = if (filterOnlyFavorites) {
             DoaRepository.doaList.filter { favoriteIds.contains(it.id) }
         } else {
@@ -345,7 +345,7 @@ fun HomeScreen(
                                 }
                             }
                             Text(
-                                text = "Doa & Dzikir Harian Muslimin v1.48.0",
+                                text = "Doa & Dzikir Harian Muslimin v1.49.0",
                                 fontSize = 11.sp,
                                 color = Color.White.copy(alpha = 0.85f)
                             )
@@ -985,6 +985,7 @@ fun HomeScreen(
                                         onShare = { shareDoa(doa) },
                                         onClick = {
                                             prefs.addDoaReadingHistory(doa.id, doa.title)
+                                            historyRefreshKey++
                                             selectedDoaForDetail = doa
                                         }
                                     )

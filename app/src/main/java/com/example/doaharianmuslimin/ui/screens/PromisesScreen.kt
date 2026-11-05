@@ -22,6 +22,10 @@ import com.example.doaharianmuslimin.data.AllahPromiseRepository
 import com.example.doaharianmuslimin.ui.theme.AccentGold
 import com.example.doaharianmuslimin.ui.theme.UthmanicFontFamily
 
+private val PromiseCardShape = RoundedCornerShape(16.dp)
+private val PromiseBannerShape = RoundedCornerShape(14.dp)
+private val PromiseTagShape = RoundedCornerShape(8.dp)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PromisesScreen(
@@ -72,7 +76,7 @@ fun PromisesScreen(
             item {
                 Surface(
                     color = AccentGold.copy(alpha = 0.12f),
-                    shape = RoundedCornerShape(14.dp),
+                    shape = PromiseBannerShape,
                     border = BorderStroke(1.dp, AccentGold.copy(alpha = 0.3f))
                 ) {
                     Row(
@@ -98,10 +102,14 @@ fun PromisesScreen(
                 }
             }
 
-            items(AllahPromiseRepository.promises, key = { it.id }) { promise ->
+            items(
+                items = AllahPromiseRepository.promises,
+                key = { it.id },
+                contentType = { "PromiseCard" }
+            ) { promise ->
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
+                    shape = PromiseCardShape,
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                     border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)),
                     elevation = CardDefaults.cardElevation(1.dp)
@@ -113,7 +121,7 @@ fun PromisesScreen(
                     ) {
                         Surface(
                             color = MaterialTheme.colorScheme.primaryContainer,
-                            shape = RoundedCornerShape(8.dp)
+                            shape = PromiseTagShape
                         ) {
                             Text(
                                 text = promise.surah,

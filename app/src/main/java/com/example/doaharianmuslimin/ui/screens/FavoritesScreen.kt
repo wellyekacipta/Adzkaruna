@@ -35,6 +35,10 @@ import com.example.doaharianmuslimin.data.model.Doa
 import com.example.doaharianmuslimin.ui.theme.AccentGold
 import com.example.doaharianmuslimin.ui.theme.LpmqFontFamily
 
+private val FavoriteCardShape = RoundedCornerShape(14.dp)
+private val DoaTagShape = RoundedCornerShape(6.dp)
+private val QuranPageBoxShape = RoundedCornerShape(10.dp)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FavoritesScreen(
@@ -226,7 +230,7 @@ fun FavoritesScreen(
                 .padding(innerPadding)
         ) {
             // Tab Selector
-            TabRow(
+            PrimaryTabRow(
                 selectedTabIndex = selectedTab,
                 containerColor = MaterialTheme.colorScheme.surface,
                 contentColor = MaterialTheme.colorScheme.primary
@@ -328,9 +332,9 @@ fun FavoritesScreen(
                             Card(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clip(RoundedCornerShape(14.dp))
+                                    .clip(FavoriteCardShape)
                                     .clickable { onSelectDoa(doa) },
-                                shape = RoundedCornerShape(14.dp),
+                                shape = FavoriteCardShape,
                                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
                             ) {
@@ -342,7 +346,7 @@ fun FavoritesScreen(
                                     ) {
                                         Surface(
                                             color = MaterialTheme.colorScheme.primaryContainer,
-                                            shape = RoundedCornerShape(6.dp)
+                                            shape = DoaTagShape
                                         ) {
                                             Text(
                                                 text = doa.category.title,
@@ -485,11 +489,11 @@ fun FavoritesScreen(
                             Card(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clip(RoundedCornerShape(14.dp))
+                                    .clip(FavoriteCardShape)
                                     .clickable {
                                         onNavigateToQuranPage(item.pageNumber)
                                     },
-                                shape = RoundedCornerShape(14.dp),
+                                shape = FavoriteCardShape,
                                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
                             ) {
@@ -506,7 +510,7 @@ fun FavoritesScreen(
                                     ) {
                                         Surface(
                                             color = MaterialTheme.colorScheme.primaryContainer,
-                                            shape = RoundedCornerShape(10.dp),
+                                            shape = QuranPageBoxShape,
                                             modifier = Modifier.size(42.dp)
                                         ) {
                                             Box(contentAlignment = Alignment.Center) {

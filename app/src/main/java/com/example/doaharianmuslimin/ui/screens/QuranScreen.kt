@@ -95,6 +95,10 @@ enum class QuranFilterCategory(val label: String) {
     JUZ_30("Juz 30 (37)")
 }
 
+private val SurahCardShape = RoundedCornerShape(16.dp)
+private val HistoryCardShape = RoundedCornerShape(14.dp)
+private val BannerCardShape = RoundedCornerShape(14.dp)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun QuranScreen(
@@ -131,10 +135,10 @@ fun QuranScreen(
     var currentMushafPage by remember { mutableIntStateOf(lastReadPage) }
 
     LaunchedEffect(viewMode) {
-        if (viewMode == QuranViewMode.PER_HALAMAN) {
+        if (viewMode == QuranViewMode.PER_HALAMAN && !prefs.isMushafDownloadPrompted() && cachedPageCount == 0) {
             val count = withContext(Dispatchers.IO) { QuranRepository.countCachedPages(context) }
             cachedPageCount = count
-            if (!prefs.isMushafDownloadPrompted() && count < 600) {
+            if (count < 600) {
                 showDownloadPromptDialog = true
             }
         }
@@ -652,18 +656,22 @@ fun QuranScreen(
                                     }
                                 }
                             }
-                            items(historyItems, key = { "${it.surahNumber}_${it.pageNumber}_${it.timestamp}" }) { item ->
+                            items(
+                                items = historyItems,
+                                key = { "${it.surahNumber}_${it.pageNumber}_${it.timestamp}" },
+                                contentType = { "QuranHistoryItem" }
+                            ) { item ->
                                 Card(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .clip(RoundedCornerShape(14.dp))
+                                        .clip(HistoryCardShape)
                                         .clickable {
                                             val foundSurah = QuranRepository.allSurahMeta.find { it.number == item.surahNumber }
                                             if (foundSurah != null) {
                                                 openSurah(foundSurah, item.pageNumber)
                                             }
                                         },
-                                    shape = RoundedCornerShape(14.dp),
+                                    shape = HistoryCardShape,
                                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                     border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f))
                                 ) {
@@ -712,18 +720,22 @@ fun QuranScreen(
                                 }
                             }
                         } else {
-                            items(favItems, key = { "${it.surahNumber}_${it.pageNumber}" }) { item ->
+                            items(
+                                items = favItems,
+                                key = { "${it.surahNumber}_${it.pageNumber}" },
+                                contentType = { "QuranBookmarkItem" }
+                            ) { item ->
                                 Card(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .clip(RoundedCornerShape(14.dp))
+                                        .clip(HistoryCardShape)
                                         .clickable {
                                             val foundSurah = QuranRepository.allSurahMeta.find { it.number == item.surahNumber }
                                             if (foundSurah != null) {
                                                 openSurah(foundSurah, item.pageNumber)
                                             }
                                         },
-                                    shape = RoundedCornerShape(14.dp),
+                                    shape = HistoryCardShape,
                                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                     border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f))
                                 ) {
@@ -755,13 +767,17 @@ fun QuranScreen(
                         }
                     } else {
                         // Surahs list items with stable key
-                        items(displayedSurahs, key = { it.number }) { surah ->
+                        items(
+                            items = displayedSurahs,
+                            key = { it.number },
+                            contentType = { "SurahItem" }
+                        ) { surah ->
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clip(RoundedCornerShape(16.dp))
+                                .clip(SurahCardShape)
                                 .clickable { openSurah(surah) },
-                            shape = RoundedCornerShape(16.dp),
+                            shape = SurahCardShape,
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                             border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f))
                         ) {
