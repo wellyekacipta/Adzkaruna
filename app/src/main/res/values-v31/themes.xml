@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="Theme.DoaHarianMuslimin" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@drawable/splash_window_background</item>
+        <item name="android:statusBarColor">@color/splash_green_background</item>
+        <item name="android:navigationBarColor">@color/splash_green_dark</item>
+
+        <!-- Android 12+ System Splash Screen -->
+        <item name="android:windowSplashScreenBackground">@color/splash_green_background</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/app_logo_kufi</item>
+        <item name="android:windowSplashScreenIconBackgroundColor">@android:color/transparent</item>
+    </style>
+</resources>
