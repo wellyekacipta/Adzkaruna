@@ -267,7 +267,9 @@ object QuranRepository {
     init {
         // Pre-fill cache with bundled surahs
         bundledSurahs.forEach { (number, surah) ->
-            surahCache[number] = surah
+            surahCache[number] = surah.copy(
+                ayats = surah.ayats.map { it.copy(surahNumber = number) }
+            )
         }
     }
 
@@ -318,7 +320,8 @@ object QuranRepository {
                                 arabic = item.getString("teksArab"),
                                 latin = item.optString("teksLatin", ""),
                                 translation = item.getString("teksIndonesia"),
-                                audioUrl = audioUrl
+                                audioUrl = audioUrl,
+                                surahNumber = number
                             )
                         )
                     }
@@ -474,10 +477,14 @@ object QuranRepository {
 
                     val wordsByLine = mutableMapOf<Int, MutableList<MushafWord>>()
                     val surahNumbersOnPage = mutableSetOf<Int>()
+                    val verseKeysOnPage = mutableListOf<String>()
 
                     for (i in 0 until versesArray.length()) {
                         val vObj = versesArray.getJSONObject(i)
                         val vKey = vObj.getString("verse_key")
+                        if (!verseKeysOnPage.contains(vKey)) {
+                            verseKeysOnPage.add(vKey)
+                        }
                         val parts = vKey.split(":")
                         val sNum = parts[0].toIntOrNull() ?: 1
                         val aNum = parts[1].toIntOrNull() ?: 1
@@ -577,13 +584,27 @@ object QuranRepository {
                         }
                     }
 
-                    // Preload translations for verses on this page
-                    val versesMap = mutableMapOf<String, QuranAyat>()
-                    for (sNum in surahNumbersOnPage) {
-                        val sDetail = getSurahDetail(sNum)
-                        sDetail?.ayats?.forEach { ayat ->
-                            val key = "$sNum:${ayat.number}"
-                            versesMap[key] = ayat
+                    // Preload translations for verses on this page in page order
+                    val versesMap = linkedMapOf<String, QuranAyat>()
+                    if (verseKeysOnPage.isNotEmpty()) {
+                        for (vKey in verseKeysOnPage) {
+                            val parts = vKey.split(":")
+                            val sNum = parts.getOrNull(0)?.toIntOrNull() ?: continue
+                            val aNum = parts.getOrNull(1)?.toIntOrNull() ?: continue
+                            val sDetail = getSurahDetail(sNum)
+                            val ayat = sDetail?.ayats?.find { it.number == aNum }
+                            if (ayat != null) {
+                                versesMap[vKey] = ayat.copy(surahNumber = sNum)
+                            }
+                        }
+                    }
+                    if (versesMap.isEmpty()) {
+                        for (sNum in surahNumbersOnPage) {
+                            val sDetail = getSurahDetail(sNum)
+                            sDetail?.ayats?.forEach { ayat ->
+                                val key = "$sNum:${ayat.number}"
+                                versesMap[key] = ayat.copy(surahNumber = sNum)
+                            }
                         }
                     }
 

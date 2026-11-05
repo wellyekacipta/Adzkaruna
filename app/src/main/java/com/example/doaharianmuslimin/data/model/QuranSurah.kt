@@ -6,7 +6,8 @@ data class QuranAyat(
     val latin: String,
     val translation: String,
     val audioUrl: String = "",
-    val tafsir: String = ""
+    val tafsir: String = "",
+    val surahNumber: Int = 0
 )
 
 data class QuranSurah(

@@ -36,12 +36,16 @@ import com.example.doaharianmuslimin.R
 import com.example.doaharianmuslimin.data.AppThemeMode
 import com.example.doaharianmuslimin.data.CommunityPrayerRepository
 import com.example.doaharianmuslimin.data.DoaRepository
+import com.example.doaharianmuslimin.data.IslamicDateHelper
 import com.example.doaharianmuslimin.data.PreferencesManager
+import com.example.doaharianmuslimin.data.PrayerTimesRepository
 import com.example.doaharianmuslimin.data.model.Doa
 import com.example.doaharianmuslimin.data.model.DoaCategory
+import com.example.doaharianmuslimin.data.model.PrayerSchedule
 import com.example.doaharianmuslimin.ui.components.*
 import com.example.doaharianmuslimin.ui.theme.AccentGold
 import com.example.doaharianmuslimin.ui.theme.PrimaryTosca
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.Calendar
 import java.text.SimpleDateFormat
@@ -63,7 +67,10 @@ enum class ActiveSubScreen {
     PROMISES,
     WAKTU_SHOLAT,
     QIBLAT,
-    TOPIK_DOA
+    TOPIK_DOA,
+    DZIKIR,
+    FAVORIT,
+    BELAJAR_ISLAM
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -104,6 +111,29 @@ fun HomeScreen(
     var quranTargetPage by remember { mutableStateOf<Int?>(null) }
     var showExitConfirmationDialog by remember { mutableStateOf(false) }
     var showConfirmClearDoaDialog by remember { mutableStateOf(false) }
+
+    // Tanggal Hari Ini (Masehi & Hijriyah) serta Countdown Sholat Berikutnya
+    val todayMasehiDate = remember { IslamicDateHelper.getTodayMasehi() }
+    val todayHijriDate = remember { IslamicDateHelper.getTodayHijri() }
+
+    var homePrayerSchedule by remember { mutableStateOf<PrayerSchedule?>(null) }
+    var nextPrayerCountdown by remember { mutableStateOf("00:00:00") }
+    var nextPrayerName by remember { mutableStateOf("Subuh") }
+
+    LaunchedEffect(Unit) {
+        val cityId = prefs.getSavedCityId()
+        val cityName = prefs.getSavedCityName()
+        homePrayerSchedule = PrayerTimesRepository.fetchKemenagSchedule(cityId, cityName)
+    }
+
+    LaunchedEffect(homePrayerSchedule) {
+        while (true) {
+            val (cd, name) = PrayerTimesRepository.getCountdownToNextPrayer(homePrayerSchedule)
+            nextPrayerCountdown = cd
+            nextPrayerName = name
+            delay(1000)
+        }
+    }
 
     // Menangani tombol kembali sistem Android di seluruh aplikasi (kembali ke Home, lalu pop-up keluar)
     BackHandler(enabled = true) {
@@ -246,6 +276,33 @@ fun HomeScreen(
             )
             return
         }
+        ActiveSubScreen.DZIKIR -> {
+            TasbihScreen(onBack = { activeSubScreen = ActiveSubScreen.NONE })
+            return
+        }
+        ActiveSubScreen.FAVORIT -> {
+            FavoritesScreen(
+                onBack = { activeSubScreen = ActiveSubScreen.NONE },
+                onSelectDoa = { selectedDoaForDetail = it },
+                onNavigateToQuranPage = { page ->
+                    activeSubScreen = ActiveSubScreen.NONE
+                    quranTargetPage = page
+                    currentNavTab = BottomNavTab.QURAN
+                },
+                favoriteIds = favoriteIds,
+                onToggleFavorite = { toggleFavorite(it) }
+            )
+            return
+        }
+        ActiveSubScreen.BELAJAR_ISLAM -> {
+            ExploreScreen(
+                onBack = { activeSubScreen = ActiveSubScreen.NONE },
+                onNavigateToPromises = { activeSubScreen = ActiveSubScreen.PROMISES },
+                onNavigateToPrayerTimes = { activeSubScreen = ActiveSubScreen.WAKTU_SHOLAT },
+                onNavigateToQibla = { activeSubScreen = ActiveSubScreen.QIBLAT }
+            )
+            return
+        }
         ActiveSubScreen.NONE -> { /* Continue with Main Flow */ }
     }
 
@@ -271,7 +328,7 @@ fun HomeScreen(
                                 color = Color.White
                             )
                             Text(
-                                text = "Doa & Dzikir Harian Muslimin v1.45.0",
+                                text = "Doa & Dzikir Harian Muslimin v1.47.0",
                                 fontSize = 11.sp,
                                 color = Color.White.copy(alpha = 0.85f)
                             )
@@ -533,34 +590,113 @@ fun HomeScreen(
                                 }
                             }
 
-                            // 2. Menu Utama (6 Kotak Menu Sesuai Gambar)
+                            // 2. Banner Tanggal Hari Ini (Masehi & Hijriyah) & Hitungan Mundur Sholat Berikutnya (Pengganti Tulisan "Menu Utama")
                             item {
-                                Text(
-                                    text = "Menu Utama",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.padding(top = 4.dp)
-                                )
+                                Surface(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(top = 4.dp, bottom = 2.dp)
+                                        .clip(RoundedCornerShape(14.dp))
+                                        .clickable { activeSubScreen = ActiveSubScreen.WAKTU_SHOLAT },
+                                    color = MaterialTheme.colorScheme.surface,
+                                    shape = RoundedCornerShape(14.dp),
+                                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.35f)),
+                                    shadowElevation = 0.5.dp
+                                ) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 14.dp, vertical = 10.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        // Bagian Kiri: Tanggal Masehi & Tanggal Hijriyah
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                Icon(
+                                                    imageVector = Icons.Default.CalendarToday,
+                                                    contentDescription = null,
+                                                    tint = MaterialTheme.colorScheme.primary,
+                                                    modifier = Modifier.size(13.dp)
+                                                )
+                                                Spacer(modifier = Modifier.width(5.dp))
+                                                Text(
+                                                    text = todayMasehiDate,
+                                                    fontSize = 12.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = MaterialTheme.colorScheme.onSurface,
+                                                    maxLines = 1,
+                                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                                )
+                                            }
+                                            Spacer(modifier = Modifier.height(2.dp))
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                Text(
+                                                    text = "🌙 $todayHijriDate",
+                                                    fontSize = 11.sp,
+                                                    fontWeight = FontWeight.SemiBold,
+                                                    color = AccentGold,
+                                                    maxLines = 1,
+                                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                                )
+                                            }
+                                        }
+
+                                        Spacer(modifier = Modifier.width(8.dp))
+
+                                        // Bagian Kanan: Hitungan Waktu Mundur Sholat Berikutnya
+                                        Surface(
+                                            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f),
+                                            shape = RoundedCornerShape(10.dp),
+                                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
+                                        ) {
+                                            Row(
+                                                modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp),
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.AccessTime,
+                                                    contentDescription = null,
+                                                    tint = MaterialTheme.colorScheme.primary,
+                                                    modifier = Modifier.size(15.dp)
+                                                )
+                                                Spacer(modifier = Modifier.width(5.dp))
+                                                Column(horizontalAlignment = Alignment.End) {
+                                                    Text(
+                                                        text = "Menuju $nextPrayerName",
+                                                        fontSize = 9.5.sp,
+                                                        fontWeight = FontWeight.SemiBold,
+                                                        color = MaterialTheme.colorScheme.primary
+                                                    )
+                                                    Text(
+                                                        text = nextPrayerCountdown.ifBlank { "00:00:00" },
+                                                        fontSize = 12.sp,
+                                                        fontWeight = FontWeight.ExtraBold,
+                                                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                                        letterSpacing = 0.5.sp
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
                             }
 
                             item {
                                 MainMenuGrid(
                                     onMenuItemClick = { menuItem ->
                                         when (menuItem) {
-                                            MainMenuItem.PROMISES -> activeSubScreen = ActiveSubScreen.PROMISES
-                                            MainMenuItem.WAKTU_SHOLAT -> activeSubScreen = ActiveSubScreen.WAKTU_SHOLAT
-                                            MainMenuItem.DOA_DOA -> {
+                                            MainMenuItem.DOA_HARIAN -> {
                                                 currentNavTab = BottomNavTab.DOA
                                                 filterOnlyFavorites = false
-                                            }
-                                            MainMenuItem.TOPIK_DOA -> activeSubScreen = ActiveSubScreen.TOPIK_DOA
-                                            MainMenuItem.QIBLAT -> activeSubScreen = ActiveSubScreen.QIBLAT
-                                            MainMenuItem.FAVORIT -> {
-                                                currentNavTab = BottomNavTab.DOA
-                                                filterOnlyFavorites = true
                                                 filterOnlyHistory = false
+                                                selectedCategory = DoaCategory.SEMUA
                                             }
+                                            MainMenuItem.DZIKIR -> activeSubScreen = ActiveSubScreen.DZIKIR
+                                            MainMenuItem.TOPIK_DOA -> activeSubScreen = ActiveSubScreen.TOPIK_DOA
+                                            MainMenuItem.FAVORIT -> activeSubScreen = ActiveSubScreen.FAVORIT
+                                            MainMenuItem.QIBLAT -> activeSubScreen = ActiveSubScreen.QIBLAT
+                                            MainMenuItem.BELAJAR_ISLAM -> activeSubScreen = ActiveSubScreen.BELAJAR_ISLAM
                                         }
                                     }
                                 )

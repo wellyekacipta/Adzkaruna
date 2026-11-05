@@ -169,10 +169,10 @@ fun QuranScreen(
 
     // Menangani tombol kembali sistem Android di layar Al-Qur'an (kembali ke Home)
     BackHandler(enabled = true) {
-        if (showPageVersesSheet) {
-            showPageVersesSheet = false
-        } else if (selectedAyatForTafsir != null) {
+        if (selectedAyatForTafsir != null) {
             selectedAyatForTafsir = null
+        } else if (showPageVersesSheet) {
+            showPageVersesSheet = false
         } else if (selectedSurah != null) {
             selectedSurah = null
             loadError = null
@@ -1210,7 +1210,11 @@ fun QuranScreen(
                         val rosetteTxt = Color(0xFFBF360C)
                         val isEvenPage = currentMushafPage % 2 == 0
                         val currentJuz = pageData?.juzNumber ?: QuranRepository.getJuzForPage(currentMushafPage)
-                        val currentSurahName = pageData?.mainSurahName ?: pageSurahMeta?.name ?: surah.name
+                        val currentSurahName = if (pageData?.versesMap?.keys?.any { it.startsWith("${surah.number}:") } == true) {
+                            surah.name
+                        } else {
+                            pageData?.mainSurahName ?: pageSurahMeta?.name ?: surah.name
+                        }
                         val isPageBookmarked = quranFavList.any { it.pageNumber == currentMushafPage }
 
                         // Mode Imersif: Kartu mengisi 100% layar (0dp horizontal padding agar rapat kiri-kanan)
@@ -1553,22 +1557,26 @@ fun QuranScreen(
                         }
 
                         // ==================== BOTTOM SHEET: DAFTAR AYAT & TAFSIR HALAMAN INI ====================
-                        if (showPageVersesSheet) {
+                        if (showPageVersesSheet && selectedAyatForTafsir == null) {
                             var ayatSearchQuery by remember { mutableStateOf("") }
                             var selectedScopeIndex by remember { mutableIntStateOf(0) } // 0 = Halaman Ini, 1 = Semua Ayat Surat
 
-                            val versesOnPage = remember(pageData, surah) {
-                                val mapVerses = pageData?.versesMap?.values?.sortedBy { it.number }
+                            val versesOnPage = remember(pageData, surah, currentMushafPage) {
+                                val mapVerses = pageData?.versesMap?.values?.toList()
                                 if (!mapVerses.isNullOrEmpty()) {
                                     mapVerses
                                 } else {
-                                    surah.ayats.take(15)
+                                    surah.ayats.map { if (it.surahNumber > 0) it else it.copy(surahNumber = surah.number) }
                                 }
                             }
 
-                            val filteredVerses = remember(ayatSearchQuery, selectedScopeIndex, versesOnPage, surah.ayats) {
+                            val filteredVerses = remember(ayatSearchQuery, selectedScopeIndex, versesOnPage, surah) {
                                 val query = ayatSearchQuery.trim()
-                                val baseList = if (selectedScopeIndex == 0) versesOnPage else surah.ayats
+                                val baseList = if (selectedScopeIndex == 0) {
+                                    versesOnPage
+                                } else {
+                                    surah.ayats.map { if (it.surahNumber > 0) it else it.copy(surahNumber = surah.number) }
+                                }
                                 if (query.isBlank()) {
                                     baseList
                                 } else {
@@ -1580,6 +1588,14 @@ fun QuranScreen(
                                         ayat.latin.contains(query, ignoreCase = true) ||
                                         ayat.arabic.contains(query)
                                     }
+                                }
+                            }
+
+                            val distinctFilteredVerses = remember(filteredVerses, surah) {
+                                val seen = mutableSetOf<String>()
+                                filteredVerses.filter { ayat ->
+                                    val sNum = if (ayat.surahNumber > 0) ayat.surahNumber else surah.number
+                                    seen.add("${sNum}_${ayat.number}")
                                 }
                             }
 
@@ -1778,7 +1794,17 @@ fun QuranScreen(
                                             verticalArrangement = Arrangement.spacedBy(10.dp),
                                             contentPadding = PaddingValues(vertical = 8.dp)
                                         ) {
-                                            items(filteredVerses, key = { it.number }) { ayatItem ->
+                                            items(
+                                                items = distinctFilteredVerses,
+                                                key = { ayatItem ->
+                                                    val sNum = if (ayatItem.surahNumber > 0) ayatItem.surahNumber else surah.number
+                                                    "${sNum}_${ayatItem.number}"
+                                                }
+                                            ) { ayatItem ->
+                                                val ayatSurahNum = if (ayatItem.surahNumber > 0) ayatItem.surahNumber else surah.number
+                                                val ayatSurahMeta = QuranRepository.allSurahMeta.find { it.number == ayatSurahNum }
+                                                val ayatSurahName = ayatSurahMeta?.name ?: surah.name
+
                                                 Card(
                                                     modifier = Modifier.fillMaxWidth(),
                                                     shape = RoundedCornerShape(12.dp),
@@ -1801,7 +1827,7 @@ fun QuranScreen(
                                                                     shape = RoundedCornerShape(6.dp)
                                                                 ) {
                                                                     Text(
-                                                                        text = "Ayat ${ayatItem.number}",
+                                                                        text = "QS. $ayatSurahName • Ayat ${ayatItem.number}",
                                                                         fontSize = 11.sp,
                                                                         fontWeight = FontWeight.Bold,
                                                                         color = Color.White,
@@ -1809,7 +1835,7 @@ fun QuranScreen(
                                                                     )
                                                                 }
 
-                                                                val isOnPage = versesOnPage.any { it.number == ayatItem.number }
+                                                                val isOnPage = versesOnPage.any { it.number == ayatItem.number && (it.surahNumber <= 0 || it.surahNumber == ayatSurahNum) }
                                                                 if (isOnPage) {
                                                                     Surface(
                                                                         color = Color(0xFFE8F5E9),
@@ -1830,8 +1856,8 @@ fun QuranScreen(
                                                             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                                                                 FilledTonalButton(
                                                                     onClick = {
-                                                                        selectedTafsirSurahNumber = surah.number
-                                                                        selectedTafsirSurahName = surah.name
+                                                                        selectedTafsirSurahNumber = ayatSurahNum
+                                                                        selectedTafsirSurahName = ayatSurahName
                                                                         selectedAyatForTafsir = ayatItem
                                                                     },
                                                                     shape = RoundedCornerShape(6.dp),
@@ -1862,14 +1888,14 @@ fun QuranScreen(
                                                                 }
 
                                                                 IconButton(
-                                                                    onClick = { copyAyat(ayatItem, surah.name) },
+                                                                    onClick = { copyAyat(ayatItem, ayatSurahName, ayatSurahNum) },
                                                                     modifier = Modifier.size(28.dp)
                                                                 ) {
                                                                     Icon(Icons.Default.ContentCopy, contentDescription = "Salin", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(15.dp))
                                                                 }
 
                                                                 IconButton(
-                                                                    onClick = { shareAyat(ayatItem, surah.name) },
+                                                                    onClick = { shareAyat(ayatItem, ayatSurahName, ayatSurahNum) },
                                                                     modifier = Modifier.size(28.dp)
                                                                 ) {
                                                                     Icon(Icons.Default.Share, contentDescription = "Bagikan", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(15.dp))
@@ -2183,14 +2209,14 @@ fun QuranScreen(
 
                             Row {
                                 IconButton(
-                                    onClick = { copyAyat(ayat, surahName) },
+                                    onClick = { copyAyat(ayat, surahName, selectedTafsirSurahNumber) },
                                     modifier = Modifier.size(36.dp)
                                 ) {
                                     Icon(Icons.Default.ContentCopy, contentDescription = "Salin", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
                                 }
 
                                 IconButton(
-                                    onClick = { shareAyat(ayat, surahName) },
+                                    onClick = { shareAyat(ayat, surahName, selectedTafsirSurahNumber) },
                                     modifier = Modifier.size(36.dp)
                                 ) {
                                     Icon(Icons.Default.Share, contentDescription = "Bagikan", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
