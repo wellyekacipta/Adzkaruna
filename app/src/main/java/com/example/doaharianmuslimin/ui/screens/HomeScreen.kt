@@ -36,12 +36,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.example.doaharianmuslimin.R
 import com.example.doaharianmuslimin.data.AppThemeMode
-import com.example.doaharianmuslimin.data.CommunityPrayerRepository
 import com.example.doaharianmuslimin.data.DoaRepository
 import com.example.doaharianmuslimin.data.PreferencesManager
 import com.example.doaharianmuslimin.data.model.Doa
@@ -85,26 +81,8 @@ fun HomeScreen(
 ) {
     val context = LocalContext.current
     val prefs = remember { PreferencesManager(context) }
-    val communityRepo = remember { CommunityPrayerRepository.getInstance(context) }
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
-    val lifecycleOwner = LocalLifecycleOwner.current
-
-    // Lifecycle-aware Firestore Listener: Menghemat baterai saat aplikasi di background / minimize
-    DisposableEffect(lifecycleOwner, communityRepo) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_START || event == Lifecycle.Event.ON_RESUME) {
-                communityRepo.startListening()
-            } else if (event == Lifecycle.Event.ON_STOP) {
-                communityRepo.stopListening()
-            }
-        }
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
-            communityRepo.stopListening()
-        }
-    }
 
     var currentNavTab by remember { mutableStateOf(BottomNavTab.HOME) }
     var activeSubScreen by remember { mutableStateOf(ActiveSubScreen.NONE) }
@@ -112,14 +90,12 @@ fun HomeScreen(
     var searchQuery by remember { mutableStateOf("") }
     var isSearchActive by remember { mutableStateOf(false) }
     var showThemeDialog by remember { mutableStateOf(false) }
-    var showCreatePrayerSheet by remember { mutableStateOf(false) }
     var filterOnlyFavorites by remember { mutableStateOf(false) }
     var filterOnlyHistory by remember { mutableStateOf(false) }
 
     var favoriteIds by remember { mutableStateOf(prefs.getFavoriteIds()) }
     var arabicFontSize by remember { mutableFloatStateOf(prefs.getArabicFontSize()) }
     var showLatin by remember { mutableStateOf(prefs.isShowLatin()) }
-    val communityPrayers by communityRepo.prayersFlow.collectAsState()
     var historyRefreshKey by remember { mutableIntStateOf(0) }
     val homeQuranHistory = remember(historyRefreshKey) { prefs.getQuranReadingHistory().firstOrNull() }
     val homeDoaHistory = remember(historyRefreshKey) { prefs.getDoaReadingHistory().firstOrNull() }
@@ -135,7 +111,6 @@ fun HomeScreen(
     // Menangani tombol kembali sistem Android di seluruh aplikasi (kembali ke Home, lalu pop-up keluar)
     BackHandler(enabled = true) {
         when {
-            showCreatePrayerSheet -> showCreatePrayerSheet = false
             showThemeDialog -> showThemeDialog = false
             selectedDoaForDetail != null -> selectedDoaForDetail = null
             isSearchActive -> {
@@ -736,20 +711,6 @@ fun HomeScreen(
                                     }
                                 )
                             }
-
-                            // 4. Aamiinkan Doa Saudaramu (Dipindah ke bawah Menu Utama)
-                            item(key = "amiinkan_doa_section", contentType = "amiinkan_doa_section") {
-                                AmiinkanDoaSection(
-                                    prayers = communityPrayers,
-                                    onArrowClick = { showCreatePrayerSheet = true },
-                                    onToggleAamiin = { prayerId ->
-                                        communityRepo.toggleAamiin(prayerId)
-                                    },
-                                    onToggleLike = { prayerId ->
-                                        communityRepo.toggleLike(prayerId)
-                                    }
-                                )
-                            }
                             // DAFTAR 35 DOA SUDAH DIHILANGKAN DARI MENU UTAMA HOME SESUAI PERMINTAAN!
                         }
 
@@ -1000,20 +961,6 @@ fun HomeScreen(
                     }
                 }
             }
-        }
-
-        // Create Prayer Sheet (from + button in Aamiinkan Doa)
-        if (showCreatePrayerSheet) {
-            CreatePrayerBottomSheet(
-                onDismiss = { showCreatePrayerSheet = false },
-                defaultName = prefs.getUserName(),
-                onSubmit = { name, location, text ->
-                    communityRepo.addPrayer(name, location, text)
-                    coroutineScope.launch {
-                        snackbarHostState.showSnackbar("Doa berhasil dikirim dan kini dapat diaminkan sesama!")
-                    }
-                }
-            )
         }
 
         // Theme Selection Dialog

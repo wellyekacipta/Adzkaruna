@@ -35,27 +35,33 @@ fun SplashScreen(
 ) {
     var startAnimation by remember { mutableStateOf(false) }
 
+    val logoFadeAlpha by animateFloatAsState(
+        targetValue = if (startAnimation) 1f else 0f,
+        animationSpec = tween(durationMillis = 900, easing = EaseInOutCubic),
+        label = "logoFadeAlpha"
+    )
+
     val logoScale by animateFloatAsState(
-        targetValue = if (startAnimation) 1f else 0.94f,
-        animationSpec = tween(durationMillis = 700, easing = EaseOutBack),
+        targetValue = if (startAnimation) 1f else 0.82f,
+        animationSpec = tween(durationMillis = 1000, easing = EaseOutBack),
         label = "logoScale"
     )
 
     val textFadeAlpha by animateFloatAsState(
         targetValue = if (startAnimation) 1f else 0f,
-        animationSpec = tween(durationMillis = 700, delayMillis = 150, easing = EaseInOutCubic),
+        animationSpec = tween(durationMillis = 800, delayMillis = 300, easing = EaseInOutCubic),
         label = "textFadeAlpha"
     )
 
     val bottomFadeAlpha by animateFloatAsState(
         targetValue = if (startAnimation) 1f else 0f,
-        animationSpec = tween(durationMillis = 700, delayMillis = 350, easing = EaseInOutCubic),
+        animationSpec = tween(durationMillis = 800, delayMillis = 500, easing = EaseInOutCubic),
         label = "bottomFadeAlpha"
     )
 
     LaunchedEffect(Unit) {
         startAnimation = true
-        delay(2000)
+        delay(2200)
         onSplashFinished()
     }
 
@@ -80,10 +86,12 @@ fun SplashScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            // Container Logo Putih (Langsung terlihat selaras dengan layar splash native)
+            // Container Logo Putih
             Box(
                 contentAlignment = Alignment.Center,
-                modifier = Modifier.scale(logoScale)
+                modifier = Modifier
+                    .scale(logoScale)
+                    .alpha(logoFadeAlpha)
             ) {
                 // Outer Subtle Halo
                 Surface(

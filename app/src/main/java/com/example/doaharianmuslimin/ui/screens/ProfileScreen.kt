@@ -95,7 +95,7 @@ fun ProfileScreen(
     }
 
     fun shareApp() {
-        val shareText = "Yuk install Adzkaruna - Aplikasi Doa & Dzikir Harian Muslimin lengkap dengan 114 Surat Al-Qur'an Mushaf Madinah, Jadwal Sholat Resmi Kemenag RI, Kompas Kiblat Halus, dan wadah saling mendoakan sesama muslim.\n\nUnduh sekarang dan raih pahala jariyah bersama!"
+        val shareText = "Yuk install Adzkaruna - Aplikasi Doa & Dzikir Harian Muslimin lengkap dengan 114 Surat Al-Qur'an Mushaf Madinah, Jadwal Sholat Resmi Kemenag RI, dan Kompas Kiblat Halus.\n\nUnduh sekarang dan raih pahala jariyah bersama!"
         val intent = Intent(Intent.ACTION_SEND).apply {
             type = "text/plain"
             putExtra(Intent.EXTRA_TEXT, shareText)
@@ -656,7 +656,7 @@ fun ProfileScreen(
                                 Spacer(modifier = Modifier.height(10.dp))
 
                                 Text(
-                                    text = "Aplikasi islami komprehensif tanpa iklan mengganggu: kumpulan doa harian shahih, 114 surat Al-Qur'an Mushaf Madinah, arah kiblat akurasi sensor, jadwal sholat resmi Kemenag RI, dan wadah saling mendoakan sesama muslim.",
+                                    text = "Aplikasi islami komprehensif tanpa iklan mengganggu: kumpulan doa harian shahih, 114 surat Al-Qur'an Mushaf Madinah, arah kiblat akurasi sensor, dan jadwal sholat resmi Kemenag RI.",
                                     fontSize = 12.sp,
                                     lineHeight = 17.sp,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -696,7 +696,7 @@ fun ProfileScreen(
             text = {
                 Column {
                     Text(
-                        text = "Nama ini akan ditampilkan saat Anda mengirimkan doa di fitur 'Doakan Saudaramu'.",
+                        text = "Nama tampilan profil Anda di aplikasi Adzkaruna.",
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
