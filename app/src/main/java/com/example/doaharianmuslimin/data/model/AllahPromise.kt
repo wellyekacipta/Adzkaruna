@@ -1,5 +1,8 @@
 package com.example.doaharianmuslimin.data.model
 
+import androidx.compose.runtime.Immutable
+
+@Immutable
 data class AllahPromise(
     val id: Int,
     val title: String,

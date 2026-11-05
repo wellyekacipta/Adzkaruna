@@ -464,7 +464,11 @@ fun ExploreScreen(
                 }
 
                 // Daftar Pembahasan & Wawasan Islam
-                items(filteredInsights, key = { it.id }) { item ->
+                items(
+                    items = filteredInsights,
+                    key = { it.id },
+                    contentType = { "IslamicInsight" }
+                ) { item ->
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(14.dp),

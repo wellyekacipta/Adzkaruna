@@ -1,5 +1,8 @@
 package com.example.doaharianmuslimin.data.model
 
+import androidx.compose.runtime.Immutable
+
+@Immutable
 data class QuranAyat(
     val number: Int,
     val arabic: String,
@@ -10,6 +13,7 @@ data class QuranAyat(
     val surahNumber: Int = 0
 )
 
+@Immutable
 data class QuranSurah(
     val number: Int,
     val name: String,

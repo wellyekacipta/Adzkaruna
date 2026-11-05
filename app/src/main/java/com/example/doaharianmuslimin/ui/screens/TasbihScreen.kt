@@ -372,7 +372,11 @@ fun TasbihScreen(
                             }
                         }
 
-                        items(filteredDzikirList, key = { it.id }) { doa ->
+                        items(
+                            items = filteredDzikirList,
+                            key = { it.id },
+                            contentType = { "DzikirCard" }
+                        ) { doa ->
                             val currentCount = doaCounters[doa.id] ?: 0
                             val targetCount = doa.repeatCount.coerceAtLeast(1)
                             val isCompleted = currentCount >= targetCount

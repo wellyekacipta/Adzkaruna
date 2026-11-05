@@ -320,7 +320,11 @@ fun FavoritesScreen(
                         contentPadding = PaddingValues(14.dp),
                         verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        items(filteredDoas, key = { it.id }) { doa ->
+                        items(
+                            items = filteredDoas,
+                            key = { it.id },
+                            contentType = { "FavoriteDoa" }
+                        ) { doa ->
                             Card(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -473,7 +477,11 @@ fun FavoritesScreen(
                         contentPadding = PaddingValues(14.dp),
                         verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        items(filteredQuranFavorites, key = { "${it.surahNumber}_${it.pageNumber}" }) { item ->
+                        items(
+                            items = filteredQuranFavorites,
+                            key = { "${it.surahNumber}_${it.pageNumber}" },
+                            contentType = { "FavoriteQuran" }
+                        ) { item ->
                             Card(
                                 modifier = Modifier
                                     .fillMaxWidth()

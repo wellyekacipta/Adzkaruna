@@ -13,7 +13,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -21,8 +20,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.doaharianmuslimin.data.model.Doa
 import com.example.doaharianmuslimin.ui.theme.AccentGold
-import com.example.doaharianmuslimin.ui.theme.PrimaryTosca
 import com.example.doaharianmuslimin.ui.theme.UthmanicFontFamily
+
+private val DoaCardShape = RoundedCornerShape(16.dp)
+private val DoaTagShape = RoundedCornerShape(8.dp)
 
 @Composable
 fun DoaCard(
@@ -37,13 +38,12 @@ fun DoaCard(
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
             .clickable { onClick() },
-        shape = RoundedCornerShape(16.dp),
+        shape = DoaCardShape,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.35f)),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Column(
@@ -59,7 +59,7 @@ fun DoaCard(
             ) {
                 Surface(
                     color = MaterialTheme.colorScheme.primaryContainer,
-                    shape = RoundedCornerShape(8.dp)
+                    shape = DoaTagShape
                 ) {
                     Text(
                         text = if (doa.arabic.isBlank()) "📖 ${doa.category.title} • Keutamaan" else doa.category.title,

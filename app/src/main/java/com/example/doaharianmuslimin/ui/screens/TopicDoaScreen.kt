@@ -384,7 +384,11 @@ fun TopicDoaScreen(
                         }
                     }
                 } else {
-                    items(filteredDoas, key = { it.id }) { doa ->
+                    items(
+                        items = filteredDoas,
+                        key = { it.id },
+                        contentType = { "DoaCard" }
+                    ) { doa ->
                         DoaCard(
                             doa = doa,
                             isFavorite = favoriteIds.contains(doa.id),
