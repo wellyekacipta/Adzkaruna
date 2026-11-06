@@ -20,8 +20,8 @@ enum class AppThemeMode(val title: String) {
 }
 
 enum class MushafStyle(val title: String, val subtitle: String) {
-    TAJWEED("Tajwid Berwarna", "Rasm Utsmani Madinah 15 baris berkaidah tajwid warna"),
-    BIASA("Mushaf Biasa", "Rasm Utsmani Madinah 15 baris standar hitam klasik")
+    TAJWEED("Tajwid Berwarna", "KFGQPC Hafs Utsmani 15 baris berkaidah tajwid warna"),
+    BIASA("Mushaf Biasa", "KFGQPC Hafs Utsmani 15 baris standar hitam klasik")
 }
 
 

@@ -2107,7 +2107,7 @@ fun QuranScreen(
                         )
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
-                            text = "15 Baris Rasm Utsmani Madinah (KFGQPC)",
+                            text = "15 Baris KFGQPC Hafs Utsmani (Madinah)",
                             fontSize = 11.5.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             textAlign = TextAlign.Center
@@ -2169,7 +2169,7 @@ fun QuranScreen(
                                     }
                                     Spacer(modifier = Modifier.height(2.dp))
                                     Text(
-                                        text = "15 Baris rasm Utsmani dengan hukum tajwid berwarna lengkap (Mad, Ghunnah, Qalqalah, Ikhfa, Idgham, Iqlab).",
+                                        text = "15 Baris Mushaf KFGQPC Hafs Utsmani dengan kaidah hukum tajwid warna lengkap (Mad, Ghunnah, Qalqalah, Ikhfa, Idgham, Iqlab).",
                                         fontSize = 11.sp,
                                         lineHeight = 15.sp,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -2210,7 +2210,7 @@ fun QuranScreen(
                                     )
                                     Spacer(modifier = Modifier.height(2.dp))
                                     Text(
-                                        text = "15 Baris rasm Utsmani cetakan Madinah klasik dengan teks hitam elegan tanpa warna tajwid.",
+                                        text = "15 Baris Mushaf KFGQPC Hafs Utsmani standar hitam elegan cetakan Kompleks Percetakan Al-Qur'an Raja Fahd Madinah.",
                                         fontSize = 11.sp,
                                         lineHeight = 15.sp,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant

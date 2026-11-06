@@ -186,7 +186,7 @@ fun ExploreScreen(
                                             }
                                         }
                                         Text(
-                                            text = "Doa & Dzikir Harian Muslimin v1.52.0",
+                                            text = "Doa & Dzikir Harian Muslimin v1.53.0",
                                             fontSize = 11.sp,
                                             color = Color.White.copy(alpha = 0.85f),
                                             maxLines = 1,
