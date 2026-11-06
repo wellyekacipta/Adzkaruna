@@ -338,7 +338,7 @@ fun HomeScreen(
                                 }
                             }
                             Text(
-                                text = "Doa & Dzikir Harian Muslimin v1.60.0",
+                                text = "Doa & Dzikir Harian Muslimin v1.61.0",
                                 fontSize = 11.sp,
                                 color = Color.White.copy(alpha = 0.85f),
                                 maxLines = 1,
@@ -348,8 +348,8 @@ fun HomeScreen(
                     }
                 },
                 actions = {
-                    // Tombol pencarian hanya muncul di menu yang membutuhkan pencarian (Home & Doa), disembunyikan di Quran, Explore & Profil
-                    if (currentNavTab == BottomNavTab.HOME || currentNavTab == BottomNavTab.DOA) {
+                    // Tombol pencarian hanya muncul di menu yang membutuhkan pencarian (Home), disembunyikan di Doa, Quran, Explore & Profil
+                    if (currentNavTab == BottomNavTab.HOME) {
                         IconButton(onClick = { isSearchActive = !isSearchActive }) {
                             Icon(
                                 imageVector = if (isSearchActive) Icons.Default.Close else Icons.Default.Search,
@@ -543,7 +543,7 @@ fun HomeScreen(
                     )
                 }
 
-                BottomNavTab.HOME, BottomNavTab.DOA -> {
+                BottomNavTab.HOME -> {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(16.dp),
@@ -578,7 +578,7 @@ fun HomeScreen(
                         }
 
                         // ==================== KHUSUS TAB HOME ====================
-                        if (currentNavTab == BottomNavTab.HOME && searchQuery.isEmpty()) {
+                        if (searchQuery.isEmpty()) {
                             // 1. Doa Pilihan Hari Ini (Muncul berdasarkan apa yang difavoritkan user)
                             item(key = "daily_featured_doa", contentType = "daily_featured_doa") {
                                 Column {
@@ -734,191 +734,18 @@ fun HomeScreen(
                             // DAFTAR 35 DOA SUDAH DIHILANGKAN DARI MENU UTAMA HOME SESUAI PERMINTAAN!
                         }
 
-                        // ==================== KHUSUS TAB DOA ATAU KETIKA SEARCH AKTIF ====================
-                        if (currentNavTab == BottomNavTab.DOA || searchQuery.isNotEmpty()) {
-                            // Category Chips di tab Doa (Lengkap dengan tombol Favorit & Riwayat)
-                            if (searchQuery.isEmpty()) {
-                                item {
-                                    CategoryChips(
-                                        selectedCategory = selectedCategory,
-                                        onCategorySelected = {
-                                            selectedCategory = it
-                                            filterOnlyFavorites = false
-                                            filterOnlyHistory = false
-                                        },
-                                        isFavoritesSelected = filterOnlyFavorites,
-                                        onFavoritesClick = {
-                                            filterOnlyFavorites = true
-                                            filterOnlyHistory = false
-                                        },
-                                        isHistorySelected = filterOnlyHistory,
-                                        onHistoryClick = {
-                                            filterOnlyHistory = true
-                                            filterOnlyFavorites = false
-                                        }
-                                    )
-                                }
-                            }
-
-                            // Section header
+                        // Jika ada pencarian dari Tab Home
+                        if (searchQuery.isNotEmpty()) {
                             item {
-                                val headerTitle = when {
-                                    searchQuery.isNotEmpty() -> "Hasil Pencarian (${displayedDoas.size})"
-                                    filterOnlyHistory -> "Riwayat Doa yang Dibaca"
-                                    filterOnlyFavorites -> "Doa Favorit Tersimpan (${displayedDoas.size})"
-                                    else -> "Doa Sebelum Tidur dan Bangun Tidur (${displayedDoas.size})"
-                                }
-
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(
-                                        text = headerTitle,
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.onBackground
-                                    )
-
-                                    if (filterOnlyFavorites || filterOnlyHistory) {
-                                        TextButton(onClick = {
-                                            filterOnlyFavorites = false
-                                            filterOnlyHistory = false
-                                            selectedCategory = DoaCategory.SEMUA
-                                        }) {
-                                            Text("Lihat Semua", color = MaterialTheme.colorScheme.primary, fontSize = 12.sp)
-                                        }
-                                    }
-                                }
+                                Text(
+                                    text = "Hasil Pencarian (${displayedDoas.size})",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onBackground
+                                )
                             }
 
-                            if (filterOnlyHistory) {
-                                if (doaHistoryList.isEmpty()) {
-                                    item {
-                                        Box(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(vertical = 40.dp),
-                                            contentAlignment = Alignment.Center
-                                        ) {
-                                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                                Icon(
-                                                    imageVector = Icons.Default.History,
-                                                    contentDescription = null,
-                                                    tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
-                                                    modifier = Modifier.size(64.dp)
-                                                )
-                                                Spacer(modifier = Modifier.height(12.dp))
-                                                Text(
-                                                    text = "Belum Ada Riwayat Baca Doa",
-                                                    fontWeight = FontWeight.SemiBold,
-                                                    color = MaterialTheme.colorScheme.onSurface
-                                                )
-                                                Spacer(modifier = Modifier.height(4.dp))
-                                                Text(
-                                                    text = "Setiap doa yang Anda buka akan otomatis tercatat di sini lengkap dengan tanggal & jam.",
-                                                    fontSize = 12.sp,
-                                                    textAlign = TextAlign.Center,
-                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                                )
-                                            }
-                                        }
-                                    }
-                                } else {
-                                    item {
-                                        Row(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(horizontal = 4.dp, vertical = 2.dp),
-                                            horizontalArrangement = Arrangement.SpaceBetween,
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            Text(
-                                                text = "${doaHistoryList.size} Riwayat Tersimpan",
-                                                fontSize = 12.sp,
-                                                fontWeight = FontWeight.SemiBold,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
-                                            TextButton(
-                                                onClick = { showConfirmClearDoaDialog = true },
-                                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
-                                                modifier = Modifier.height(28.dp)
-                                            ) {
-                                                Icon(
-                                                    imageVector = Icons.Default.DeleteSweep,
-                                                    contentDescription = null,
-                                                    tint = MaterialTheme.colorScheme.error,
-                                                    modifier = Modifier.size(15.dp)
-                                                )
-                                                Spacer(modifier = Modifier.width(4.dp))
-                                                Text(
-                                                    text = "Hapus Riwayat",
-                                                    fontSize = 11.5.sp,
-                                                    color = MaterialTheme.colorScheme.error,
-                                                    fontWeight = FontWeight.Bold
-                                                )
-                                            }
-                                        }
-                                    }
-                                    items(doaHistoryList, key = { "${it.doaId}_${it.timestamp}" }) { item ->
-                                        val foundDoa = DoaRepository.doaList.find { it.id == item.doaId }
-                                        Card(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .clip(RoundedCornerShape(14.dp))
-                                                .clickable {
-                                                    if (foundDoa != null) {
-                                                        selectedDoaForDetail = foundDoa
-                                                    }
-                                                },
-                                            shape = RoundedCornerShape(14.dp),
-                                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f))
-                                        ) {
-                                            Row(
-                                                modifier = Modifier.fillMaxWidth().padding(14.dp),
-                                                horizontalArrangement = Arrangement.SpaceBetween,
-                                                verticalAlignment = Alignment.CenterVertically
-                                            ) {
-                                                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
-                                                    Surface(
-                                                        shape = CircleShape,
-                                                        color = MaterialTheme.colorScheme.primaryContainer,
-                                                        modifier = Modifier.size(38.dp)
-                                                    ) {
-                                                        Box(contentAlignment = Alignment.Center) {
-                                                            Icon(
-                                                                imageVector = Icons.Default.History,
-                                                                contentDescription = null,
-                                                                tint = MaterialTheme.colorScheme.primary,
-                                                                modifier = Modifier.size(20.dp)
-                                                            )
-                                                        }
-                                                    }
-                                                    Spacer(modifier = Modifier.width(12.dp))
-                                                    Column {
-                                                        Text(
-                                                            text = item.title,
-                                                            fontWeight = FontWeight.Bold,
-                                                            fontSize = 13.5.sp,
-                                                            maxLines = 1,
-                                                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-                                                        )
-                                                        val sdf = SimpleDateFormat("dd MMM yyyy, HH:mm 'WIB'", Locale.forLanguageTag("id-ID"))
-                                                        Text(
-                                                            text = "Dibaca: ${sdf.format(Date(item.timestamp))}",
-                                                            fontSize = 11.sp,
-                                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                                        )
-                                                    }
-                                                }
-                                                Icon(Icons.Default.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                                            }
-                                        }
-                                    }
-                                }
-                            } else if (displayedDoas.isEmpty()) {
+                            if (displayedDoas.isEmpty()) {
                                 item {
                                     Box(
                                         modifier = Modifier
@@ -928,26 +755,20 @@ fun HomeScreen(
                                     ) {
                                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                             Icon(
-                                                imageVector = if (filterOnlyFavorites) Icons.Default.BookmarkBorder else Icons.Default.SearchOff,
+                                                imageVector = Icons.Default.SearchOff,
                                                 contentDescription = null,
                                                 tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
                                                 modifier = Modifier.size(64.dp)
                                             )
                                             Spacer(modifier = Modifier.height(12.dp))
                                             Text(
-                                                text = if (filterOnlyFavorites)
-                                                    "Belum ada doa yang difavoritkan"
-                                                else
-                                                    "Doa tidak ditemukan",
+                                                text = "Doa tidak ditemukan",
                                                 fontWeight = FontWeight.SemiBold,
                                                 color = MaterialTheme.colorScheme.onSurface
                                             )
                                             Spacer(modifier = Modifier.height(4.dp))
                                             Text(
-                                                text = if (filterOnlyFavorites)
-                                                    "Tandai doa dengan ikon penanda agar muncul di sini dan menjadi Doa Hari Ini"
-                                                else
-                                                    "Coba gunakan kata kunci pencarian yang lain",
+                                                text = "Coba gunakan kata kunci pencarian yang lain",
                                                 fontSize = 12.sp,
                                                 textAlign = TextAlign.Center,
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -956,9 +777,128 @@ fun HomeScreen(
                                     }
                                 }
                             } else {
-                                // Tampilan Menu List Doa (Ringkas, rapi, bernomor & nyaman dibaca)
                                 itemsIndexed(
                                     items = displayedDoas,
+                                    key = { _, doa -> doa.id },
+                                    contentType = { _, _ -> "HomeDoaListItem" }
+                                ) { index, doa ->
+                                    HomeDoaListItem(
+                                        index = index,
+                                        doa = doa,
+                                        isFavorite = favoriteIds.contains(doa.id),
+                                        onFavoriteToggle = { toggleFavorite(doa.id) },
+                                        onClick = {
+                                            prefs.addDoaReadingHistory(doa.id, doa.title)
+                                            historyRefreshKey++
+                                            selectedDoaForDetail = doa
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // ==================== KHUSUS TAB DOA ====================
+                BottomNavTab.DOA -> {
+                    Column(
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        // Kolom Pencarian Pinned (Tetap berada di atas saat user scroll doa-doa ke bawah, seperti di menu explore)
+                        Surface(
+                            color = MaterialTheme.colorScheme.surface,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            OutlinedTextField(
+                                value = searchQuery,
+                                onValueChange = { searchQuery = it },
+                                placeholder = {
+                                    Text(
+                                        text = "Cari judul doa, arti, atau lafadz...",
+                                        fontSize = 12.5.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                                    )
+                                },
+                                singleLine = true,
+                                leadingIcon = {
+                                    Icon(Icons.Default.Search, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                },
+                                trailingIcon = {
+                                    if (searchQuery.isNotBlank()) {
+                                        IconButton(onClick = { searchQuery = "" }) {
+                                            Icon(Icons.Default.Clear, contentDescription = "Hapus", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        }
+                                    }
+                                },
+                                shape = RoundedCornerShape(12.dp),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedContainerColor = MaterialTheme.colorScheme.surface,
+                                    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                    unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.4f)
+                                ),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 10.dp)
+                            )
+                        }
+
+                        // List doa yang dapat di-scroll
+                        val filteredDoas = remember(searchQuery) {
+                            if (searchQuery.isBlank()) {
+                                DoaRepository.doaList
+                            } else {
+                                val q = searchQuery.trim().lowercase()
+                                DoaRepository.doaList.filter {
+                                    it.title.lowercase().contains(q) ||
+                                    it.latin.lowercase().contains(q) ||
+                                    it.translation.lowercase().contains(q) ||
+                                    it.arabic.contains(q)
+                                }
+                            }
+                        }
+
+                        LazyColumn(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f),
+                            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 16.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            if (filteredDoas.isEmpty()) {
+                                item {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 40.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                            Icon(
+                                                imageVector = Icons.Default.SearchOff,
+                                                contentDescription = null,
+                                                tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+                                                modifier = Modifier.size(64.dp)
+                                            )
+                                            Spacer(modifier = Modifier.height(12.dp))
+                                            Text(
+                                                text = "Doa tidak ditemukan",
+                                                fontWeight = FontWeight.SemiBold,
+                                                color = MaterialTheme.colorScheme.onSurface
+                                            )
+                                            Spacer(modifier = Modifier.height(4.dp))
+                                            Text(
+                                                text = "Coba gunakan kata kunci pencarian yang lain",
+                                                fontSize = 12.sp,
+                                                textAlign = TextAlign.Center,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
+                                }
+                            } else {
+                                itemsIndexed(
+                                    items = filteredDoas,
                                     key = { _, doa -> doa.id },
                                     contentType = { _, _ -> "HomeDoaListItem" }
                                 ) { index, doa ->

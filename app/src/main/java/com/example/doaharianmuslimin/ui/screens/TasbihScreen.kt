@@ -36,6 +36,8 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.PlatformTextStyle
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -129,49 +131,50 @@ fun TasbihScreen(
                 ) {
                     TopAppBar(
                         windowInsets = WindowInsets(0.dp),
-                        navigationIcon = {
-                            IconButton(onClick = onBack) {
-                                Icon(
-                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                    contentDescription = "Kembali",
-                                    tint = Color.White
-                                )
-                            }
-                        },
                         title = {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Image(
                                     painter = painterResource(id = R.drawable.app_logo_kufi),
-                                    contentDescription = "Logo",
+                                    contentDescription = "Logo Adzkaruna",
                                     modifier = Modifier.size(34.dp)
                                 )
                                 Spacer(modifier = Modifier.width(10.dp))
-                                Column {
+                                Column(modifier = Modifier.weight(1f, fill = false)) {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         Text(
                                             text = "Adzkaruna",
                                             fontSize = 18.sp,
                                             fontWeight = FontWeight.Bold,
-                                            color = Color.White
+                                            color = Color.White,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
                                         )
-                                        Spacer(modifier = Modifier.width(6.dp))
-                                        Surface(
-                                            shape = RoundedCornerShape(4.dp),
-                                            color = AccentGold
+                                        Spacer(modifier = Modifier.width(5.dp))
+                                        Box(
+                                            modifier = Modifier
+                                                .background(AccentGold, shape = RoundedCornerShape(3.dp))
+                                                .padding(horizontal = 3.dp, vertical = 0.5.dp),
+                                            contentAlignment = Alignment.Center
                                         ) {
                                             Text(
                                                 text = "PRO",
                                                 fontSize = 8.5.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                color = Color.Black,
-                                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                                                fontWeight = FontWeight.Black,
+                                                color = Color(0xFF3E2723),
+                                                letterSpacing = 0.2.sp,
+                                                style = TextStyle(
+                                                    platformStyle = PlatformTextStyle(includeFontPadding = false),
+                                                    lineHeight = 9.sp
+                                                )
                                             )
                                         }
                                     }
                                     Text(
-                                        text = "Doa & Dzikir Harian Muslimin v1.60.0",
+                                        text = "Doa & Dzikir Harian Muslimin v1.61.0",
                                         fontSize = 11.sp,
-                                        color = Color.White.copy(alpha = 0.85f)
+                                        color = Color.White.copy(alpha = 0.85f),
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
                                     )
                                 }
                             }
