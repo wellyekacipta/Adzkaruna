@@ -1,4 +1,4 @@
-﻿package com.example.doaharianmuslimin.data
+package com.example.doaharianmuslimin.data
 
 import com.example.doaharianmuslimin.data.model.Doa
 import com.example.doaharianmuslimin.data.model.DoaCategory
@@ -282,6 +282,28 @@ Di saat anda tidur, anda sangat butuh pertolongan dan pengamanan dari Allah. Unt
             source = "HR. al-Bukhari no. 1103, Abu Dawud 5060, at-Tirmidzi 3414, Ibnu Majah 3878 (Shahih)",
             category = DoaCategory.TIDUR,
             note = "Keutamaan istimewa: Nabi SAW bersabda barangsiapa membaca dzikir ini saat terbangun di malam hari lalu berdoa, niscaya akan dikabulkan doanya. Jika dia berwudhu lalu shalat, maka shalatnya akan diterima.",
+            repeatCount = 1
+        ),
+        Doa(
+            id = 22,
+            title = "Doa Masuk WC/Kamar Mandi",
+            arabic = "(بِسْمِ اللَّهِ) اَللَّهُمَّ إِنِّيْ أَعُوْذُ بِكَ مِنَ الْخُبُثِ وَالْخَبَائِثِ",
+            latin = "(Bismillaah) Allaahumma innii a'uudzu bika minal khubutsi wal khobaa-its.",
+            translation = "Dengan nama Allah. Ya Allah, sesungguhnya aku berlindung kepadaMu dari godaan setan laki-laki dan perempuan.",
+            source = "HR. Al-Bukhari 1/45 dan Muslim 1/283. Sedang tambahan bismillaah pada permulaan hadits, menurut riwayat Said bin Manshur. Lihat Fathul Baari 1/244.",
+            category = DoaCategory.KAMAR_MANDI,
+            note = "Sunnah membaca basmalah dan mendahulukan kaki kiri ketika memasuki kamar mandi/WC.",
+            repeatCount = 1
+        ),
+        Doa(
+            id = 23,
+            title = "Doa Keluar WC/Kamar Mandi",
+            arabic = "غُفْرَانَكَ",
+            latin = "Ghufroonak.",
+            translation = "Aku minta ampun kepadaMu.",
+            source = "HR. Seluruh penyusun kitab Sunan, kecuali An-Nasai yang meriwayatkan dalam 'Amalul Yaumi wal Lailah, lihat Takhrij Zaadul Ma'aad 2/387.",
+            category = DoaCategory.KAMAR_MANDI,
+            note = "Sunnah mendahulukan kaki kanan ketika melangkah keluar dari kamar mandi/WC.",
             repeatCount = 1
         )
     )

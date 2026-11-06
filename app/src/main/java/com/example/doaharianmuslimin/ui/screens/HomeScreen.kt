@@ -453,7 +453,7 @@ fun HomeScreen(
                                 }
                             }
                             Text(
-                                text = "Doa & Dzikir Harian Muslimin v1.63.0",
+                                text = "Doa & Dzikir Harian Muslimin v1.64.0",
                                 fontSize = 11.sp,
                                 color = Color.White.copy(alpha = 0.85f),
                                 maxLines = 1,
@@ -864,29 +864,8 @@ fun HomeScreen(
                             }
                         }
 
-                        // Kategori Doa di bawah fitur pencarian (tidak tertutup pencarian)
-                        Surface(
-                            color = MaterialTheme.colorScheme.surface,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            val headerCategoryTitle = if (searchQuery.isNotEmpty()) {
-                                "Hasil Pencarian (${filteredDoas.size})"
-                            } else {
-                                "Doa Sebelum Tidur dan Bangun Tidur (${filteredDoas.size})"
-                            }
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 16.dp, vertical = 6.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = headerCategoryTitle,
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onBackground
-                                )
-                            }
+                        val groupedDoas = remember(filteredDoas) {
+                            filteredDoas.groupBy { it.category }
                         }
 
                         LazyColumn(
@@ -928,22 +907,33 @@ fun HomeScreen(
                                     }
                                 }
                             } else {
-                                itemsIndexed(
-                                    items = filteredDoas,
-                                    key = { _, doa -> doa.id },
-                                    contentType = { _, _ -> "HomeDoaListItem" }
-                                ) { index, doa ->
-                                    HomeDoaListItem(
-                                        index = index,
-                                        doa = doa,
-                                        isFavorite = favoriteIds.contains(doa.id),
-                                        onFavoriteToggle = { toggleFavorite(doa.id) },
-                                        onClick = {
-                                            prefs.addDoaReadingHistory(doa.id, doa.title)
-                                            historyRefreshKey++
-                                            selectedDoaForDetail = doa
-                                        }
-                                    )
+                                groupedDoas.forEach { (cat, doasInCategory) ->
+                                    item(key = "header_${cat.name}", contentType = "category_header") {
+                                        Text(
+                                            text = "${cat.title} (${doasInCategory.size})",
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.onBackground,
+                                            modifier = Modifier.padding(top = 8.dp, bottom = 2.dp)
+                                        )
+                                    }
+                                    itemsIndexed(
+                                        items = doasInCategory,
+                                        key = { _, doa -> doa.id },
+                                        contentType = { _, _ -> "HomeDoaListItem" }
+                                    ) { index, doa ->
+                                        HomeDoaListItem(
+                                            index = index,
+                                            doa = doa,
+                                            isFavorite = favoriteIds.contains(doa.id),
+                                            onFavoriteToggle = { toggleFavorite(doa.id) },
+                                            onClick = {
+                                                prefs.addDoaReadingHistory(doa.id, doa.title)
+                                                historyRefreshKey++
+                                                selectedDoaForDetail = doa
+                                            }
+                                        )
+                                    }
                                 }
                             }
                         }

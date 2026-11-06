@@ -44,12 +44,8 @@ data class TopicItem(
 
 // Static topics & shapes to prevent re-allocation on every recomposition
 private val StaticTopics = listOf(
-    TopicItem("Doa Sebelum Tidur dan Bangun Tidur", "Koleksi lengkap 21 doa, dzikir, keutamaan & adab tidur", Icons.Default.Bedtime, matchingCategory = DoaCategory.TIDUR),
-    TopicItem("Ayat Perlindungan Malam", "Al-Mu'awwidzaat, Ayat Kursi & 2 Ayat Terakhir Al-Baqarah", Icons.Default.Shield, keyword = "ayat"),
-    TopicItem("Doa Pasrah Diri & Fitrah", "Mati di atas fitrah, keselamatan ruh & penjagaan jiwa", Icons.Default.Favorite, keyword = "fitrah"),
-    TopicItem("Dzikir Pelepas Lelah & Hutang", "Tasbih Fatimah 100x & permohonan pelunas hutang", Icons.Default.Spa, keyword = "hutang"),
-    TopicItem("Mimpi Buruk & Rasa Cemas", "Tuntunan adab mimpi buruk, rasa takut & kesepian saat tidur", Icons.Default.NightlightRound, keyword = "mimpi"),
-    TopicItem("Doa Bangun Tidur & Terjaga", "Syukur fajar, kesehatan jasad, qiyamul lail & saat terbangun", Icons.Default.WbSunny, keyword = "bangun")
+    TopicItem("Doa Sebelum Tidur dan Bangun Tidur", "Koleksi lengkap 21 doa sebelum dan bangun tidur", Icons.Default.Bedtime, matchingCategory = DoaCategory.TIDUR),
+    TopicItem("Doa Masuk dan Keluar Kamar Mandi", "Koleksi 2 doa masuk dan keluar WC / kamar mandi", Icons.Default.MeetingRoom, matchingCategory = DoaCategory.KAMAR_MANDI)
 )
 
 private val TopicCardShape = RoundedCornerShape(14.dp)
