@@ -35,10 +35,10 @@ fun DailyDoaBanner(
     isFavorite: Boolean,
     onFavoriteToggle: () -> Unit,
     onClick: () -> Unit,
+    arabicFontFamily: androidx.compose.ui.text.font.FontFamily? = null,
     modifier: Modifier = Modifier
 ) {
-    val context = androidx.compose.ui.platform.LocalContext.current
-    val arabicFontFamily = remember { PreferencesManager(context).getArabicFontStyle().fontFamily }
+    val effectiveFontFamily = arabicFontFamily ?: UthmanicFontFamily
 
     Card(
         modifier = modifier
@@ -46,7 +46,7 @@ fun DailyDoaBanner(
             .clip(RoundedCornerShape(20.dp))
             .clickable { onClick() },
         shape = RoundedCornerShape(20.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Box(
             modifier = Modifier
@@ -116,7 +116,7 @@ fun DailyDoaBanner(
                 Text(
                     text = doa.arabic,
                     color = Color.White,
-                    fontFamily = arabicFontFamily,
+                    fontFamily = effectiveFontFamily,
                     fontSize = 20.sp,
                     lineHeight = 34.sp,
                     textAlign = TextAlign.End,

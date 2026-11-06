@@ -17,7 +17,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.FormatListBulleted
 import androidx.compose.material.icons.automirrored.filled.MenuBook
@@ -550,211 +552,40 @@ fun HomeScreen(
                 }
 
                 BottomNavTab.HOME -> {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(14.dp)
-                    ) {
-                        // Search bar when active or if query exists
-                        if (isSearchActive || searchQuery.isNotEmpty()) {
-                            item {
-                                OutlinedTextField(
-                                    value = searchQuery,
-                                    onValueChange = { searchQuery = it },
-                                    modifier = Modifier.fillMaxWidth(),
-                                    placeholder = { Text("Cari judul doa, arti, atau lafadz...") },
-                                    leadingIcon = {
-                                        Icon(Icons.Default.Search, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                                    },
-                                    trailingIcon = {
-                                        if (searchQuery.isNotEmpty()) {
-                                            IconButton(onClick = { searchQuery = "" }) {
-                                                Icon(Icons.Default.Clear, contentDescription = "Hapus")
-                                            }
-                                        }
-                                    },
-                                    shape = RoundedCornerShape(16.dp),
-                                    singleLine = true,
-                                    colors = OutlinedTextFieldDefaults.colors(
-                                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                                    )
-                                )
-                            }
-                        }
-
-                        // ==================== KHUSUS TAB HOME ====================
-                        if (searchQuery.isEmpty()) {
-                            // 1. Doa Pilihan Hari Ini (Muncul berdasarkan apa yang difavoritkan user)
-                            item(key = "daily_featured_doa", contentType = "daily_featured_doa") {
-                                Column {
-                                    if (isFeaturedFromFavorites) {
-                                        Surface(
-                                            color = AccentGold.copy(alpha = 0.15f),
-                                            shape = RoundedCornerShape(8.dp),
-                                            modifier = Modifier.padding(bottom = 6.dp)
-                                        ) {
-                                            Text(
-                                                text = "⭐ Doa Favorit Anda",
-                                                color = MaterialTheme.colorScheme.onSurface,
-                                                fontSize = 11.sp,
-                                                fontWeight = FontWeight.SemiBold,
-                                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                                            )
-                                        }
-                                    }
-
-                                    DailyDoaBanner(
-                                        doa = dailyFeaturedDoa,
-                                        isFavorite = favoriteIds.contains(dailyFeaturedDoa.id),
-                                        onFavoriteToggle = { toggleFavorite(dailyFeaturedDoa.id) },
-                                        onClick = { selectedDoaForDetail = dailyFeaturedDoa }
-                                    )
-                                }
-                            }
-
-                            item(key = "main_menu_grid", contentType = "main_menu_grid") {
-                                MainMenuGrid(
-                                    onMenuItemClick = { menuItem ->
-                                        when (menuItem) {
-                                            MainMenuItem.DOA_HARIAN -> {
-                                                currentNavTab = BottomNavTab.DOA
-                                                filterOnlyFavorites = false
-                                                filterOnlyHistory = false
-                                                selectedCategory = DoaCategory.TIDUR
-                                            }
-                                            MainMenuItem.DZIKIR -> activeSubScreen = ActiveSubScreen.DZIKIR
-                                            MainMenuItem.TOPIK_DOA -> activeSubScreen = ActiveSubScreen.TOPIK_DOA
-                                            MainMenuItem.FAVORIT -> activeSubScreen = ActiveSubScreen.FAVORIT
-                                            MainMenuItem.QIBLAT -> activeSubScreen = ActiveSubScreen.QIBLAT
-                                            MainMenuItem.BELAJAR_ISLAM -> activeSubScreen = ActiveSubScreen.BELAJAR_ISLAM
-                                        }
-                                    }
-                                )
-                            }
-
-                            // Quick Access: Terakhir Dibaca Al-Qur'an & Doa (Riwayat Nyata)
-                            val quranHist = homeQuranHistory
-                            val doaHist = homeDoaHistory
-                            if (quranHist != null || doaHist != null) {
-                                item(key = "quick_access_history", contentType = "quick_access_history") {
-                                    Surface(
+                    if (searchQuery.isNotEmpty()) {
+                        // Tampilan hasil pencarian menggunakan LazyColumn (virtualized list)
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(14.dp)
+                        ) {
+                            if (isSearchActive) {
+                                item {
+                                    OutlinedTextField(
+                                        value = searchQuery,
+                                        onValueChange = { searchQuery = it },
                                         modifier = Modifier.fillMaxWidth(),
-                                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f),
+                                        placeholder = { Text("Cari judul doa, arti, atau lafadz...") },
+                                        leadingIcon = {
+                                            Icon(Icons.Default.Search, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                        },
+                                        trailingIcon = {
+                                            if (searchQuery.isNotEmpty()) {
+                                                IconButton(onClick = { searchQuery = "" }) {
+                                                    Icon(Icons.Default.Clear, contentDescription = "Hapus")
+                                                }
+                                            }
+                                        },
                                         shape = RoundedCornerShape(16.dp),
-                                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.35f))
-                                    ) {
-                                        Column(modifier = Modifier.padding(14.dp)) {
-                                            Row(
-                                                modifier = Modifier.fillMaxWidth(),
-                                                horizontalArrangement = Arrangement.SpaceBetween,
-                                                verticalAlignment = Alignment.CenterVertically
-                                            ) {
-                                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                                    Icon(Icons.Default.History, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
-                                                    Spacer(modifier = Modifier.width(8.dp))
-                                                    Column {
-                                                        Text(
-                                                            text = "Tilawah Terakhir",
-                                                            fontWeight = FontWeight.Bold,
-                                                            fontSize = 13.5.sp,
-                                                            color = MaterialTheme.colorScheme.primary
-                                                        )
-                                                        val latestTimestamp = maxOf(quranHist?.timestamp ?: 0L, doaHist?.timestamp ?: 0L)
-                                                        val formattedDateTime = remember(latestTimestamp) {
-                                                            val ts = if (latestTimestamp > 0L) latestTimestamp else System.currentTimeMillis()
-                                                            val sdf = java.text.SimpleDateFormat("HH:mm, dd MMMM yyyy", java.util.Locale.forLanguageTag("id-ID"))
-                                                            sdf.format(java.util.Date(ts))
-                                                        }
-                                                        Text(
-                                                            text = formattedDateTime,
-                                                            fontSize = 11.sp,
-                                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                                        )
-                                                    }
-                                                }
-                                            }
-
-                                            Spacer(modifier = Modifier.height(10.dp))
-
-                                            Row(
-                                                modifier = Modifier.fillMaxWidth(),
-                                                horizontalArrangement = Arrangement.spacedBy(10.dp)
-                                            ) {
-                                                if (quranHist != null) {
-                                                    Surface(
-                                                        modifier = Modifier
-                                                            .weight(1f)
-                                                            .clip(RoundedCornerShape(12.dp))
-                                                            .clickable {
-                                                                quranTargetPage = quranHist.pageNumber
-                                                                currentNavTab = BottomNavTab.QURAN
-                                                            },
-                                                        color = MaterialTheme.colorScheme.surface,
-                                                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
-                                                    ) {
-                                                        Column(modifier = Modifier.padding(10.dp)) {
-                                                            Text("Al-Qur'an", fontSize = 10.5.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
-                                                            Spacer(modifier = Modifier.height(2.dp))
-                                                            Text(
-                                                                quranHist.surahName,
-                                                                fontWeight = FontWeight.Bold,
-                                                                fontSize = 12.sp,
-                                                                maxLines = 1,
-                                                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-                                                            )
-                                                            Text("Hal. ${quranHist.pageNumber} ›", fontSize = 10.5.sp, color = MaterialTheme.colorScheme.primary)
-                                                        }
-                                                    }
-                                                }
-
-                                                if (doaHist != null) {
-                                                    Surface(
-                                                        modifier = Modifier
-                                                            .weight(1f)
-                                                            .clip(RoundedCornerShape(12.dp))
-                                                            .clickable {
-                                                                DoaRepository.doaList.find { it.id == doaHist.doaId }?.let {
-                                                                    selectedDoaForDetail = it
-                                                                }
-                                                            },
-                                                        color = MaterialTheme.colorScheme.surface,
-                                                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
-                                                    ) {
-                                                        Column(modifier = Modifier.padding(10.dp)) {
-                                                            Text("Doa Harian", fontSize = 10.5.sp, color = AccentGold, fontWeight = FontWeight.Bold)
-                                                            Spacer(modifier = Modifier.height(2.dp))
-                                                            Text(
-                                                                doaHist.title,
-                                                                fontWeight = FontWeight.Bold,
-                                                                fontSize = 12.sp,
-                                                                maxLines = 1,
-                                                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-                                                            )
-                                                            Text("Buka Doa ›", fontSize = 10.5.sp, color = MaterialTheme.colorScheme.primary)
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
+                                        singleLine = true,
+                                        colors = OutlinedTextFieldDefaults.colors(
+                                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                            unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                                        )
+                                    )
                                 }
                             }
 
-                            // Statistik Membaca Al-Qur'an (Senin - Ahad) - Di bawah Aktivitas Terakhir Dibaca
-                            item(key = "quran_weekly_stats", contentType = "quran_weekly_stats") {
-                                QuranWeeklyStatsCard(
-                                    weeklyStats = quranWeeklyStats,
-                                    onNavigateToQuran = {
-                                        currentNavTab = BottomNavTab.QURAN
-                                    }
-                                )
-                            }
-                            // DAFTAR 35 DOA SUDAH DIHILANGKAN DARI MENU UTAMA HOME SESUAI PERMINTAAN!
-                        }
-
-                        // Jika ada pencarian dari Tab Home
-                        if (searchQuery.isNotEmpty()) {
                             item {
                                 Text(
                                     text = "Hasil Pencarian (${displayedDoas.size})",
@@ -814,6 +645,201 @@ fun HomeScreen(
                                     )
                                 }
                             }
+                        }
+                    } else {
+                        // Tampilan Dashboard Utama Menggunakan Column + verticalScroll (100% Super Mulus, Bebas Jank/Recycling Overhead!)
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .verticalScroll(rememberScrollState())
+                                .padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(14.dp)
+                        ) {
+                            // Search bar when active
+                            if (isSearchActive) {
+                                OutlinedTextField(
+                                    value = searchQuery,
+                                    onValueChange = { searchQuery = it },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    placeholder = { Text("Cari judul doa, arti, atau lafadz...") },
+                                    leadingIcon = {
+                                        Icon(Icons.Default.Search, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                    },
+                                    trailingIcon = {
+                                        if (searchQuery.isNotEmpty()) {
+                                            IconButton(onClick = { searchQuery = "" }) {
+                                                Icon(Icons.Default.Clear, contentDescription = "Hapus")
+                                            }
+                                        }
+                                    },
+                                    shape = RoundedCornerShape(16.dp),
+                                    singleLine = true,
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                                    )
+                                )
+                            }
+
+                            // 1. Doa Pilihan Hari Ini
+                            Column {
+                                if (isFeaturedFromFavorites) {
+                                    Surface(
+                                        color = AccentGold.copy(alpha = 0.15f),
+                                        shape = RoundedCornerShape(8.dp),
+                                        modifier = Modifier.padding(bottom = 6.dp)
+                                    ) {
+                                        Text(
+                                            text = "⭐ Doa Favorit Anda",
+                                            color = MaterialTheme.colorScheme.onSurface,
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                        )
+                                    }
+                                }
+
+                                DailyDoaBanner(
+                                    doa = dailyFeaturedDoa,
+                                    isFavorite = favoriteIds.contains(dailyFeaturedDoa.id),
+                                    onFavoriteToggle = { toggleFavorite(dailyFeaturedDoa.id) },
+                                    onClick = { selectedDoaForDetail = dailyFeaturedDoa },
+                                    arabicFontFamily = currentArabicFontStyle.fontFamily
+                                )
+                            }
+
+                            // 2. Menu Grid (6 Menu)
+                            MainMenuGrid(
+                                onMenuItemClick = { menuItem ->
+                                    when (menuItem) {
+                                        MainMenuItem.DOA_HARIAN -> {
+                                            currentNavTab = BottomNavTab.DOA
+                                            filterOnlyFavorites = false
+                                            filterOnlyHistory = false
+                                            selectedCategory = DoaCategory.TIDUR
+                                        }
+                                        MainMenuItem.DZIKIR -> activeSubScreen = ActiveSubScreen.DZIKIR
+                                        MainMenuItem.TOPIK_DOA -> activeSubScreen = ActiveSubScreen.TOPIK_DOA
+                                        MainMenuItem.FAVORIT -> activeSubScreen = ActiveSubScreen.FAVORIT
+                                        MainMenuItem.QIBLAT -> activeSubScreen = ActiveSubScreen.QIBLAT
+                                        MainMenuItem.BELAJAR_ISLAM -> activeSubScreen = ActiveSubScreen.BELAJAR_ISLAM
+                                    }
+                                }
+                            )
+
+                            // 3. Quick Access: Tilawah Terakhir Al-Qur'an & Doa (Riwayat Nyata)
+                            val quranHist = homeQuranHistory
+                            val doaHist = homeDoaHistory
+                            if (quranHist != null || doaHist != null) {
+                                Surface(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f),
+                                    shape = RoundedCornerShape(16.dp),
+                                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.35f))
+                                ) {
+                                    Column(modifier = Modifier.padding(14.dp)) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                Icon(Icons.Default.History, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                                                Spacer(modifier = Modifier.width(8.dp))
+                                                Column {
+                                                    Text(
+                                                        text = "Tilawah Terakhir",
+                                                        fontWeight = FontWeight.Bold,
+                                                        fontSize = 13.5.sp,
+                                                        color = MaterialTheme.colorScheme.primary
+                                                    )
+                                                    val latestTimestamp = maxOf(quranHist?.timestamp ?: 0L, doaHist?.timestamp ?: 0L)
+                                                    val formattedDateTime = remember(latestTimestamp) {
+                                                        val ts = if (latestTimestamp > 0L) latestTimestamp else System.currentTimeMillis()
+                                                        val sdf = java.text.SimpleDateFormat("HH:mm, dd MMMM yyyy", java.util.Locale.forLanguageTag("id-ID"))
+                                                        sdf.format(java.util.Date(ts))
+                                                    }
+                                                    Text(
+                                                        text = formattedDateTime,
+                                                        fontSize = 11.sp,
+                                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                    )
+                                                }
+                                            }
+                                        }
+
+                                        Spacer(modifier = Modifier.height(10.dp))
+
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                        ) {
+                                            if (quranHist != null) {
+                                                Surface(
+                                                    modifier = Modifier
+                                                        .weight(1f)
+                                                        .clip(RoundedCornerShape(12.dp))
+                                                        .clickable {
+                                                            quranTargetPage = quranHist.pageNumber
+                                                            currentNavTab = BottomNavTab.QURAN
+                                                        },
+                                                    color = MaterialTheme.colorScheme.surface,
+                                                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+                                                ) {
+                                                    Column(modifier = Modifier.padding(10.dp)) {
+                                                        Text("Al-Qur'an", fontSize = 10.5.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                                                        Spacer(modifier = Modifier.height(2.dp))
+                                                        Text(
+                                                            quranHist.surahName,
+                                                            fontWeight = FontWeight.Bold,
+                                                            fontSize = 12.sp,
+                                                            maxLines = 1,
+                                                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                                        )
+                                                        Text("Hal. ${quranHist.pageNumber} ›", fontSize = 10.5.sp, color = MaterialTheme.colorScheme.primary)
+                                                    }
+                                                }
+                                            }
+
+                                            if (doaHist != null) {
+                                                Surface(
+                                                    modifier = Modifier
+                                                        .weight(1f)
+                                                        .clip(RoundedCornerShape(12.dp))
+                                                        .clickable {
+                                                            DoaRepository.doaList.find { it.id == doaHist.doaId }?.let {
+                                                                selectedDoaForDetail = it
+                                                            }
+                                                        },
+                                                    color = MaterialTheme.colorScheme.surface,
+                                                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+                                                ) {
+                                                    Column(modifier = Modifier.padding(10.dp)) {
+                                                        Text("Doa Harian", fontSize = 10.5.sp, color = AccentGold, fontWeight = FontWeight.Bold)
+                                                        Spacer(modifier = Modifier.height(2.dp))
+                                                        Text(
+                                                            doaHist.title,
+                                                            fontWeight = FontWeight.Bold,
+                                                            fontSize = 12.sp,
+                                                            maxLines = 1,
+                                                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                                        )
+                                                        Text("Buka Doa ›", fontSize = 10.5.sp, color = MaterialTheme.colorScheme.primary)
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            // 4. Catatan Tilawah (Senin - Ahad)
+                            QuranWeeklyStatsCard(
+                                weeklyStats = quranWeeklyStats,
+                                onNavigateToQuran = {
+                                    currentNavTab = BottomNavTab.QURAN
+                                }
+                            )
                         }
                     }
                 }
