@@ -66,6 +66,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.doaharianmuslimin.data.PreferencesManager
+import com.example.doaharianmuslimin.data.MushafStyle
 import com.example.doaharianmuslimin.data.QuranRepository
 import com.example.doaharianmuslimin.data.model.MushafPageData
 import com.example.doaharianmuslimin.data.model.QuranAyat
@@ -121,6 +122,8 @@ fun QuranScreen(
     var isImmersiveBarsVisible by remember { mutableStateOf(false) }
 
     val prefs = remember { PreferencesManager(context) }
+    var currentMushafStyle by remember { mutableStateOf(prefs.getMushafStyle()) }
+    var showMushafStyleDialog by remember { mutableStateOf(false) }
     var showDownloadPromptDialog by remember { mutableStateOf(false) }
     var isDownloadingAllMushaf by remember { mutableStateOf(false) }
     var downloadProgressCount by remember { mutableIntStateOf(0) }
@@ -135,13 +138,22 @@ fun QuranScreen(
     var currentMushafPage by remember { mutableIntStateOf(lastReadPage) }
 
     LaunchedEffect(viewMode) {
+        if (viewMode == QuranViewMode.PER_HALAMAN && !prefs.isMushafStyleChosen()) {
+            showMushafStyleDialog = true
+        }
         if (viewMode == QuranViewMode.PER_HALAMAN && !prefs.isMushafDownloadPrompted() && cachedPageCount == 0) {
-            val count = withContext(Dispatchers.IO) { QuranRepository.countCachedPages(context) }
+            val isTajweed = currentMushafStyle == MushafStyle.TAJWEED
+            val count = withContext(Dispatchers.IO) { QuranRepository.countCachedPages(context, isTajweed) }
             cachedPageCount = count
             if (count < 600) {
                 showDownloadPromptDialog = true
             }
         }
+    }
+
+    LaunchedEffect(currentMushafStyle) {
+        val isTajweed = currentMushafStyle == MushafStyle.TAJWEED
+        cachedPageCount = withContext(Dispatchers.IO) { QuranRepository.countCachedPages(context, isTajweed) }
     }
 
     // Notify parent activity/home screen to enter/exit immersive fullscreen
@@ -894,18 +906,50 @@ fun QuranScreen(
                                 }
                             }
 
-                            // Toggle Mode Icon (Per Baris vs Per Halaman Mushaf Kemenag)
-                            IconButton(
-                                onClick = {
-                                    viewMode = if (viewMode == QuranViewMode.PER_BARIS) QuranViewMode.PER_HALAMAN else QuranViewMode.PER_BARIS
-                                },
-                                modifier = Modifier.size(38.dp)
-                            ) {
-                                Icon(
-                                    imageVector = if (viewMode == QuranViewMode.PER_BARIS) Icons.AutoMirrored.Filled.MenuBook else Icons.AutoMirrored.Filled.ViewList,
-                                    contentDescription = "Ganti Mode",
-                                    tint = AccentGold
-                                )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                // Mushaf Style Selector (Tajwid Berwarna vs Mushaf Biasa)
+                                if (viewMode == QuranViewMode.PER_HALAMAN) {
+                                    Surface(
+                                        onClick = { showMushafStyleDialog = true },
+                                        shape = RoundedCornerShape(20.dp),
+                                        color = Color.White.copy(alpha = 0.18f),
+                                        border = BorderStroke(1.dp, AccentGold.copy(alpha = 0.7f)),
+                                        modifier = Modifier.padding(end = 4.dp)
+                                    ) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = if (currentMushafStyle == MushafStyle.TAJWEED) Icons.Default.Palette else Icons.Default.AutoStories,
+                                                contentDescription = "Gaya Mushaf",
+                                                tint = AccentGold,
+                                                modifier = Modifier.size(13.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Text(
+                                                text = if (currentMushafStyle == MushafStyle.TAJWEED) "Tajwid" else "Biasa",
+                                                fontSize = 11.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = Color.White
+                                            )
+                                        }
+                                    }
+                                }
+
+                                // Toggle Mode Icon (Per Baris vs Per Halaman Mushaf Kemenag)
+                                IconButton(
+                                    onClick = {
+                                        viewMode = if (viewMode == QuranViewMode.PER_BARIS) QuranViewMode.PER_HALAMAN else QuranViewMode.PER_BARIS
+                                    },
+                                    modifier = Modifier.size(38.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = if (viewMode == QuranViewMode.PER_BARIS) Icons.AutoMirrored.Filled.MenuBook else Icons.AutoMirrored.Filled.ViewList,
+                                        contentDescription = "Ganti Mode",
+                                        tint = AccentGold
+                                    )
+                                }
                             }
                         }
                     }
@@ -1177,25 +1221,26 @@ fun QuranScreen(
                         val pageSurahMeta = QuranRepository.allSurahMeta.find { it.number == pageSurahNum }
 
                         var pageData by remember(currentMushafPage) { mutableStateOf<MushafPageData?>(null) }
-                        var pageBitmap by remember(currentMushafPage) { mutableStateOf<Bitmap?>(null) }
-                        var isLoadingPage by remember(currentMushafPage) { mutableStateOf(true) }
+                        var pageBitmap by remember(currentMushafPage, currentMushafStyle) { mutableStateOf<Bitmap?>(null) }
+                        var isLoadingPage by remember(currentMushafPage, currentMushafStyle) { mutableStateOf(true) }
 
-                        LaunchedEffect(currentMushafPage) {
+                        LaunchedEffect(currentMushafPage, currentMushafStyle) {
                             isLoadingPage = true
                             blockedVerseKey = null
+                            val isTajweed = currentMushafStyle == MushafStyle.TAJWEED
                             val pSurahNum = QuranRepository.getSurahNumberForPage(currentMushafPage)
                             val pSurahMeta = QuranRepository.allSurahMeta.find { it.number == pSurahNum }
                             val pSurahName = pSurahMeta?.name ?: surah.name
                             prefs.recordQuranDailyPage(pSurahNum, pSurahName, currentMushafPage)
                             prefs.addQuranReadingHistory(pSurahNum, pSurahName, currentMushafPage)
                             quranHistoryList = prefs.getQuranReadingHistory()
-                            QuranRepository.preloadMushafAdjacentPages(context, currentMushafPage)
+                            QuranRepository.preloadMushafAdjacentPages(context, currentMushafPage, isTajweed)
                             coroutineScope.launch {
                                 pageData = QuranRepository.getMushafPage(currentMushafPage, context)
                                 isLoadingPage = false
                             }
                             coroutineScope.launch {
-                                pageBitmap = QuranRepository.getMushafPageBitmap(context, currentMushafPage)
+                                pageBitmap = QuranRepository.getMushafPageBitmap(context, currentMushafPage, isTajweed)
                             }
                         }
 
@@ -1320,18 +1365,48 @@ fun QuranScreen(
                                                 }
                                             }
 
-                                            Surface(
-                                                color = mushafBg,
-                                                shape = RoundedCornerShape(6.dp),
-                                                border = BorderStroke(1.dp, greenDark)
-                                            ) {
-                                                Text(
-                                                    text = "JUZ $currentJuz",
-                                                    fontSize = 10.sp,
-                                                    fontWeight = FontWeight.Bold,
-                                                    color = greenDark,
-                                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
-                                                )
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                Surface(
+                                                    color = if (currentMushafStyle == MushafStyle.TAJWEED) Color(0xFFE8F5E9) else Color(0xFFF5F5F5),
+                                                    shape = RoundedCornerShape(6.dp),
+                                                    border = BorderStroke(1.dp, if (currentMushafStyle == MushafStyle.TAJWEED) greenDark else Color.Gray),
+                                                    modifier = Modifier
+                                                        .clickable { showMushafStyleDialog = true }
+                                                        .padding(end = 4.dp)
+                                                ) {
+                                                    Row(
+                                                        verticalAlignment = Alignment.CenterVertically,
+                                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
+                                                    ) {
+                                                        Icon(
+                                                            imageVector = if (currentMushafStyle == MushafStyle.TAJWEED) Icons.Default.Palette else Icons.Default.AutoStories,
+                                                            contentDescription = null,
+                                                            tint = if (currentMushafStyle == MushafStyle.TAJWEED) greenDark else Color.DarkGray,
+                                                            modifier = Modifier.size(11.dp)
+                                                        )
+                                                        Spacer(modifier = Modifier.width(3.dp))
+                                                        Text(
+                                                            text = if (currentMushafStyle == MushafStyle.TAJWEED) "Tajwid" else "Biasa",
+                                                            fontSize = 10.sp,
+                                                            fontWeight = FontWeight.Bold,
+                                                            color = if (currentMushafStyle == MushafStyle.TAJWEED) greenDark else Color.DarkGray
+                                                        )
+                                                    }
+                                                }
+
+                                                Surface(
+                                                    color = mushafBg,
+                                                    shape = RoundedCornerShape(6.dp),
+                                                    border = BorderStroke(1.dp, greenDark)
+                                                ) {
+                                                    Text(
+                                                        text = "JUZ $currentJuz",
+                                                        fontSize = 10.sp,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = greenDark,
+                                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                                    )
+                                                }
                                             }
                                         }
 
@@ -1357,24 +1432,30 @@ fun QuranScreen(
                                     if (pageBitmap != null) {
                                         Image(
                                             bitmap = pageBitmap!!.asImageBitmap(),
-                                            contentDescription = "Halaman $currentMushafPage Mushaf Madinah Tajwid",
+                                            contentDescription = "Halaman $currentMushafPage Mushaf Madinah ${if (currentMushafStyle == MushafStyle.TAJWEED) "Tajwid Berwarna" else "Biasa"}",
                                             contentScale = ContentScale.Fit,
                                             modifier = Modifier
                                                 .fillMaxSize()
                                                 .padding(horizontal = 0.dp)
+                                        )
+                                    } else if (pageData != null && !pageData!!.lines.isNullOrEmpty()) {
+                                        Mushaf15LinesView(
+                                            pageData = pageData!!,
+                                            isTajweed = currentMushafStyle == MushafStyle.TAJWEED,
+                                            isDark = isDark
                                         )
                                     } else if (isLoadingPage) {
                                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                             CircularProgressIndicator(color = MaterialTheme.colorScheme.primary, strokeWidth = 2.5.dp, modifier = Modifier.size(34.dp))
                                             Spacer(modifier = Modifier.height(8.dp))
                                             Text(
-                                                text = "Memuat Halaman $currentMushafPage Mushaf Madinah Tajwid...",
+                                                text = "Memuat Halaman $currentMushafPage Mushaf Madinah...",
                                                 fontSize = 11.5.sp,
                                                 fontWeight = FontWeight.Medium,
                                                 color = greenDark
                                             )
                                             Text(
-                                                text = "15 Baris Rasm Utsmani Tajwid Berwarna (KFGQPC)",
+                                                text = "15 Baris Rasm Utsmani (${if (currentMushafStyle == MushafStyle.TAJWEED) "Tajwid Berwarna" else "Mushaf Biasa"})",
                                                 fontSize = 10.sp,
                                                 color = Color.Gray
                                             )
@@ -1383,13 +1464,14 @@ fun QuranScreen(
                                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                             Icon(Icons.Default.CloudOff, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(36.dp))
                                             Spacer(modifier = Modifier.height(6.dp))
-                                            Text("Gagal memuat gambar halaman $currentMushafPage", fontSize = 12.sp, color = Color.Gray)
+                                            Text("Gagal memuat halaman $currentMushafPage", fontSize = 12.sp, color = Color.Gray)
                                             Spacer(modifier = Modifier.height(8.dp))
                                             Button(
                                                 onClick = {
                                                     isLoadingPage = true
+                                                    val isTajweed = currentMushafStyle == MushafStyle.TAJWEED
                                                     coroutineScope.launch {
-                                                        pageBitmap = QuranRepository.getMushafPageBitmap(context, currentMushafPage)
+                                                        pageBitmap = QuranRepository.getMushafPageBitmap(context, currentMushafPage, isTajweed)
                                                         isLoadingPage = false
                                                     }
                                                 },
@@ -1439,6 +1521,29 @@ fun QuranScreen(
                                             }
 
                                             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                                FilledTonalButton(
+                                                    onClick = { showMushafStyleDialog = true },
+                                                    shape = RoundedCornerShape(8.dp),
+                                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                                                    modifier = Modifier.height(30.dp),
+                                                    colors = ButtonDefaults.filledTonalButtonColors(
+                                                        containerColor = if (currentMushafStyle == MushafStyle.TAJWEED) Color(0xFFE0F2F1) else Color(0xFFECEFF1),
+                                                        contentColor = if (currentMushafStyle == MushafStyle.TAJWEED) PrimaryTosca else Color(0xFF37474F)
+                                                    )
+                                                ) {
+                                                    Icon(
+                                                        imageVector = if (currentMushafStyle == MushafStyle.TAJWEED) Icons.Default.Palette else Icons.Default.AutoStories,
+                                                        contentDescription = null,
+                                                        modifier = Modifier.size(12.dp)
+                                                    )
+                                                    Spacer(modifier = Modifier.width(3.dp))
+                                                    Text(
+                                                        text = if (currentMushafStyle == MushafStyle.TAJWEED) "Tajwid" else "Biasa",
+                                                        fontSize = 10.sp,
+                                                        fontWeight = FontWeight.SemiBold
+                                                    )
+                                                }
+
                                                 FilledTonalButton(
                                                     onClick = { showDownloadPromptDialog = true },
                                                     shape = RoundedCornerShape(8.dp),
@@ -1903,17 +2008,29 @@ fun QuranScreen(
 
                                                         Spacer(modifier = Modifier.height(8.dp))
 
-                                                        // Teks Arab - Font LPMQ Isep Misbah
-                                                        Text(
-                                                            text = ayatItem.arabic,
-                                                            fontFamily = LpmqFontFamily,
-                                                            fontSize = 20.sp,
-                                                            fontWeight = FontWeight.Bold,
-                                                            lineHeight = 36.sp,
-                                                            textAlign = TextAlign.End,
-                                                            color = if (isDark) Color(0xFFFFFFFF) else Color(0xFF000000),
-                                                            modifier = Modifier.fillMaxWidth()
-                                                        )
+                                                        // Teks Arab - Font LPMQ Isep Misbah (Tajwid Berwarna vs Biasa)
+                                                        if (currentMushafStyle == MushafStyle.TAJWEED) {
+                                                            Text(
+                                                                text = buildTajweedAnnotatedString(ayatItem.arabic, isDark),
+                                                                fontFamily = LpmqFontFamily,
+                                                                fontSize = 20.sp,
+                                                                fontWeight = FontWeight.Bold,
+                                                                lineHeight = 36.sp,
+                                                                textAlign = TextAlign.End,
+                                                                modifier = Modifier.fillMaxWidth()
+                                                            )
+                                                        } else {
+                                                            Text(
+                                                                text = ayatItem.arabic,
+                                                                fontFamily = LpmqFontFamily,
+                                                                fontSize = 20.sp,
+                                                                fontWeight = FontWeight.Bold,
+                                                                lineHeight = 36.sp,
+                                                                textAlign = TextAlign.End,
+                                                                color = if (isDark) Color(0xFFFFFFFF) else Color(0xFF000000),
+                                                                modifier = Modifier.fillMaxWidth()
+                                                            )
+                                                        }
 
                                                         if (ayatItem.latin.isNotBlank()) {
                                                             Spacer(modifier = Modifier.height(4.dp))
@@ -1951,8 +2068,177 @@ fun QuranScreen(
             }
         }
         
+        // ==================== DIALOG 0: PILIH GAYA MUSHAF (TAJWID WARNA VS BIASA) ====================
+        if (showMushafStyleDialog) {
+            var tempSelectedStyle by remember { mutableStateOf(currentMushafStyle) }
+
+            AlertDialog(
+                onDismissRequest = {
+                    showMushafStyleDialog = false
+                    prefs.setMushafStyleChosen(true)
+                },
+                icon = {
+                    Icon(
+                        imageVector = Icons.Default.AutoStories,
+                        contentDescription = null,
+                        tint = AccentGold,
+                        modifier = Modifier.size(34.dp)
+                    )
+                },
+                title = {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = "Pilih Gaya Mushaf Per Halaman",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 17.sp,
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = "15 Baris Rasm Utsmani Madinah (KFGQPC)",
+                            fontSize = 11.5.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Text(
+                            text = "Pilih gaya tampilan lembaran Al-Qur'an sesuai kenyamanan membaca Anda:",
+                            fontSize = 12.5.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+
+                        // Opsi 1: Gaya Mushaf Utsmani Tajwid Berwarna
+                        Surface(
+                            onClick = { tempSelectedStyle = MushafStyle.TAJWEED },
+                            shape = RoundedCornerShape(12.dp),
+                            color = if (tempSelectedStyle == MushafStyle.TAJWEED) PrimaryTosca.copy(alpha = 0.12f) else MaterialTheme.colorScheme.surface,
+                            border = BorderStroke(
+                                width = if (tempSelectedStyle == MushafStyle.TAJWEED) 2.dp else 1.dp,
+                                color = if (tempSelectedStyle == MushafStyle.TAJWEED) PrimaryTosca else MaterialTheme.colorScheme.outline.copy(alpha = 0.4f)
+                            ),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                RadioButton(
+                                    selected = tempSelectedStyle == MushafStyle.TAJWEED,
+                                    onClick = { tempSelectedStyle = MushafStyle.TAJWEED },
+                                    colors = RadioButtonDefaults.colors(selectedColor = PrimaryTosca)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Column {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text(
+                                            text = "Tajwid Berwarna",
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 14.sp,
+                                            color = if (tempSelectedStyle == MushafStyle.TAJWEED) PrimaryTosca else MaterialTheme.colorScheme.onSurface
+                                        )
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Surface(
+                                            color = AccentGold.copy(alpha = 0.2f),
+                                            shape = RoundedCornerShape(4.dp)
+                                        ) {
+                                            Text(
+                                                text = "Rekomendasi",
+                                                fontSize = 9.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = AccentGold,
+                                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                                            )
+                                        }
+                                    }
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text(
+                                        text = "15 Baris rasm Utsmani dengan hukum tajwid berwarna lengkap (Mad, Ghunnah, Qalqalah, Ikhfa, Idgham, Iqlab).",
+                                        fontSize = 11.sp,
+                                        lineHeight = 15.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        }
+
+                        // Opsi 2: Gaya Mushaf Utsmani Biasa
+                        Surface(
+                            onClick = { tempSelectedStyle = MushafStyle.BIASA },
+                            shape = RoundedCornerShape(12.dp),
+                            color = if (tempSelectedStyle == MushafStyle.BIASA) AccentGold.copy(alpha = 0.12f) else MaterialTheme.colorScheme.surface,
+                            border = BorderStroke(
+                                width = if (tempSelectedStyle == MushafStyle.BIASA) 2.dp else 1.dp,
+                                color = if (tempSelectedStyle == MushafStyle.BIASA) AccentGold else MaterialTheme.colorScheme.outline.copy(alpha = 0.4f)
+                            ),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                RadioButton(
+                                    selected = tempSelectedStyle == MushafStyle.BIASA,
+                                    onClick = { tempSelectedStyle = MushafStyle.BIASA },
+                                    colors = RadioButtonDefaults.colors(selectedColor = AccentGold)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Column {
+                                    Text(
+                                        text = "Mushaf Biasa (Standar)",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 14.sp,
+                                        color = if (tempSelectedStyle == MushafStyle.BIASA) AccentGold else MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text(
+                                        text = "15 Baris rasm Utsmani cetakan Madinah klasik dengan teks hitam elegan tanpa warna tajwid.",
+                                        fontSize = 11.sp,
+                                        lineHeight = 15.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        }
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            currentMushafStyle = tempSelectedStyle
+                            prefs.setMushafStyle(tempSelectedStyle)
+                            prefs.setMushafStyleChosen(true)
+                            showMushafStyleDialog = false
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                    ) {
+                        Text("Terapkan Gaya")
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = {
+                            showMushafStyleDialog = false
+                            prefs.setMushafStyleChosen(true)
+                        }
+                    ) {
+                        Text("Tutup")
+                    }
+                }
+            )
+        }
+
         // ==================== DIALOG 1: UNDUH MUSHAF OFFLINE (POP UP PERTAMA KALI) ====================
         if (showDownloadPromptDialog) {
+            val isPromptTajweed = currentMushafStyle == MushafStyle.TAJWEED
+            val promptStyleTitle = if (isPromptTajweed) "Tajwid Berwarna" else "Biasa Standar"
+
             AlertDialog(
                 onDismissRequest = {
                     showDownloadPromptDialog = false
@@ -1963,7 +2249,7 @@ fun QuranScreen(
                 },
                 title = {
                     Text(
-                        text = "Unduh Mushaf Tajwid (604 Halaman)?",
+                        text = "Unduh Mushaf $promptStyleTitle (604 Halaman)?",
                         fontWeight = FontWeight.Bold,
                         fontSize = 17.sp,
                         textAlign = TextAlign.Center
@@ -1972,7 +2258,7 @@ fun QuranScreen(
                 text = {
                     Column {
                         Text(
-                            text = "Unduh seluruh lembaran Mushaf Madinah Tajwid Berwarna (KFGQPC) agar Anda dapat membaca dengan sangat cepat, lancar tanpa kendala/ngelag, dan 100% offline tanpa kuota internet.\n\nJika memilih 'Nanti Saja', lembaran mushaf tajwid tetap dapat dibaca secara langsung (diunduh otomatis per halaman saat dibuka).",
+                            text = "Unduh seluruh lembaran Mushaf Madinah $promptStyleTitle (KFGQPC) agar Anda dapat membaca dengan sangat cepat, lancar tanpa kendala/ngelag, dan 100% offline tanpa kuota internet.\n\nJika memilih 'Nanti Saja', lembaran mushaf tetap dapat dibaca secara langsung (diunduh otomatis per halaman saat dibuka).",
                             fontSize = 13.sp,
                             lineHeight = 18.sp
                         )
@@ -1994,14 +2280,14 @@ fun QuranScreen(
                             prefs.setMushafDownloadPrompted(true)
                             isDownloadingAllMushaf = true
                             coroutineScope.launch {
-                                QuranRepository.downloadAllMushafPages(context) { downloaded, total ->
+                                QuranRepository.downloadAllMushafPages(context, isPromptTajweed) { downloaded, total ->
                                     downloadProgressCount = downloaded
                                     totalMushafPages = total
                                     cachedPageCount = downloaded
                                 }
                                 isDownloadingAllMushaf = false
                                 prefs.setMushafAllDownloaded(true)
-                                snackbarHostState.showSnackbar("Alhamdulillah! Seluruh 604 halaman mushaf tajwid telah tersimpan offline 📖✨")
+                                snackbarHostState.showSnackbar("Alhamdulillah! Seluruh 604 halaman mushaf $promptStyleTitle telah tersimpan offline 📖✨")
                             }
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
@@ -2225,17 +2511,29 @@ fun QuranScreen(
 
                     Spacer(modifier = Modifier.height(14.dp))
 
-                    // Lafadz Ayat Arab (#000000) - Font LPMQ Isep Misbah
-                    Text(
-                        text = ayat.arabic,
-                        fontFamily = LpmqFontFamily,
-                        fontSize = 26.sp,
-                        fontWeight = FontWeight.Bold,
-                        lineHeight = 48.sp,
-                        textAlign = TextAlign.End,
-                        color = if (isDark) Color(0xFFFFFFFF) else Color(0xFF000000),
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                    // Lafadz Ayat Arab (Tajwid Berwarna vs Biasa)
+                    if (currentMushafStyle == MushafStyle.TAJWEED) {
+                        Text(
+                            text = buildTajweedAnnotatedString(ayat.arabic, isDark),
+                            fontFamily = LpmqFontFamily,
+                            fontSize = 26.sp,
+                            fontWeight = FontWeight.Bold,
+                            lineHeight = 48.sp,
+                            textAlign = TextAlign.End,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    } else {
+                        Text(
+                            text = ayat.arabic,
+                            fontFamily = LpmqFontFamily,
+                            fontSize = 26.sp,
+                            fontWeight = FontWeight.Bold,
+                            lineHeight = 48.sp,
+                            textAlign = TextAlign.End,
+                            color = if (isDark) Color(0xFFFFFFFF) else Color(0xFF000000),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
 
                     if (ayat.latin.isNotBlank()) {
                         Spacer(modifier = Modifier.height(10.dp))
@@ -2325,6 +2623,124 @@ fun QuranScreen(
             hostState = snackbarHostState,
             modifier = Modifier.align(Alignment.BottomCenter)
         )
+    }
+}
+
+/**
+ * Tampilan Native 15 Baris Mushaf Utsmani (KFGQPC Madinah) berdasarkan data API Quran.com:
+ * https://api.quran.com/api/v4/verses/by_page/{page_number}?words=true&word_fields=line_number,text_uthmani
+ * Mendukung 2 gaya: Tajwid Berwarna dan Mushaf Biasa (Standar Hitam).
+ */
+@Composable
+fun Mushaf15LinesView(
+    pageData: MushafPageData,
+    isTajweed: Boolean,
+    isDark: Boolean,
+    modifier: Modifier = Modifier
+) {
+    val frameGold = AccentGold
+    val greenDark = Color(0xFF1B5E20)
+
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(horizontal = 8.dp, vertical = 2.dp)
+            .border(1.5.dp, frameGold.copy(alpha = 0.55f), RoundedCornerShape(4.dp))
+            .padding(2.dp)
+            .border(0.8.dp, greenDark.copy(alpha = 0.35f), RoundedCornerShape(2.dp))
+            .padding(horizontal = 6.dp, vertical = 4.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.SpaceBetween,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            for (line in pageData.lines) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (line.isSurahHeader) {
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(26.dp),
+                            color = Color(0xFFFFF8E1),
+                            shape = RoundedCornerShape(4.dp),
+                            border = BorderStroke(1.dp, frameGold)
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(horizontal = 8.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "سورة ${line.surahNameArabic}",
+                                    fontFamily = UthmanicFontFamily,
+                                    fontSize = 12.5.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = greenDark
+                                )
+                                Text(
+                                    text = "QS. ${line.surahNameLatin}",
+                                    fontSize = 9.5.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = Color(0xFFBF360C)
+                                )
+                            }
+                        }
+                    } else if (line.isBismillah) {
+                        Text(
+                            text = "بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ",
+                            fontFamily = UthmanicFontFamily,
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (isTajweed) Color(0xFF1565C0) else (if (isDark) Color(0xFFECEFF1) else Color.Black),
+                            textAlign = TextAlign.Center
+                        )
+                    } else if (line.words.isNotEmpty()) {
+                        val lineText = line.words.joinToString(" ") { word ->
+                            if (word.charTypeName == "end") {
+                                "۝${toArabicDigits(word.verseNumber)}"
+                            } else {
+                                word.textUthmani
+                            }
+                        }
+
+                        val styledText = if (isTajweed) {
+                            buildTajweedAnnotatedString(lineText, isDark)
+                        } else {
+                            buildAnnotatedString {
+                                append(lineText)
+                                addStyle(
+                                    SpanStyle(
+                                        color = if (isDark) Color(0xFFECEFF1) else Color.Black,
+                                        fontWeight = FontWeight.SemiBold
+                                    ),
+                                    0,
+                                    lineText.length
+                                )
+                            }
+                        }
+
+                        CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+                            Text(
+                                text = styledText,
+                                fontFamily = UthmanicFontFamily,
+                                fontSize = 14.5.sp,
+                                textAlign = if (line.words.size < 4 && (pageData.pageNumber <= 2 || line.lineNumber == 15)) TextAlign.Center else TextAlign.Justify,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 

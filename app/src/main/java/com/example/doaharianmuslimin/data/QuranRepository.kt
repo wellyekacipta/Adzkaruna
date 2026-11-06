@@ -625,41 +625,53 @@ object QuranRepository {
         }
     }
 
-    private val pageBitmapCache = android.util.LruCache<Int, Bitmap>(8)
+    private val pageBitmapCache = android.util.LruCache<String, Bitmap>(16)
 
     /**
-     * Load official high-resolution 15-line Mushaf Madinah V4 Tajweed page image (KFGQPC standard)
-     * Automatically caches downloaded images to context.cacheDir/mushaf_tajweed_pages/
+     * Load official high-resolution 15-line Mushaf Madinah page image (KFGQPC standard)
+     * Supports both Tajweed Berwarna (isTajweed = true) and Mushaf Biasa / Standar (isTajweed = false)
+     * Automatically caches downloaded images to context.cacheDir/mushaf_tajweed_pages/ or mushaf_standard_pages/
      */
-    suspend fun getMushafPageBitmap(context: Context, pageNumber: Int): Bitmap? {
+    suspend fun getMushafPageBitmap(context: Context, pageNumber: Int, isTajweed: Boolean = true): Bitmap? {
         val safePage = pageNumber.coerceIn(1, 604)
-        pageBitmapCache.get(safePage)?.let { return it }
+        val cacheKey = if (isTajweed) "tajweed_$safePage" else "standard_$safePage"
+        pageBitmapCache.get(cacheKey)?.let { return it }
 
         return withContext(Dispatchers.IO) {
             val padded = String.format(Locale.US, "%03d", safePage)
-            val dir = File(context.cacheDir, "mushaf_tajweed_pages")
+            val dirName = if (isTajweed) "mushaf_tajweed_pages" else "mushaf_standard_pages"
+            val fileName = if (isTajweed) "tajweed_page$padded.png" else "standard_page$padded.png"
+            val dir = File(context.cacheDir, dirName)
             if (!dir.exists()) dir.mkdirs()
-            val cacheFile = File(dir, "tajweed_page$padded.png")
+            val cacheFile = File(dir, fileName)
 
             // 1. Try reading from disk cache
             if (cacheFile.exists() && cacheFile.length() > 5000) {
                 try {
                     val bmp = BitmapFactory.decodeFile(cacheFile.absolutePath)
                     if (bmp != null) {
-                        pageBitmapCache.put(safePage, bmp)
+                        pageBitmapCache.put(cacheKey, bmp)
                         return@withContext bmp
                     }
                 } catch (_: Exception) {}
             }
 
-            // 2. Fetch from high-speed official CDN (KFGQPC Madani V4 Tajweed, with jahedev & Quran.app fallback)
-            val urls = listOf(
-                "https://raw.githubusercontent.com/SakinaDevGroup/mushaf-tajweed-cdn/main/light/p$safePage.png",
-                "https://fastly.jsdelivr.net/gh/SakinaDevGroup/mushaf-tajweed-cdn@main/light/p$safePage.png",
-                "https://raw.githubusercontent.com/jahedev/tajweed-quran-pages/master/hafs/tajweed-$padded.jpg",
-                "https://cdn.jsdelivr.net/gh/jahedev/tajweed-quran-pages@master/hafs/tajweed-$padded.jpg",
-                "https://files.quran.app/hafs/madani/width_1024/page$padded.png"
-            )
+            // 2. Fetch from high-speed official CDN
+            val urls = if (isTajweed) {
+                listOf(
+                    "https://raw.githubusercontent.com/SakinaDevGroup/mushaf-tajweed-cdn/main/light/p$safePage.png",
+                    "https://fastly.jsdelivr.net/gh/SakinaDevGroup/mushaf-tajweed-cdn@main/light/p$safePage.png",
+                    "https://raw.githubusercontent.com/jahedev/tajweed-quran-pages/master/hafs/tajweed-$padded.jpg",
+                    "https://cdn.jsdelivr.net/gh/jahedev/tajweed-quran-pages@master/hafs/tajweed-$padded.jpg"
+                )
+            } else {
+                listOf(
+                    "https://files.quran.app/hafs/madani/width_1024/page$padded.png",
+                    "https://android.quran.com/data/width_1024/page$padded.png",
+                    "https://raw.githubusercontent.com/quran/quran.com-images/master/pages/page$padded.png",
+                    "https://cdn.jsdelivr.net/gh/quran/quran.com-images@master/pages/page$padded.png"
+                )
+            }
 
             for (urlStr in urls) {
                 try {
@@ -677,7 +689,7 @@ object QuranRepository {
                         }
                         val bmp = BitmapFactory.decodeFile(cacheFile.absolutePath)
                         if (bmp != null) {
-                            pageBitmapCache.put(safePage, bmp)
+                            pageBitmapCache.put(cacheKey, bmp)
                             return@withContext bmp
                         }
                     }
@@ -690,54 +702,61 @@ object QuranRepository {
     /**
      * Asynchronously pre-fetch adjacent pages in the background for instant swiping
      */
-    fun preloadMushafAdjacentPages(context: Context, currentPage: Int) {
+    fun preloadMushafAdjacentPages(context: Context, currentPage: Int, isTajweed: Boolean = true) {
         val next = (currentPage + 1).coerceAtMost(604)
         val prev = (currentPage - 1).coerceAtLeast(1)
+        val nextKey = if (isTajweed) "tajweed_$next" else "standard_$next"
+        val prevKey = if (isTajweed) "tajweed_$prev" else "standard_$prev"
         CoroutineScope(Dispatchers.IO).launch {
             if (next != currentPage) {
                 getMushafPage(next, context)
-                if (pageBitmapCache.get(next) == null) {
-                    getMushafPageBitmap(context, next)
+                if (pageBitmapCache.get(nextKey) == null) {
+                    getMushafPageBitmap(context, next, isTajweed)
                 }
             }
             if (prev != currentPage) {
                 getMushafPage(prev, context)
-                if (pageBitmapCache.get(prev) == null) {
-                    getMushafPageBitmap(context, prev)
+                if (pageBitmapCache.get(prevKey) == null) {
+                    getMushafPageBitmap(context, prev, isTajweed)
                 }
             }
         }
     }
 
-    fun isPageCached(context: Context, pageNumber: Int): Boolean {
+    fun isPageCached(context: Context, pageNumber: Int, isTajweed: Boolean = true): Boolean {
         val padded = String.format(Locale.US, "%03d", pageNumber.coerceIn(1, 604))
-        val dir = File(context.cacheDir, "mushaf_tajweed_pages")
-        val cacheFile = File(dir, "tajweed_page$padded.png")
+        val dirName = if (isTajweed) "mushaf_tajweed_pages" else "mushaf_standard_pages"
+        val fileName = if (isTajweed) "tajweed_page$padded.png" else "standard_page$padded.png"
+        val dir = File(context.cacheDir, dirName)
+        val cacheFile = File(dir, fileName)
         return cacheFile.exists() && cacheFile.length() > 5000
     }
 
-    fun countCachedPages(context: Context): Int {
-        val dir = File(context.cacheDir, "mushaf_tajweed_pages")
+    fun countCachedPages(context: Context, isTajweed: Boolean = true): Int {
+        val dirName = if (isTajweed) "mushaf_tajweed_pages" else "mushaf_standard_pages"
+        val prefix = if (isTajweed) "tajweed_page" else "standard_page"
+        val dir = File(context.cacheDir, dirName)
         if (!dir.exists() || !dir.isDirectory) return 0
-        val files = dir.listFiles { _, name -> name.startsWith("tajweed_page") && name.endsWith(".png") }
+        val files = dir.listFiles { _, name -> name.startsWith(prefix) && name.endsWith(".png") }
         return files?.count { it.length() > 5000 } ?: 0
     }
 
     suspend fun downloadAllMushafPages(
         context: Context,
+        isTajweed: Boolean = true,
         onProgress: (downloaded: Int, total: Int) -> Unit
     ) = withContext(Dispatchers.IO) {
         val total = 604
-        var currentCount = countCachedPages(context)
+        var currentCount = countCachedPages(context, isTajweed)
         onProgress(currentCount, total)
 
         for (page in 1..total) {
-            if (!isPageCached(context, page)) {
-                getMushafPageBitmap(context, page)
+            if (!isPageCached(context, page, isTajweed)) {
+                getMushafPageBitmap(context, page, isTajweed)
                 try {
                     getMushafPage(page, context)
                 } catch (_: Exception) {}
-                currentCount = countCachedPages(context)
+                currentCount = countCachedPages(context, isTajweed)
                 onProgress(currentCount, total)
             }
         }

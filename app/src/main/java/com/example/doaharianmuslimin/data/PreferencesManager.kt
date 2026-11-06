@@ -19,6 +19,11 @@ enum class AppThemeMode(val title: String) {
     SYSTEM("Ikuti Sistem")
 }
 
+enum class MushafStyle(val title: String, val subtitle: String) {
+    TAJWEED("Tajwid Berwarna", "Rasm Utsmani Madinah 15 baris berkaidah tajwid warna"),
+    BIASA("Mushaf Biasa", "Rasm Utsmani Madinah 15 baris standar hitam klasik")
+}
+
 
 data class QuranHistoryItem(
     val surahNumber: Int,
@@ -49,6 +54,8 @@ class PreferencesManager(private val context: Context) {
         private const val KEY_CITY_NAME = "key_selected_city_name"
         private const val KEY_MUSHAF_DOWNLOAD_PROMPTED = "key_mushaf_tajweed_download_prompted_v1"
         private const val KEY_MUSHAF_ALL_DOWNLOADED = "key_mushaf_tajweed_all_downloaded_v1"
+        private const val KEY_MUSHAF_STYLE = "key_mushaf_style_v1"
+        private const val KEY_MUSHAF_STYLE_CHOSEN = "key_mushaf_style_chosen_v1"
         private const val KEY_USER_NAME = "key_profile_user_name"
         private const val KEY_QURAN_HISTORY = "key_quran_reading_history_json"
         private const val KEY_QURAN_FAVORITES = "key_quran_favorites_json"
@@ -86,6 +93,26 @@ class PreferencesManager(private val context: Context) {
 
     fun isMushafAllDownloaded(): Boolean = prefs.getBoolean(KEY_MUSHAF_ALL_DOWNLOADED, false)
     fun setMushafAllDownloaded(downloaded: Boolean) = prefs.edit().putBoolean(KEY_MUSHAF_ALL_DOWNLOADED, downloaded).apply()
+
+    // --- Mushaf Style (Tajwid Warna vs Biasa) ---
+    fun getMushafStyle(): MushafStyle {
+        val name = prefs.getString(KEY_MUSHAF_STYLE, MushafStyle.TAJWEED.name)
+        return try {
+            MushafStyle.valueOf(name ?: MushafStyle.TAJWEED.name)
+        } catch (_: Exception) {
+            MushafStyle.TAJWEED
+        }
+    }
+
+    fun setMushafStyle(style: MushafStyle) {
+        prefs.edit().putString(KEY_MUSHAF_STYLE, style.name).apply()
+    }
+
+    fun isMushafStyleChosen(): Boolean = prefs.getBoolean(KEY_MUSHAF_STYLE_CHOSEN, false)
+
+    fun setMushafStyleChosen(chosen: Boolean) {
+        prefs.edit().putBoolean(KEY_MUSHAF_STYLE_CHOSEN, chosen).apply()
+    }
 
     fun getFavoriteIds(): Set<Int> {
         val stringSet = prefs.getStringSet(KEY_FAVORITES, emptySet()) ?: emptySet()
