@@ -1225,7 +1225,6 @@ private fun HomeDoaListItem(
             .clickable(onClick = onClick),
         shape = HomeItemShape,
         color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 1.dp,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
     ) {
         Row(
