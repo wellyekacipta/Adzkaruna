@@ -102,69 +102,62 @@ fun TasbihScreen(
         modifier = modifier.fillMaxSize(),
         bottomBar = bottomBar,
         topBar = {
-            Surface(
-                color = MaterialTheme.colorScheme.primary,
+            Column(
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .statusBarsPadding()
-                ) {
-                    TopAppBar(
-                        windowInsets = WindowInsets(0.dp),
-                        title = {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Image(
-                                    painter = painterResource(id = R.drawable.app_logo_kufi),
-                                    contentDescription = "Logo Adzkaruna",
-                                    modifier = Modifier.size(34.dp)
-                                )
-                                Spacer(modifier = Modifier.width(10.dp))
-                                Column(modifier = Modifier.weight(1f, fill = false)) {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Text(
-                                            text = "Adzkaruna",
-                                            fontSize = 18.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = Color.White,
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis
-                                        )
-                                        Spacer(modifier = Modifier.width(5.dp))
-                                        Box(
-                                            modifier = Modifier
-                                                .background(AccentGold, shape = RoundedCornerShape(3.dp))
-                                                .padding(horizontal = 3.dp, vertical = 0.5.dp),
-                                            contentAlignment = Alignment.Center
-                                        ) {
-                                            Text(
-                                                text = "PRO",
-                                                fontSize = 8.5.sp,
-                                                fontWeight = FontWeight.Black,
-                                                color = Color(0xFF3E2723),
-                                                letterSpacing = 0.2.sp,
-                                                style = TextStyle(
-                                                    platformStyle = PlatformTextStyle(includeFontPadding = false),
-                                                    lineHeight = 9.sp
-                                                )
-                                            )
-                                        }
-                                    }
+                TopAppBar(
+                    title = {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Image(
+                                painter = painterResource(id = R.drawable.app_logo_kufi),
+                                contentDescription = "Logo Adzkaruna",
+                                modifier = Modifier.size(36.dp)
+                            )
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column(modifier = Modifier.weight(1f, fill = false)) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
                                     Text(
-                                        text = "Doa & Dzikir Harian Muslimin v1.65.0",
-                                        fontSize = 11.sp,
-                                        color = Color.White.copy(alpha = 0.85f),
+                                        text = "Adzkaruna",
+                                        fontSize = 18.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White,
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis
                                     )
+                                    Spacer(modifier = Modifier.width(5.dp))
+                                    Box(
+                                        modifier = Modifier
+                                            .background(AccentGold, shape = RoundedCornerShape(3.dp))
+                                            .padding(horizontal = 3.dp, vertical = 0.5.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = "PRO",
+                                            fontSize = 8.5.sp,
+                                            fontWeight = FontWeight.Black,
+                                            color = Color(0xFF3E2723),
+                                            letterSpacing = 0.2.sp,
+                                            style = TextStyle(
+                                                platformStyle = PlatformTextStyle(includeFontPadding = false),
+                                                lineHeight = 9.sp
+                                            )
+                                        )
+                                    }
                                 }
+                                Text(
+                                    text = "Doa & Dzikir Harian Muslimin v1.65.0",
+                                    fontSize = 11.sp,
+                                    color = Color.White.copy(alpha = 0.85f),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
                             }
-                        },
-                        colors = TopAppBarDefaults.topAppBarColors(
-                            containerColor = Color.Transparent
-                        )
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.primary
                     )
+                )
 
                     // Tab Navigation Row
                     PrimaryTabRow(
@@ -201,7 +194,6 @@ fun TasbihScreen(
                     }
                 }
             }
-        }
     ) { innerPadding ->
         Box(
             modifier = Modifier
