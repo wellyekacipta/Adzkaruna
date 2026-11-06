@@ -102,6 +102,14 @@ fun HomeScreen(
     var arabicFontSize by remember { mutableFloatStateOf(prefs.getArabicFontSize()) }
     var showLatin by remember { mutableStateOf(prefs.isShowLatin()) }
     var historyRefreshKey by remember { mutableIntStateOf(0) }
+
+    // Auto-refresh real-time riwayat Al-Qur'an dan statistik saat kembali ke Tab Home atau saat sub-layar ditutup
+    LaunchedEffect(currentNavTab, activeSubScreen) {
+        if (currentNavTab == BottomNavTab.HOME && activeSubScreen == ActiveSubScreen.NONE) {
+            historyRefreshKey++
+        }
+    }
+
     val homeQuranHistory = remember(historyRefreshKey) { prefs.getQuranReadingHistory().firstOrNull() }
     val homeDoaHistory = remember(historyRefreshKey) { prefs.getDoaReadingHistory().firstOrNull() }
     val doaHistoryList = remember(historyRefreshKey) { prefs.getDoaReadingHistory() }
@@ -288,6 +296,7 @@ fun HomeScreen(
                         activeSubScreen = ActiveSubScreen.NONE
                         currentNavTab = BottomNavTab.HOME
                         filterOnlyFavorites = false
+                        historyRefreshKey++
                     },
                     icon = {
                         Icon(
