@@ -21,7 +21,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.doaharianmuslimin.data.PreferencesManager
 import com.example.doaharianmuslimin.data.model.Doa
-import com.example.doaharianmuslimin.data.model.sanitizeAyahBrackets
 import com.example.doaharianmuslimin.ui.theme.AccentGold
 import com.example.doaharianmuslimin.ui.theme.UthmanicFontFamily
 
@@ -135,7 +134,7 @@ fun DoaCard(
             // Arabic preview with Uthmanic font (hanya jika ada teks Arab)
             if (doa.arabic.isNotBlank()) {
                 Text(
-                    text = doa.arabic.sanitizeAyahBrackets(),
+                    text = doa.arabic,
                     color = MaterialTheme.colorScheme.primary,
                     fontFamily = arabicFontFamily,
                     fontSize = 22.sp,

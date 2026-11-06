@@ -24,7 +24,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.doaharianmuslimin.data.PreferencesManager
 import com.example.doaharianmuslimin.data.model.Doa
-import com.example.doaharianmuslimin.data.model.sanitizeAyahBrackets
 import com.example.doaharianmuslimin.ui.theme.AccentGold
 import com.example.doaharianmuslimin.ui.theme.PrimaryTosca
 import com.example.doaharianmuslimin.ui.theme.PrimaryToscaLight
@@ -115,7 +114,7 @@ fun DailyDoaBanner(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = doa.arabic.sanitizeAyahBrackets(),
+                    text = doa.arabic,
                     color = Color.White,
                     fontFamily = arabicFontFamily,
                     fontSize = 20.sp,

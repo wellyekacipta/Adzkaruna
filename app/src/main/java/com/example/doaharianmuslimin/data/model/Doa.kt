@@ -2,8 +2,6 @@ package com.example.doaharianmuslimin.data.model
 
 import androidx.compose.runtime.Immutable
 
-fun String.sanitizeAyahBrackets(): String = this.replace('﴿', '(').replace('﴾', ')')
-
 @Immutable
 data class Doa(
     val id: Int,

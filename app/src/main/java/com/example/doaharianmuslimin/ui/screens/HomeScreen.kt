@@ -44,7 +44,6 @@ import com.example.doaharianmuslimin.data.PreferencesManager
 import com.example.doaharianmuslimin.data.model.ArabicFontStyle
 import com.example.doaharianmuslimin.data.model.Doa
 import com.example.doaharianmuslimin.data.model.DoaCategory
-import com.example.doaharianmuslimin.data.model.sanitizeAyahBrackets
 import com.example.doaharianmuslimin.ui.components.*
 import com.example.doaharianmuslimin.ui.theme.AccentGold
 import com.example.doaharianmuslimin.ui.theme.PrimaryTosca
@@ -163,7 +162,7 @@ fun HomeScreen(
             appendLine(doa.title)
             if (doa.arabic.isNotBlank()) {
                 appendLine()
-                appendLine(doa.arabic.sanitizeAyahBrackets())
+                appendLine(doa.arabic)
             }
             if (doa.latin.isNotBlank()) {
                 appendLine()
@@ -187,7 +186,7 @@ fun HomeScreen(
             appendLine("📖 *${doa.title}*")
             if (doa.arabic.isNotBlank()) {
                 appendLine()
-                appendLine(doa.arabic.sanitizeAyahBrackets())
+                appendLine(doa.arabic)
             }
             if (doa.latin.isNotBlank()) {
                 appendLine()
@@ -338,7 +337,7 @@ fun HomeScreen(
                                 }
                             }
                             Text(
-                                text = "Doa & Dzikir Harian Muslimin v1.61.0",
+                                text = "Doa & Dzikir Harian Muslimin v1.62.0",
                                 fontSize = 11.sp,
                                 color = Color.White.copy(alpha = 0.85f),
                                 maxLines = 1,
