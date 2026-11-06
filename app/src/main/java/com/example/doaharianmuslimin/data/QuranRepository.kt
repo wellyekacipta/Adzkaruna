@@ -626,19 +626,36 @@ object QuranRepository {
     }
 
     private val pageBitmapCache = android.util.LruCache<String, Bitmap>(32)
+    private var hasCleanedLegacyCache = false
+
+    private fun cleanLegacyCache(context: Context) {
+        if (hasCleanedLegacyCache) return
+        hasCleanedLegacyCache = true
+        try {
+            val tajweedDir = File(context.cacheDir, "mushaf_tajweed_pages")
+            if (tajweedDir.exists()) {
+                tajweedDir.listFiles { _, name -> name.endsWith(".png") }?.forEach { it.delete() }
+            }
+            val standardDir = File(context.cacheDir, "mushaf_standard_pages")
+            if (standardDir.exists()) {
+                standardDir.listFiles { _, name -> name.endsWith(".png") }?.forEach { it.delete() }
+            }
+        } catch (_: Exception) {}
+    }
 
     /**
      * Synchronously retrieve bitmap from in-memory cache or local disk cache without network delay.
      * Ensures instant page rendering during swiping.
      */
     fun getCachedBitmapSync(context: Context, pageNumber: Int, isTajweed: Boolean = true): Bitmap? {
+        cleanLegacyCache(context)
         val safePage = pageNumber.coerceIn(1, 604)
         val cacheKey = if (isTajweed) "tajweed_$safePage" else "standard_$safePage"
         pageBitmapCache.get(cacheKey)?.let { return it }
 
         val padded = String.format(Locale.US, "%03d", safePage)
         val dirName = if (isTajweed) "mushaf_tajweed_pages" else "mushaf_standard_pages"
-        val fileName = if (isTajweed) "tajweed_page$padded.png" else "standard_page$padded.jpg"
+        val fileName = if (isTajweed) "tajweed_page$padded.jpg" else "standard_page$padded.jpg"
         val cacheFile = File(File(context.cacheDir, dirName), fileName)
         if (cacheFile.exists() && cacheFile.length() > 5000) {
             try {
@@ -654,10 +671,11 @@ object QuranRepository {
 
     /**
      * Load official high-resolution 15-line Mushaf Madinah page image (KFGQPC HAFS Uthmanic standard)
-     * Supports both Tajweed Berwarna (isTajweed = true, KFGQPC V4) and Mushaf Biasa / Standar (isTajweed = false, KFGQPC Hafs Wasat)
+     * Supports both Tajweed Berwarna (isTajweed = true, 15 Baris Utsmani Tajweed HD) and Mushaf Biasa / Standar (isTajweed = false, KFGQPC Hafs Wasat)
      * Automatically caches downloaded images to context.cacheDir/mushaf_tajweed_pages/ or mushaf_standard_pages/
      */
     suspend fun getMushafPageBitmap(context: Context, pageNumber: Int, isTajweed: Boolean = true): Bitmap? {
+        cleanLegacyCache(context)
         val safePage = pageNumber.coerceIn(1, 604)
         val cacheKey = if (isTajweed) "tajweed_$safePage" else "standard_$safePage"
         pageBitmapCache.get(cacheKey)?.let { return it }
@@ -665,7 +683,7 @@ object QuranRepository {
         return withContext(Dispatchers.IO) {
             val padded = String.format(Locale.US, "%03d", safePage)
             val dirName = if (isTajweed) "mushaf_tajweed_pages" else "mushaf_standard_pages"
-            val fileName = if (isTajweed) "tajweed_page$padded.png" else "standard_page$padded.jpg"
+            val fileName = if (isTajweed) "tajweed_page$padded.jpg" else "standard_page$padded.jpg"
             val dir = File(context.cacheDir, dirName)
             if (!dir.exists()) dir.mkdirs()
             val cacheFile = File(dir, fileName)
@@ -681,12 +699,12 @@ object QuranRepository {
                 } catch (_: Exception) {}
             }
 
-            // 2. Fetch from high-speed official CDN (King Fahd Complex - KFGQPC Hafs Uthmanic)
+            // 2. Fetch from high-speed official CDN (15-line Hafs Uthmanic)
             val urls = if (isTajweed) {
                 listOf(
-                    "https://cdn.jsdelivr.net/gh/SakinaDevGroup/mushaf-tajweed-cdn@main/light/p$safePage.png",
-                    "https://fastly.jsdelivr.net/gh/SakinaDevGroup/mushaf-tajweed-cdn@main/light/p$safePage.png",
-                    "https://raw.githubusercontent.com/SakinaDevGroup/mushaf-tajweed-cdn/main/light/p$safePage.png"
+                    "https://cdn.jsdelivr.net/gh/jahedev/tajweed-quran-pages@master/hafs/tajweed-$padded.jpg",
+                    "https://fastly.jsdelivr.net/gh/jahedev/tajweed-quran-pages@master/hafs/tajweed-$padded.jpg",
+                    "https://raw.githubusercontent.com/jahedev/tajweed-quran-pages/master/hafs/tajweed-$padded.jpg"
                 )
             } else {
                 listOf(
@@ -746,7 +764,7 @@ object QuranRepository {
     fun isPageCached(context: Context, pageNumber: Int, isTajweed: Boolean = true): Boolean {
         val padded = String.format(Locale.US, "%03d", pageNumber.coerceIn(1, 604))
         val dirName = if (isTajweed) "mushaf_tajweed_pages" else "mushaf_standard_pages"
-        val fileName = if (isTajweed) "tajweed_page$padded.png" else "standard_page$padded.jpg"
+        val fileName = if (isTajweed) "tajweed_page$padded.jpg" else "standard_page$padded.jpg"
         val dir = File(context.cacheDir, dirName)
         val cacheFile = File(dir, fileName)
         return cacheFile.exists() && cacheFile.length() > 5000
@@ -755,10 +773,9 @@ object QuranRepository {
     fun countCachedPages(context: Context, isTajweed: Boolean = true): Int {
         val dirName = if (isTajweed) "mushaf_tajweed_pages" else "mushaf_standard_pages"
         val prefix = if (isTajweed) "tajweed_page" else "standard_page"
-        val extension = if (isTajweed) ".png" else ".jpg"
         val dir = File(context.cacheDir, dirName)
         if (!dir.exists() || !dir.isDirectory) return 0
-        val files = dir.listFiles { _, name -> name.startsWith(prefix) && name.endsWith(extension) }
+        val files = dir.listFiles { _, name -> name.startsWith(prefix) && name.endsWith(".jpg") }
         return files?.count { it.length() > 5000 } ?: 0
     }
 
