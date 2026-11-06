@@ -453,7 +453,7 @@ fun HomeScreen(
                                 }
                             }
                             Text(
-                                text = "Doa & Dzikir Harian Muslimin v1.64.0",
+                                text = "Doa & Dzikir Harian Muslimin v1.65.0",
                                 fontSize = 11.sp,
                                 color = Color.White.copy(alpha = 0.85f),
                                 maxLines = 1,
@@ -651,14 +651,27 @@ fun HomeScreen(
                                                 verticalAlignment = Alignment.CenterVertically
                                             ) {
                                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                                    Icon(Icons.Default.History, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
-                                                    Spacer(modifier = Modifier.width(6.dp))
-                                                    Text(
-                                                        text = "Aktivitas Terakhir Dibaca",
-                                                        fontWeight = FontWeight.Bold,
-                                                        fontSize = 13.sp,
-                                                        color = MaterialTheme.colorScheme.primary
-                                                    )
+                                                    Icon(Icons.Default.History, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                                                    Spacer(modifier = Modifier.width(8.dp))
+                                                    Column {
+                                                        Text(
+                                                            text = "Tilawah Terakhir",
+                                                            fontWeight = FontWeight.Bold,
+                                                            fontSize = 13.5.sp,
+                                                            color = MaterialTheme.colorScheme.primary
+                                                        )
+                                                        val latestTimestamp = maxOf(quranHist?.timestamp ?: 0L, doaHist?.timestamp ?: 0L)
+                                                        val formattedDateTime = remember(latestTimestamp) {
+                                                            val ts = if (latestTimestamp > 0L) latestTimestamp else System.currentTimeMillis()
+                                                            val sdf = java.text.SimpleDateFormat("HH:mm, dd MMMM yyyy", java.util.Locale.forLanguageTag("id-ID"))
+                                                            sdf.format(java.util.Date(ts))
+                                                        }
+                                                        Text(
+                                                            text = formattedDateTime,
+                                                            fontSize = 11.sp,
+                                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                        )
+                                                    }
                                                 }
                                             }
 

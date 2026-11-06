@@ -74,7 +74,7 @@ fun QuranWeeklyStatsCard(
                     Spacer(modifier = Modifier.width(10.dp))
                     Column {
                         Text(
-                            text = "Statistik Membaca Al-Qur'an",
+                            text = "Catatan Tilawah",
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
@@ -93,11 +93,11 @@ fun QuranWeeklyStatsCard(
 
             // 2. Teks Ringkas Status Membaca
             val statusText = when {
-                activeDay != null && activeDay.pagesRead > 0 -> "${activeDay.dayName} sudah membaca ${activeDay.pagesRead} halaman"
-                activeDay != null && activeDay.isToday -> "${activeDay.dayName} belum membaca Al-Qur'an hari ini"
-                activeDay != null && activeDay.isFuture -> "${activeDay.dayName} belum tiba"
-                activeDay != null -> "${activeDay.dayName} membaca 0 halaman"
-                else -> "Belum ada catatan membaca"
+                activeDay != null && activeDay.pagesRead > 0 -> "Hari ${activeDay.dayName}, Anda telah menuntaskan ${activeDay.pagesRead} halaman :-)"
+                activeDay != null && activeDay.isToday -> "Hari ${activeDay.dayName}, Anda belum membaca Al-Qur'an hari ini"
+                activeDay != null && activeDay.isFuture -> "Hari ${activeDay.dayName} belum tiba"
+                activeDay != null -> "Hari ${activeDay.dayName}, Anda membaca 0 halaman"
+                else -> "Belum ada catatan tilawah"
             }
 
             Surface(
