@@ -8,6 +8,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -19,14 +21,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.doaharianmuslimin.data.DoaRepository
+import com.example.doaharianmuslimin.data.PreferencesManager
 import com.example.doaharianmuslimin.data.model.Doa
 import com.example.doaharianmuslimin.data.model.DoaCategory
-import com.example.doaharianmuslimin.ui.components.DoaCard
+import com.example.doaharianmuslimin.ui.components.DoaDetailBottomSheet
+import com.example.doaharianmuslimin.ui.theme.AccentGold
+import com.example.doaharianmuslimin.ui.theme.PrimaryTosca
 
 data class TopicItem(
     val title: String,
@@ -50,19 +56,25 @@ private val StaticTopics = listOf(
 
 private val TopicCardShape = RoundedCornerShape(14.dp)
 private val TopicIconShape = RoundedCornerShape(12.dp)
-private val SearchShape = RoundedCornerShape(12.dp)
+private val DoaListItemShape = RoundedCornerShape(12.dp)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TopicDoaScreen(
     onBack: () -> Unit,
-    onSelectDoa: (Doa) -> Unit,
+    onSelectDoa: (Doa) -> Unit = {},
     favoriteIds: Set<Int>,
     onToggleFavorite: (Int) -> Unit,
     onCopyDoa: (Doa) -> Unit,
     onShareDoa: (Doa) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+    val prefs = remember { PreferencesManager(context) }
+    var arabicFontSize by remember { mutableFloatStateOf(prefs.getArabicFontSize()) }
+    var showLatin by remember { mutableStateOf(prefs.isShowLatin()) }
+    var detailDoa by remember { mutableStateOf<Doa?>(null) }
+
     var selectedTopic by remember { mutableStateOf<TopicItem?>(null) }
     var searchQuery by remember { mutableStateOf("") }
     var isSearchActive by remember { mutableStateOf(false) }
@@ -96,7 +108,7 @@ fun TopicDoaScreen(
                                     overflow = TextOverflow.Ellipsis
                                 )
                                 Text(
-                                    text = if (selectedTopic == null) "Pilih topik kebutuhan doa Anda" else "Kumpulan Doa Pilihan",
+                                    text = if (selectedTopic == null) "Pilih topik kebutuhan doa Anda" else "Daftar Doa Pilihan",
                                     fontSize = 11.sp,
                                     color = Color.White.copy(alpha = 0.85f),
                                     maxLines = 1,
@@ -154,7 +166,7 @@ fun TopicDoaScreen(
                                 onValueChange = { searchQuery = it },
                                 placeholder = {
                                     Text(
-                                        text = if (selectedTopic == null) "Cari doa atau topik..." else "Cari doa dalam topik ini...",
+                                        text = if (selectedTopic == null) "Cari doa atau topik..." else "Cari dalam daftar doa ini...",
                                         fontSize = 12.sp,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
@@ -222,18 +234,20 @@ fun TopicDoaScreen(
                             modifier = Modifier.padding(bottom = 4.dp)
                         )
                     }
-                    items(
+                    itemsIndexed(
                         items = matchingDoas,
-                        key = { it.id },
-                        contentType = { "DoaCard" }
-                    ) { doa ->
-                        DoaCard(
+                        key = { _, doa -> doa.id },
+                        contentType = { _, _ -> "DoaListItem" }
+                    ) { index, doa ->
+                        TopicDoaListItem(
+                            index = index,
                             doa = doa,
                             isFavorite = favoriteIds.contains(doa.id),
-                            onFavoriteToggle = { onToggleFavorite(doa.id) },
-                            onCopy = { onCopyDoa(doa) },
-                            onShare = { onShareDoa(doa) },
-                            onClick = { onSelectDoa(doa) }
+                            onToggleFavorite = { onToggleFavorite(doa.id) },
+                            onClick = {
+                                detailDoa = doa
+                                onSelectDoa(doa)
+                            }
                         )
                     }
                     item {
@@ -332,7 +346,7 @@ fun TopicDoaScreen(
                 }
             }
         } else {
-            // Screen 2: Filtered prayers for the selected topic
+            // Screen 2: Menu list of prayers for the selected topic
             val topic = selectedTopic!!
             val topicDoas = remember(topic) {
                 DoaRepository.doaList.filter { doa ->
@@ -359,7 +373,7 @@ fun TopicDoaScreen(
                     .fillMaxSize()
                     .padding(innerPadding),
                 contentPadding = PaddingValues(14.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 item {
                     Row(
@@ -368,7 +382,7 @@ fun TopicDoaScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Menampilkan ${filteredDoas.size} Doa untuk ${topic.title}",
+                            text = "Daftar ${filteredDoas.size} Doa: ${topic.title}",
                             fontSize = 12.5.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.primary
@@ -398,22 +412,138 @@ fun TopicDoaScreen(
                         }
                     }
                 } else {
-                    items(
+                    itemsIndexed(
                         items = filteredDoas,
-                        key = { it.id },
-                        contentType = { "DoaCard" }
-                    ) { doa ->
-                        DoaCard(
+                        key = { _, doa -> doa.id },
+                        contentType = { _, _ -> "DoaListItem" }
+                    ) { index, doa ->
+                        TopicDoaListItem(
+                            index = index,
                             doa = doa,
                             isFavorite = favoriteIds.contains(doa.id),
-                            onFavoriteToggle = { onToggleFavorite(doa.id) },
-                            onCopy = { onCopyDoa(doa) },
-                            onShare = { onShareDoa(doa) },
-                            onClick = { onSelectDoa(doa) }
+                            onToggleFavorite = { onToggleFavorite(doa.id) },
+                            onClick = {
+                                detailDoa = doa
+                                onSelectDoa(doa)
+                            }
                         )
                     }
                 }
             }
+        }
+    }
+
+    // Doa Detail Bottom Sheet directly inside TopicDoaScreen so it appears instantly
+    detailDoa?.let { doa ->
+        DoaDetailBottomSheet(
+            doa = doa,
+            isFavorite = favoriteIds.contains(doa.id),
+            onFavoriteToggle = { onToggleFavorite(doa.id) },
+            onDismiss = { detailDoa = null },
+            onCopy = { onCopyDoa(doa) },
+            onShare = { onShareDoa(doa) },
+            arabicFontSize = arabicFontSize,
+            onFontSizeChange = { newSize ->
+                arabicFontSize = newSize
+                prefs.setArabicFontSize(newSize)
+            },
+            showLatin = showLatin,
+            onToggleLatin = { newShow ->
+                showLatin = newShow
+                prefs.setShowLatin(newShow)
+            }
+        )
+    }
+}
+
+/**
+ * Clean & Compact Menu List Item for Topic Doa
+ */
+@Composable
+private fun TopicDoaListItem(
+    index: Int,
+    doa: Doa,
+    isFavorite: Boolean,
+    onToggleFavorite: () -> Unit,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(DoaListItemShape)
+            .clickable(onClick = onClick),
+        shape = DoaListItemShape,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.25f))
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Number badge (1, 2, 3...)
+            Surface(
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.primaryContainer,
+                modifier = Modifier.size(36.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Text(
+                        text = "${index + 1}",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.5.sp,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            // Title and brief info
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = doa.title,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                val subtitle = doa.source.ifBlank {
+                    doa.translation.take(60)
+                }
+                Text(
+                    text = subtitle,
+                    fontSize = 11.5.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+
+            Spacer(modifier = Modifier.width(6.dp))
+
+            // Favorite Bookmark Button
+            IconButton(
+                onClick = onToggleFavorite,
+                modifier = Modifier.size(34.dp)
+            ) {
+                Icon(
+                    imageVector = if (isFavorite) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
+                    contentDescription = if (isFavorite) "Hapus Favorit" else "Tambah Favorit",
+                    tint = if (isFavorite) AccentGold else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+
+            Icon(
+                imageVector = Icons.Default.ChevronRight,
+                contentDescription = "Buka Doa",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                modifier = Modifier.size(18.dp)
+            )
         }
     }
 }
