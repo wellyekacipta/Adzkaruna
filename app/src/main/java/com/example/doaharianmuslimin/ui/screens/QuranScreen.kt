@@ -1225,7 +1225,6 @@ fun QuranScreen(
                         var isLoadingPage by remember(currentMushafPage, currentMushafStyle) { mutableStateOf(true) }
 
                         LaunchedEffect(currentMushafPage, currentMushafStyle) {
-                            isLoadingPage = true
                             blockedVerseKey = null
                             val isTajweed = currentMushafStyle == MushafStyle.TAJWEED
                             val pSurahNum = QuranRepository.getSurahNumberForPage(currentMushafPage)
@@ -1234,13 +1233,32 @@ fun QuranScreen(
                             prefs.recordQuranDailyPage(pSurahNum, pSurahName, currentMushafPage)
                             prefs.addQuranReadingHistory(pSurahNum, pSurahName, currentMushafPage)
                             quranHistoryList = prefs.getQuranReadingHistory()
+
+                            // 1. Cek instan dari in-memory / disk cache agar swipe tidak berkedip
+                            val instantBmp = QuranRepository.getCachedBitmapSync(context, currentMushafPage, isTajweed)
+                            if (instantBmp != null) {
+                                pageBitmap = instantBmp
+                                isLoadingPage = false
+                            } else {
+                                pageBitmap = null
+                                isLoadingPage = true
+                            }
+
+                            // 2. Preload halaman sekitar secara cerdas
                             QuranRepository.preloadMushafAdjacentPages(context, currentMushafPage, isTajweed)
+
+                            // 3. Muat metadata ayat untuk Tafsir BottomSheet di background
                             coroutineScope.launch {
                                 pageData = QuranRepository.getMushafPage(currentMushafPage, context)
-                                isLoadingPage = false
                             }
-                            coroutineScope.launch {
-                                pageBitmap = QuranRepository.getMushafPageBitmap(context, currentMushafPage, isTajweed)
+
+                            // 4. Jika belum ada bitmap, muat dari network/disk dan selesaikan loading saat bitmap didapat
+                            if (instantBmp == null) {
+                                coroutineScope.launch {
+                                    val bmp = QuranRepository.getMushafPageBitmap(context, currentMushafPage, isTajweed)
+                                    pageBitmap = bmp
+                                    isLoadingPage = false
+                                }
                             }
                         }
 
@@ -1437,12 +1455,6 @@ fun QuranScreen(
                                             modifier = Modifier
                                                 .fillMaxSize()
                                                 .padding(horizontal = 0.dp)
-                                        )
-                                    } else if (pageData != null && !pageData!!.lines.isNullOrEmpty()) {
-                                        Mushaf15LinesView(
-                                            pageData = pageData!!,
-                                            isTajweed = currentMushafStyle == MushafStyle.TAJWEED,
-                                            isDark = isDark
                                         )
                                     } else if (isLoadingPage) {
                                         Column(horizontalAlignment = Alignment.CenterHorizontally) {

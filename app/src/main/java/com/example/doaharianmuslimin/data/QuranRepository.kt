@@ -625,7 +625,32 @@ object QuranRepository {
         }
     }
 
-    private val pageBitmapCache = android.util.LruCache<String, Bitmap>(16)
+    private val pageBitmapCache = android.util.LruCache<String, Bitmap>(32)
+
+    /**
+     * Synchronously retrieve bitmap from in-memory cache or local disk cache without network delay.
+     * Ensures instant page rendering during swiping.
+     */
+    fun getCachedBitmapSync(context: Context, pageNumber: Int, isTajweed: Boolean = true): Bitmap? {
+        val safePage = pageNumber.coerceIn(1, 604)
+        val cacheKey = if (isTajweed) "tajweed_$safePage" else "standard_$safePage"
+        pageBitmapCache.get(cacheKey)?.let { return it }
+
+        val padded = String.format(Locale.US, "%03d", safePage)
+        val dirName = if (isTajweed) "mushaf_tajweed_pages" else "mushaf_standard_pages"
+        val fileName = if (isTajweed) "tajweed_page$padded.png" else "standard_page$padded.png"
+        val cacheFile = File(File(context.cacheDir, dirName), fileName)
+        if (cacheFile.exists() && cacheFile.length() > 5000) {
+            try {
+                val bmp = BitmapFactory.decodeFile(cacheFile.absolutePath)
+                if (bmp != null) {
+                    pageBitmapCache.put(cacheKey, bmp)
+                    return bmp
+                }
+            } catch (_: Exception) {}
+        }
+        return null
+    }
 
     /**
      * Load official high-resolution 15-line Mushaf Madinah page image (KFGQPC standard)
@@ -703,22 +728,19 @@ object QuranRepository {
      * Asynchronously pre-fetch adjacent pages in the background for instant swiping
      */
     fun preloadMushafAdjacentPages(context: Context, currentPage: Int, isTajweed: Boolean = true) {
-        val next = (currentPage + 1).coerceAtMost(604)
-        val prev = (currentPage - 1).coerceAtLeast(1)
-        val nextKey = if (isTajweed) "tajweed_$next" else "standard_$next"
-        val prevKey = if (isTajweed) "tajweed_$prev" else "standard_$prev"
+        val targets = listOf(
+            (currentPage + 1).coerceAtMost(604),
+            (currentPage + 2).coerceAtMost(604),
+            (currentPage - 1).coerceAtLeast(1)
+        ).distinct().filter { it != currentPage }
+
         CoroutineScope(Dispatchers.IO).launch {
-            if (next != currentPage) {
-                getMushafPage(next, context)
-                if (pageBitmapCache.get(nextKey) == null) {
-                    getMushafPageBitmap(context, next, isTajweed)
+            for (target in targets) {
+                val cacheKey = if (isTajweed) "tajweed_$target" else "standard_$target"
+                if (pageBitmapCache.get(cacheKey) == null) {
+                    getMushafPageBitmap(context, target, isTajweed)
                 }
-            }
-            if (prev != currentPage) {
-                getMushafPage(prev, context)
-                if (pageBitmapCache.get(prevKey) == null) {
-                    getMushafPageBitmap(context, prev, isTajweed)
-                }
+                getMushafPage(target, context)
             }
         }
     }
