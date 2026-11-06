@@ -2,6 +2,7 @@ package com.example.doaharianmuslimin.data
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.example.doaharianmuslimin.data.model.ArabicFontStyle
 import com.example.doaharianmuslimin.data.model.QuranDayStat
 import com.example.doaharianmuslimin.data.model.QuranWeeklyStats
 import java.text.SimpleDateFormat
@@ -45,6 +46,7 @@ class PreferencesManager(private val context: Context) {
     companion object {
         private const val KEY_FAVORITES = "favorite_doa_ids"
         private const val KEY_ARABIC_FONT_SIZE = "arabic_font_size"
+        private const val KEY_ARABIC_FONT_STYLE = "key_arabic_font_style"
         private const val KEY_SHOW_LATIN = "show_latin"
         private const val KEY_THEME_MODE = "app_theme_mode"
         private const val KEY_ADHAN_ENABLED = "key_adhan_enabled"
@@ -142,6 +144,19 @@ class PreferencesManager(private val context: Context) {
 
     fun setArabicFontSize(sizeSp: Float) {
         prefs.edit().putFloat(KEY_ARABIC_FONT_SIZE, sizeSp).apply()
+    }
+
+    fun getArabicFontStyle(): ArabicFontStyle {
+        val name = prefs.getString(KEY_ARABIC_FONT_STYLE, ArabicFontStyle.RASM_UTSMANI.name)
+        return try {
+            ArabicFontStyle.valueOf(name ?: ArabicFontStyle.RASM_UTSMANI.name)
+        } catch (_: Exception) {
+            ArabicFontStyle.RASM_UTSMANI
+        }
+    }
+
+    fun setArabicFontStyle(style: ArabicFontStyle) {
+        prefs.edit().putString(KEY_ARABIC_FONT_STYLE, style.name).apply()
     }
 
     fun isShowLatin(): Boolean {

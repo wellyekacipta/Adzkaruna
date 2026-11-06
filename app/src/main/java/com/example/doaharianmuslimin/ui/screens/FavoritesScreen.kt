@@ -57,6 +57,7 @@ fun FavoritesScreen(
 
     var quranFavoritesRefreshKey by remember { mutableIntStateOf(0) }
     val quranFavorites = remember(quranFavoritesRefreshKey) { prefs.getQuranFavorites() }
+    val arabicFontFamily = remember { prefs.getArabicFontStyle().fontFamily }
     val doaFavorites = remember(favoriteIds) {
         DoaRepository.doaList.filter { favoriteIds.contains(it.id) }
     }
@@ -409,7 +410,7 @@ fun FavoritesScreen(
 
                                     Text(
                                         text = doa.arabic,
-                                        fontFamily = LpmqFontFamily,
+                                        fontFamily = arabicFontFamily,
                                         fontSize = 18.sp,
                                         fontWeight = FontWeight.Bold,
                                         textAlign = TextAlign.End,

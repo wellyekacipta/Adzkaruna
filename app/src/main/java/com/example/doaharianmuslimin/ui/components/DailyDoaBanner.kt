@@ -11,6 +11,7 @@ import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -21,6 +22,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.doaharianmuslimin.data.PreferencesManager
 import com.example.doaharianmuslimin.data.model.Doa
 import com.example.doaharianmuslimin.ui.theme.AccentGold
 import com.example.doaharianmuslimin.ui.theme.PrimaryTosca
@@ -35,6 +37,9 @@ fun DailyDoaBanner(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val arabicFontFamily = remember { PreferencesManager(context).getArabicFontStyle().fontFamily }
+
     Card(
         modifier = modifier
             .fillMaxWidth()
@@ -111,7 +116,7 @@ fun DailyDoaBanner(
                 Text(
                     text = doa.arabic,
                     color = Color.White,
-                    fontFamily = UthmanicFontFamily,
+                    fontFamily = arabicFontFamily,
                     fontSize = 20.sp,
                     lineHeight = 34.sp,
                     textAlign = TextAlign.End,

@@ -7,19 +7,29 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import com.example.doaharianmuslimin.R
+import com.example.doaharianmuslimin.data.model.ArabicFontStyle
 
-// Font Resmi Mushaf Madinah V2 (KFGQPC - King Fahd Glorious Quran Printing Complex)
-val UthmanicFontFamily = FontFamily(
+// 1. Font Rasm Utsmani (Khat Naskhi khas Madinah)
+val RasmUtsmaniFontFamily = FontFamily(
+    Font(R.font.uthmanic, FontWeight.Normal)
+)
+
+// 2. Font KFGQPC Uthman Taha Naskh (Mushaf Madinah V2)
+val KfgqpcFontFamily = FontFamily(
     Font(R.font.kfgqpc_hafs, FontWeight.Normal)
 )
-val MadinahFontFamily = UthmanicFontFamily
 
-// Font Resmi Al-Qur'an Standar Indonesia (LPMQ Kemenag RI - Isep Misbah)
-val LpmqFontFamily = FontFamily(
+// 3. Font Isep Misbah (LPMQ Kemenag RI Standar Indonesia)
+val IsepMisbahFontFamily = FontFamily(
     Font(R.font.lpmq, FontWeight.Normal),
     Font(R.font.lpmq, FontWeight.Bold),
     Font(R.font.lpmq, FontWeight.SemiBold)
 )
+
+// Alias kompatibilitas
+val UthmanicFontFamily = RasmUtsmaniFontFamily
+val MadinahFontFamily = KfgqpcFontFamily
+val LpmqFontFamily = IsepMisbahFontFamily
 
 val Typography = Typography(
     headlineLarge = TextStyle(

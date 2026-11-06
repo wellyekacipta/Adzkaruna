@@ -11,6 +11,7 @@ import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -18,6 +19,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.doaharianmuslimin.data.PreferencesManager
 import com.example.doaharianmuslimin.data.model.Doa
 import com.example.doaharianmuslimin.ui.theme.AccentGold
 import com.example.doaharianmuslimin.ui.theme.UthmanicFontFamily
@@ -35,6 +37,9 @@ fun DoaCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val arabicFontFamily = remember { PreferencesManager(context).getArabicFontStyle().fontFamily }
+
     Card(
         modifier = modifier
             .fillMaxWidth()
@@ -131,7 +136,7 @@ fun DoaCard(
                 Text(
                     text = doa.arabic,
                     color = MaterialTheme.colorScheme.primary,
-                    fontFamily = UthmanicFontFamily,
+                    fontFamily = arabicFontFamily,
                     fontSize = 22.sp,
                     lineHeight = 36.sp,
                     textAlign = TextAlign.End,

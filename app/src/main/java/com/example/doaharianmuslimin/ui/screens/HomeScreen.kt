@@ -41,6 +41,7 @@ import com.example.doaharianmuslimin.R
 import com.example.doaharianmuslimin.data.AppThemeMode
 import com.example.doaharianmuslimin.data.DoaRepository
 import com.example.doaharianmuslimin.data.PreferencesManager
+import com.example.doaharianmuslimin.data.model.ArabicFontStyle
 import com.example.doaharianmuslimin.data.model.Doa
 import com.example.doaharianmuslimin.data.model.DoaCategory
 import com.example.doaharianmuslimin.ui.components.*
@@ -95,6 +96,7 @@ fun HomeScreen(
     var filterOnlyHistory by remember { mutableStateOf(false) }
 
     var favoriteIds by remember { mutableStateOf(prefs.getFavoriteIds()) }
+    var currentArabicFontStyle by remember { mutableStateOf(prefs.getArabicFontStyle()) }
     var arabicFontSize by remember { mutableFloatStateOf(prefs.getArabicFontSize()) }
     var showLatin by remember { mutableStateOf(prefs.isShowLatin()) }
     var historyRefreshKey by remember { mutableIntStateOf(0) }
@@ -327,7 +329,7 @@ fun HomeScreen(
                                 }
                             }
                             Text(
-                                text = "Doa & Dzikir Harian Muslimin v1.58.0",
+                                text = "Doa & Dzikir Harian Muslimin v1.59.0",
                                 fontSize = 11.sp,
                                 color = Color.White.copy(alpha = 0.85f),
                                 maxLines = 1,
@@ -499,7 +501,8 @@ fun HomeScreen(
                         },
                         onImmersiveModeChanged = { immersive ->
                             isQuranImmersive = immersive
-                        }
+                        },
+                        arabicFontStyle = currentArabicFontStyle
                     )
                 }
 
@@ -516,6 +519,10 @@ fun HomeScreen(
                         currentThemeMode = currentThemeMode,
                         onOpenThemeDialog = { showThemeDialog = true },
                         totalFavorites = favoriteIds.size,
+                        currentArabicFontStyle = currentArabicFontStyle,
+                        onArabicFontStyleChange = { newStyle ->
+                            currentArabicFontStyle = newStyle
+                        },
                         onSelectDoa = { doaId ->
                             DoaRepository.doaList.find { it.id == doaId }?.let {
                                 selectedDoaForDetail = it
@@ -1074,7 +1081,8 @@ fun HomeScreen(
                 onToggleLatin = { newShow ->
                     showLatin = newShow
                     prefs.setShowLatin(newShow)
-                }
+                },
+                arabicFontFamily = currentArabicFontStyle.fontFamily
             )
         }
 

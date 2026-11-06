@@ -29,6 +29,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -36,6 +37,7 @@ import com.example.doaharianmuslimin.R
 import com.example.doaharianmuslimin.data.AppThemeMode
 import com.example.doaharianmuslimin.data.DoaRepository
 import com.example.doaharianmuslimin.data.PreferencesManager
+import com.example.doaharianmuslimin.data.model.ArabicFontStyle
 import com.example.doaharianmuslimin.ui.theme.AccentGold
 import com.example.doaharianmuslimin.ui.theme.PrimaryTosca
 import kotlinx.coroutines.launch
@@ -50,12 +52,18 @@ fun ProfileScreen(
     totalFavorites: Int,
     onSelectDoa: ((Int) -> Unit)? = null,
     onNavigateToQuran: (() -> Unit)? = null,
+    currentArabicFontStyle: ArabicFontStyle? = null,
+    onArabicFontStyleChange: ((ArabicFontStyle) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
     val prefs = remember { PreferencesManager(context) }
+
+    val initialStyle = currentArabicFontStyle ?: remember { prefs.getArabicFontStyle() }
+    var arabicFontStyle by remember(currentArabicFontStyle) { mutableStateOf(initialStyle) }
+    var showArabicFontDialog by remember { mutableStateOf(false) }
 
     var currentUserName by remember { mutableStateOf(prefs.getUserName()) }
     var showEditNameDialog by remember { mutableStateOf(false) }
@@ -516,13 +524,13 @@ fun ProfileScreen(
                 )
             }
 
-            // Font Arabic Info
+            // Font Arabic Info / Setting
             item {
                 SettingTile(
                     title = "Font Teks Arab",
-                    subtitle = "Uthmanic Naskh (Standar Asli Mushaf Madinah)",
+                    subtitle = arabicFontStyle.title,
                     icon = Icons.Default.FontDownload,
-                    onClick = {}
+                    onClick = { showArabicFontDialog = true }
                 )
             }
 
@@ -562,7 +570,7 @@ fun ProfileScreen(
                                     color = MaterialTheme.colorScheme.primary
                                 )
                                 Text(
-                                    text = "Doa & Dzikir Harian Muslimin v1.58.0",
+                                    text = "Doa & Dzikir Harian Muslimin v1.59.0",
                                     fontSize = 11.5.sp,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -1223,6 +1231,122 @@ fun ProfileScreen(
                     Text("Batal")
                 }
             }
+        )
+    }
+
+    if (showArabicFontDialog) {
+        AlertDialog(
+            onDismissRequest = { showArabicFontDialog = false },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.FontDownload,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text(
+                        text = "Pilih Font Teks Arab",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp
+                    )
+                }
+            },
+            text = {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Text(
+                        text = "Pilih gaya tulisan Arab untuk Al-Qur'an per baris dan doa-doa harian:",
+                        fontSize = 12.5.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    ArabicFontStyle.entries.forEach { fontOption ->
+                        val isSelected = arabicFontStyle == fontOption
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(14.dp))
+                                .clickable {
+                                    arabicFontStyle = fontOption
+                                    prefs.setArabicFontStyle(fontOption)
+                                    onArabicFontStyleChange?.invoke(fontOption)
+                                    showArabicFontDialog = false
+                                    coroutineScope.launch {
+                                        snackbarHostState.showSnackbar("Font Arab diubah ke ${fontOption.title}")
+                                    }
+                                },
+                            shape = RoundedCornerShape(14.dp),
+                            color = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+                            else MaterialTheme.colorScheme.surface,
+                            border = BorderStroke(
+                                if (isSelected) 2.dp else 1.dp,
+                                if (isSelected) MaterialTheme.colorScheme.primary
+                                else MaterialTheme.colorScheme.outline.copy(alpha = 0.25f)
+                            )
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 10.dp, vertical = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                RadioButton(
+                                    selected = isSelected,
+                                    onClick = {
+                                        arabicFontStyle = fontOption
+                                        prefs.setArabicFontStyle(fontOption)
+                                        onArabicFontStyleChange?.invoke(fontOption)
+                                        showArabicFontDialog = false
+                                        coroutineScope.launch {
+                                            snackbarHostState.showSnackbar("Font Arab diubah ke ${fontOption.title}")
+                                        }
+                                    },
+                                    colors = RadioButtonDefaults.colors(
+                                        selectedColor = MaterialTheme.colorScheme.primary
+                                    )
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = fontOption.title,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 13.5.sp,
+                                        color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Text(
+                                        text = fontOption.subtitle,
+                                        fontSize = 11.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        text = fontOption.sampleText,
+                                        fontFamily = fontOption.fontFamily,
+                                        fontSize = 19.sp,
+                                        lineHeight = 28.sp,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        textAlign = TextAlign.End,
+                                        modifier = Modifier.fillMaxWidth()
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showArabicFontDialog = false }) {
+                    Text("Tutup", fontWeight = FontWeight.Bold)
+                }
+            },
+            shape = RoundedCornerShape(20.dp),
+            containerColor = MaterialTheme.colorScheme.surface
         )
     }
 }

@@ -44,6 +44,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.doaharianmuslimin.R
 import com.example.doaharianmuslimin.data.DoaRepository
+import com.example.doaharianmuslimin.data.PreferencesManager
 import com.example.doaharianmuslimin.data.model.Doa
 import com.example.doaharianmuslimin.data.model.DoaCategory
 import com.example.doaharianmuslimin.ui.theme.AccentGold
@@ -61,6 +62,8 @@ fun TasbihScreen(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    val prefs = remember { PreferencesManager(context) }
+    val arabicFontFamily = remember { prefs.getArabicFontStyle().fontFamily }
     val vibrator = remember {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             val vibratorManager = context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as? android.os.VibratorManager
@@ -165,7 +168,7 @@ fun TasbihScreen(
                                         }
                                     }
                                     Text(
-                                        text = "Doa & Dzikir Harian Muslimin v1.58.0",
+                                        text = "Doa & Dzikir Harian Muslimin v1.59.0",
                                         fontSize = 11.sp,
                                         color = Color.White.copy(alpha = 0.85f)
                                     )
@@ -452,7 +455,7 @@ fun TasbihScreen(
                                     // Tulisan Arab
                                     Text(
                                         text = doa.arabic,
-                                        fontFamily = LpmqFontFamily,
+                                        fontFamily = arabicFontFamily,
                                         fontSize = 20.sp,
                                         fontWeight = FontWeight.Bold,
                                         lineHeight = 36.sp,
@@ -608,7 +611,7 @@ fun TasbihScreen(
                             Text(
                                 text = dzikirOptions[selectedDzikirIndex].first,
                                 fontSize = 28.sp,
-                                fontFamily = UthmanicFontFamily,
+                                fontFamily = arabicFontFamily,
                                 color = MaterialTheme.colorScheme.primary,
                                 fontWeight = FontWeight.Normal,
                                 textAlign = TextAlign.Center

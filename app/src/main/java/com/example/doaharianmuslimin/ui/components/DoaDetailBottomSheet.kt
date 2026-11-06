@@ -26,6 +26,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.doaharianmuslimin.data.PreferencesManager
 import com.example.doaharianmuslimin.data.model.Doa
 import com.example.doaharianmuslimin.ui.theme.AccentGold
 import com.example.doaharianmuslimin.ui.theme.PrimaryTosca
@@ -43,9 +44,12 @@ fun DoaDetailBottomSheet(
     arabicFontSize: Float,
     onFontSizeChange: (Float) -> Unit,
     showLatin: Boolean,
-    onToggleLatin: (Boolean) -> Unit
+    onToggleLatin: (Boolean) -> Unit,
+    arabicFontFamily: androidx.compose.ui.text.font.FontFamily? = null
 ) {
     val context = LocalContext.current
+    val prefs = remember { PreferencesManager(context) }
+    val effectiveArabicFontFamily = arabicFontFamily ?: remember(prefs.getArabicFontStyle()) { prefs.getArabicFontStyle().fontFamily }
     val vibrator = remember {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             val vibratorManager = context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as? android.os.VibratorManager
@@ -225,7 +229,7 @@ fun DoaDetailBottomSheet(
                         Text(
                             text = doa.arabic,
                             color = MaterialTheme.colorScheme.primary,
-                            fontFamily = UthmanicFontFamily,
+                            fontFamily = effectiveArabicFontFamily,
                             fontSize = arabicFontSize.sp,
                             lineHeight = (arabicFontSize * 1.9f).sp,
                             textAlign = TextAlign.End,

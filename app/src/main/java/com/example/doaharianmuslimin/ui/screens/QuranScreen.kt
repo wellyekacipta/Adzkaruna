@@ -68,6 +68,7 @@ import androidx.compose.ui.unit.sp
 import com.example.doaharianmuslimin.data.PreferencesManager
 import com.example.doaharianmuslimin.data.MushafStyle
 import com.example.doaharianmuslimin.data.QuranRepository
+import com.example.doaharianmuslimin.data.model.ArabicFontStyle
 import com.example.doaharianmuslimin.data.model.MushafPageData
 import com.example.doaharianmuslimin.data.model.QuranAyat
 import com.example.doaharianmuslimin.data.model.QuranSurah
@@ -107,7 +108,8 @@ fun QuranScreen(
     initialTargetPage: Int? = null,
     onResetTargetPage: (() -> Unit)? = null,
     onNavigateToHome: (() -> Unit)? = null,
-    onImmersiveModeChanged: ((Boolean) -> Unit)? = null
+    onImmersiveModeChanged: ((Boolean) -> Unit)? = null,
+    arabicFontStyle: ArabicFontStyle? = null
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
@@ -122,6 +124,9 @@ fun QuranScreen(
     var isImmersiveBarsVisible by remember { mutableStateOf(false) }
 
     val prefs = remember { PreferencesManager(context) }
+    val effectiveArabicFontFamily = arabicFontStyle?.fontFamily ?: remember(prefs.getArabicFontStyle()) {
+        prefs.getArabicFontStyle().fontFamily
+    }
     var currentMushafStyle by remember { mutableStateOf(prefs.getMushafStyle()) }
     var showMushafStyleDialog by remember { mutableStateOf(false) }
     var showDownloadPromptDialog by remember { mutableStateOf(false) }
@@ -830,7 +835,7 @@ fun QuranScreen(
                                 ) {
                                     Text(
                                         text = surah.arabicName,
-                                        fontFamily = LpmqFontFamily,
+                                        fontFamily = effectiveArabicFontFamily,
                                         fontSize = 20.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = if (isDark) Color(0xFFFFFFFF) else Color(0xFF000000),
@@ -1039,7 +1044,7 @@ fun QuranScreen(
                                             val bismillahColor = if (isDark) Color(0xFFFFFFFF) else Color(0xFF000000)
                                             Text(
                                                 text = "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ",
-                                                fontFamily = LpmqFontFamily,
+                                                fontFamily = effectiveArabicFontFamily,
                                                 fontSize = 26.sp,
                                                 fontWeight = FontWeight.Bold,
                                                 color = bismillahColor
@@ -1182,7 +1187,7 @@ fun QuranScreen(
                                         // Arabic Text in Solid Pure Black (#000000) - Font LPMQ Isep Misbah Kemenag RI
                                         Text(
                                             text = ayat.arabic,
-                                            fontFamily = LpmqFontFamily,
+                                            fontFamily = effectiveArabicFontFamily,
                                             fontSize = 26.sp,
                                             fontWeight = FontWeight.Bold,
                                             lineHeight = 48.sp,
@@ -2024,7 +2029,7 @@ fun QuranScreen(
                                                         if (currentMushafStyle == MushafStyle.TAJWEED) {
                                                             Text(
                                                                 text = buildTajweedAnnotatedString(ayatItem.arabic, isDark),
-                                                                fontFamily = LpmqFontFamily,
+                                                                fontFamily = effectiveArabicFontFamily,
                                                                 fontSize = 20.sp,
                                                                 fontWeight = FontWeight.Bold,
                                                                 lineHeight = 36.sp,
@@ -2034,7 +2039,7 @@ fun QuranScreen(
                                                         } else {
                                                             Text(
                                                                 text = ayatItem.arabic,
-                                                                fontFamily = LpmqFontFamily,
+                                                                fontFamily = effectiveArabicFontFamily,
                                                                 fontSize = 20.sp,
                                                                 fontWeight = FontWeight.Bold,
                                                                 lineHeight = 36.sp,
@@ -2527,7 +2532,7 @@ fun QuranScreen(
                     if (currentMushafStyle == MushafStyle.TAJWEED) {
                         Text(
                             text = buildTajweedAnnotatedString(ayat.arabic, isDark),
-                            fontFamily = LpmqFontFamily,
+                            fontFamily = effectiveArabicFontFamily,
                             fontSize = 26.sp,
                             fontWeight = FontWeight.Bold,
                             lineHeight = 48.sp,
@@ -2537,7 +2542,7 @@ fun QuranScreen(
                     } else {
                         Text(
                             text = ayat.arabic,
-                            fontFamily = LpmqFontFamily,
+                            fontFamily = effectiveArabicFontFamily,
                             fontSize = 26.sp,
                             fontWeight = FontWeight.Bold,
                             lineHeight = 48.sp,
