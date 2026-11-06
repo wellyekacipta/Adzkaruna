@@ -189,7 +189,7 @@ fun SplashScreen(
             Spacer(modifier = Modifier.height(4.dp))
 
             Text(
-                text = "Versi 1.62.0",
+                text = "Versi 1.63.0",
                 fontSize = 11.sp,
                 color = Color.White.copy(alpha = 0.8f),
                 fontWeight = FontWeight.Normal,

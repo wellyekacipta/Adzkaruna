@@ -55,12 +55,12 @@ import com.example.doaharianmuslimin.ui.theme.UthmanicFontFamily
 
 private val DzikirCardShape = RoundedCornerShape(14.dp)
 private val DzikirBannerShape = RoundedCornerShape(12.dp)
-private val SearchFieldShape = RoundedCornerShape(12.dp)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TasbihScreen(
     onBack: () -> Unit = {},
+    bottomBar: @Composable () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -77,7 +77,6 @@ fun TasbihScreen(
     }
 
     var selectedTab by remember { mutableIntStateOf(0) } // 0 = Dzikir Pagi & Petang, 1 = Tasbih Digital
-    var searchQuery by remember { mutableStateOf("") }
 
     fun vibrateShort() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -99,25 +98,9 @@ fun TasbihScreen(
 
     val allDzikirList = remember { DoaRepository.dzikirList }
 
-    val filteredDzikirList = remember(allDzikirList, searchQuery) {
-        if (searchQuery.isBlank()) {
-            allDzikirList
-        } else {
-            val q = searchQuery.trim().lowercase()
-            allDzikirList.filter {
-                it.title.lowercase().contains(q) ||
-                it.arabic.contains(q) ||
-                it.latin.lowercase().contains(q) ||
-                it.translation.lowercase().contains(q) ||
-                (!it.note.isNullOrBlank() && it.note.lowercase().contains(q))
-            }
-        }
-    }
-
     Scaffold(
-        modifier = modifier
-            .fillMaxSize()
-            .navigationBarsPadding(),
+        modifier = modifier.fillMaxSize(),
+        bottomBar = bottomBar,
         topBar = {
             Surface(
                 color = MaterialTheme.colorScheme.primary,
@@ -169,7 +152,7 @@ fun TasbihScreen(
                                         }
                                     }
                                     Text(
-                                        text = "Doa & Dzikir Harian Muslimin v1.62.0",
+                                        text = "Doa & Dzikir Harian Muslimin v1.63.0",
                                         fontSize = 11.sp,
                                         color = Color.White.copy(alpha = 0.85f),
                                         maxLines = 1,
@@ -216,51 +199,6 @@ fun TasbihScreen(
                             icon = { Icon(Icons.Default.Fingerprint, contentDescription = null, modifier = Modifier.size(18.dp)) }
                         )
                     }
-
-                    // Sticky / Pinned Search Field di atas konten Tab Dzikir
-                    if (selectedTab == 0) {
-                        Surface(
-                            color = MaterialTheme.colorScheme.surface,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            OutlinedTextField(
-                                value = searchQuery,
-                                onValueChange = { searchQuery = it },
-                                placeholder = {
-                                    Text(
-                                        "Cari dzikir (Sayyidul Istighfar, latin, arti...)",
-                                        fontSize = 12.5.sp,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-                                    )
-                                },
-                                leadingIcon = {
-                                    Icon(
-                                        Icons.Default.Search,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.primary
-                                    )
-                                },
-                                trailingIcon = {
-                                    if (searchQuery.isNotEmpty()) {
-                                        IconButton(onClick = { searchQuery = "" }) {
-                                            Icon(Icons.Default.Clear, contentDescription = "Hapus")
-                                        }
-                                    }
-                                },
-                                singleLine = true,
-                                shape = SearchFieldShape,
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
-                                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
-                                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                    unfocusedBorderColor = Color.Transparent
-                                ),
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 14.dp, vertical = 6.dp)
-                            )
-                        }
-                    }
                 }
             }
         }
@@ -303,82 +241,42 @@ fun TasbihScreen(
                     context.startActivity(Intent.createChooser(intent, "Bagikan Dzikir"))
                 }
 
-                if (filteredDzikirList.isEmpty()) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(24.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Icon(
-                                imageVector = Icons.Default.SearchOff,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
-                                modifier = Modifier.size(64.dp)
-                            )
-                            Spacer(modifier = Modifier.height(12.dp))
-                            Text(
-                                text = "Dzikir Tidak Ditemukan",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 16.sp,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            Spacer(modifier = Modifier.height(6.dp))
-                            Text(
-                                text = "Tidak ditemukan bacaan yang cocok dengan \"$searchQuery\"",
-                                fontSize = 12.5.sp,
-                                textAlign = TextAlign.Center,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Spacer(modifier = Modifier.height(14.dp))
-                            OutlinedButton(
-                                onClick = { searchQuery = "" },
-                                shape = RoundedCornerShape(10.dp)
-                            ) {
-                                Text("Tampilkan Semua Dzikir")
-                            }
-                        }
-                    }
-                } else {
-                    LazyColumn(
+                LazyColumn(
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         // Info header banner
-                        if (searchQuery.isBlank()) {
-                            item {
-                                Surface(
-                                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f),
-                                    shape = DzikirBannerShape,
-                                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)),
-                                    modifier = Modifier.fillMaxWidth()
+                        item {
+                            Surface(
+                                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f),
+                                shape = DzikirBannerShape,
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(12.dp),
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Row(
-                                        modifier = Modifier.padding(12.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.WbSunny,
-                                            contentDescription = null,
-                                            tint = AccentGold,
-                                            modifier = Modifier.size(24.dp)
-                                        )
-                                        Spacer(modifier = Modifier.width(10.dp))
-                                        Text(
-                                            text = "Dzikir pagi dibaca setelah Subuh hingga Dhuha, dzikir petang dibaca setelah Ashar hingga terbenam matahari.",
-                                            fontSize = 11.5.sp,
-                                            lineHeight = 16.sp,
-                                            color = MaterialTheme.colorScheme.onPrimaryContainer
-                                        )
-                                    }
+                                    Icon(
+                                        imageVector = Icons.Default.WbSunny,
+                                        contentDescription = null,
+                                        tint = AccentGold,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(10.dp))
+                                    Text(
+                                        text = "Dzikir pagi dibaca setelah Subuh hingga Dhuha, dzikir petang dibaca setelah Ashar hingga terbenam matahari.",
+                                        fontSize = 11.5.sp,
+                                        lineHeight = 16.sp,
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                                    )
                                 }
                             }
                         }
 
                         items(
-                            items = filteredDzikirList,
+                            items = allDzikirList,
                             key = { it.id },
                             contentType = { "DzikirCard" }
                         ) { doa ->
@@ -553,7 +451,6 @@ fun TasbihScreen(
                             }
                         }
                     }
-                }
             } else {
                 // ==================== TAB 1: TASBIH DIGITAL (RESPONSIVE) ====================
                 var count by remember { mutableIntStateOf(0) }

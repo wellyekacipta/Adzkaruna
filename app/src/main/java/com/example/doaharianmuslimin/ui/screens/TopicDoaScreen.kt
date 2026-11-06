@@ -520,28 +520,6 @@ private fun TopicDoaListItem(
                     overflow = TextOverflow.Ellipsis
                 )
             }
-
-            Spacer(modifier = Modifier.width(6.dp))
-
-            // Favorite Bookmark Button
-            IconButton(
-                onClick = onToggleFavorite,
-                modifier = Modifier.size(34.dp)
-            ) {
-                Icon(
-                    imageVector = if (isFavorite) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
-                    contentDescription = if (isFavorite) "Hapus Favorit" else "Tambah Favorit",
-                    tint = if (isFavorite) AccentGold else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-
-            Icon(
-                imageVector = Icons.Default.ChevronRight,
-                contentDescription = "Buka Doa",
-                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
-                modifier = Modifier.size(18.dp)
-            )
         }
     }
 }

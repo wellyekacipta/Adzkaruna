@@ -88,7 +88,7 @@ fun HomeScreen(
 
     var currentNavTab by remember { mutableStateOf(BottomNavTab.HOME) }
     var activeSubScreen by remember { mutableStateOf(ActiveSubScreen.NONE) }
-    var selectedCategory by remember { mutableStateOf(DoaCategory.SEMUA) }
+    var selectedCategory by remember { mutableStateOf(DoaCategory.TIDUR) }
     var searchQuery by remember { mutableStateOf("") }
     var isSearchActive by remember { mutableStateOf(false) }
     var showThemeDialog by remember { mutableStateOf(false) }
@@ -216,11 +216,7 @@ fun HomeScreen(
             DoaRepository.doaList
         }
 
-        val categoryFiltered = if (selectedCategory != DoaCategory.SEMUA && !filterOnlyFavorites) {
-            baseList.filter { it.category == selectedCategory }
-        } else {
-            baseList
-        }
+        val categoryFiltered = baseList
 
         if (searchQuery.isBlank()) {
             categoryFiltered
@@ -234,38 +230,158 @@ fun HomeScreen(
         }
     }
 
-    // Handle Active Sub-Screens
-    when (activeSubScreen) {
-        ActiveSubScreen.PROMISES -> {
-            PromisesScreen(onBack = { activeSubScreen = ActiveSubScreen.NONE })
-            return
+        val homeBottomBar = @Composable {
+            NavigationBar(
+                containerColor = MaterialTheme.colorScheme.surface,
+                tonalElevation = 8.dp
+            ) {
+                // 1. Quran
+                NavigationBarItem(
+                    selected = currentNavTab == BottomNavTab.QURAN && activeSubScreen == ActiveSubScreen.NONE,
+                    onClick = {
+                        activeSubScreen = ActiveSubScreen.NONE
+                        currentNavTab = BottomNavTab.QURAN
+                        filterOnlyFavorites = false
+                    },
+                    icon = {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.MenuBook,
+                            contentDescription = "Quran"
+                        )
+                    },
+                    label = { Text("Quran", fontSize = 11.sp) },
+                    colors = NavigationBarItemDefaults.colors(
+                        selectedIconColor = MaterialTheme.colorScheme.primary,
+                        selectedTextColor = MaterialTheme.colorScheme.primary,
+                        indicatorColor = MaterialTheme.colorScheme.primaryContainer
+                    )
+                )
+
+                // 2. Explore
+                NavigationBarItem(
+                    selected = currentNavTab == BottomNavTab.EXPLORE && activeSubScreen == ActiveSubScreen.NONE,
+                    onClick = {
+                        activeSubScreen = ActiveSubScreen.NONE
+                        currentNavTab = BottomNavTab.EXPLORE
+                        filterOnlyFavorites = false
+                    },
+                    icon = {
+                        Icon(
+                            imageVector = Icons.Default.Explore,
+                            contentDescription = "Explore"
+                        )
+                    },
+                    label = { Text("Explore", fontSize = 11.sp) },
+                    colors = NavigationBarItemDefaults.colors(
+                        selectedIconColor = MaterialTheme.colorScheme.primary,
+                        selectedTextColor = MaterialTheme.colorScheme.primary,
+                        indicatorColor = MaterialTheme.colorScheme.primaryContainer
+                    )
+                )
+
+                // 3. Home (Active center tab atau saat aktif di menu Dzikir)
+                NavigationBarItem(
+                    selected = (currentNavTab == BottomNavTab.HOME && activeSubScreen == ActiveSubScreen.NONE) || activeSubScreen == ActiveSubScreen.DZIKIR,
+                    onClick = {
+                        activeSubScreen = ActiveSubScreen.NONE
+                        currentNavTab = BottomNavTab.HOME
+                        filterOnlyFavorites = false
+                    },
+                    icon = {
+                        Icon(
+                            imageVector = Icons.Default.Home,
+                            contentDescription = "Home"
+                        )
+                    },
+                    label = { Text("Home", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
+                    colors = NavigationBarItemDefaults.colors(
+                        selectedIconColor = MaterialTheme.colorScheme.primary,
+                        selectedTextColor = MaterialTheme.colorScheme.primary,
+                        indicatorColor = MaterialTheme.colorScheme.primaryContainer
+                    )
+                )
+
+                // 4. Doa
+                NavigationBarItem(
+                    selected = currentNavTab == BottomNavTab.DOA && activeSubScreen == ActiveSubScreen.NONE,
+                    onClick = {
+                        activeSubScreen = ActiveSubScreen.NONE
+                        currentNavTab = BottomNavTab.DOA
+                        filterOnlyFavorites = false
+                    },
+                    icon = {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.FormatListBulleted,
+                            contentDescription = "Doa"
+                        )
+                    },
+                    label = { Text("Doa", fontSize = 11.sp) },
+                    colors = NavigationBarItemDefaults.colors(
+                        selectedIconColor = MaterialTheme.colorScheme.primary,
+                        selectedTextColor = MaterialTheme.colorScheme.primary,
+                        indicatorColor = MaterialTheme.colorScheme.primaryContainer
+                    )
+                )
+
+                // 5. Profil
+                NavigationBarItem(
+                    selected = currentNavTab == BottomNavTab.PROFIL && activeSubScreen == ActiveSubScreen.NONE,
+                    onClick = {
+                        activeSubScreen = ActiveSubScreen.NONE
+                        currentNavTab = BottomNavTab.PROFIL
+                        filterOnlyFavorites = false
+                    },
+                    icon = {
+                        Icon(
+                            imageVector = Icons.Default.Person,
+                            contentDescription = "Profil"
+                        )
+                    },
+                    label = { Text("Profil", fontSize = 11.sp) },
+                    colors = NavigationBarItemDefaults.colors(
+                        selectedIconColor = MaterialTheme.colorScheme.primary,
+                        selectedTextColor = MaterialTheme.colorScheme.primary,
+                        indicatorColor = MaterialTheme.colorScheme.primaryContainer
+                    )
+                )
+            }
         }
-        ActiveSubScreen.WAKTU_SHOLAT -> {
-            PrayerTimesScreen(onBack = { activeSubScreen = ActiveSubScreen.NONE })
-            return
-        }
-        ActiveSubScreen.QIBLAT -> {
-            QiblaScreen(onBack = { activeSubScreen = ActiveSubScreen.NONE })
-            return
-        }
-        ActiveSubScreen.TOPIK_DOA -> {
-            TopicDoaScreen(
-                onBack = {
-                    selectedDoaForDetail = null
-                    activeSubScreen = ActiveSubScreen.NONE
-                },
-                onSelectDoa = {},
-                favoriteIds = favoriteIds,
-                onToggleFavorite = { toggleFavorite(it) },
-                onCopyDoa = { copyDoaToClipboard(it) },
-                onShareDoa = { shareDoa(it) }
-            )
-            return
-        }
-        ActiveSubScreen.DZIKIR -> {
-            TasbihScreen(onBack = { activeSubScreen = ActiveSubScreen.NONE })
-            return
-        }
+
+        // Handle Active Sub-Screens
+        when (activeSubScreen) {
+            ActiveSubScreen.PROMISES -> {
+                PromisesScreen(onBack = { activeSubScreen = ActiveSubScreen.NONE })
+                return
+            }
+            ActiveSubScreen.WAKTU_SHOLAT -> {
+                PrayerTimesScreen(onBack = { activeSubScreen = ActiveSubScreen.NONE })
+                return
+            }
+            ActiveSubScreen.QIBLAT -> {
+                QiblaScreen(onBack = { activeSubScreen = ActiveSubScreen.NONE })
+                return
+            }
+            ActiveSubScreen.TOPIK_DOA -> {
+                TopicDoaScreen(
+                    onBack = {
+                        selectedDoaForDetail = null
+                        activeSubScreen = ActiveSubScreen.NONE
+                    },
+                    onSelectDoa = {},
+                    favoriteIds = favoriteIds,
+                    onToggleFavorite = { toggleFavorite(it) },
+                    onCopyDoa = { copyDoaToClipboard(it) },
+                    onShareDoa = { shareDoa(it) }
+                )
+                return
+            }
+            ActiveSubScreen.DZIKIR -> {
+                TasbihScreen(
+                    onBack = { activeSubScreen = ActiveSubScreen.NONE },
+                    bottomBar = homeBottomBar
+                )
+                return
+            }
         ActiveSubScreen.FAVORIT -> {
             FavoritesScreen(
                 onBack = { activeSubScreen = ActiveSubScreen.NONE },
@@ -337,7 +453,7 @@ fun HomeScreen(
                                 }
                             }
                             Text(
-                                text = "Doa & Dzikir Harian Muslimin v1.62.0",
+                                text = "Doa & Dzikir Harian Muslimin v1.63.0",
                                 fontSize = 11.sp,
                                 color = Color.White.copy(alpha = 0.85f),
                                 maxLines = 1,
@@ -380,116 +496,7 @@ fun HomeScreen(
         },
         bottomBar = {
             if (!isQuranImmersive || currentNavTab != BottomNavTab.QURAN) {
-            // Footer Navigation with 5 tabs as requested: Quran, Explore, Home, Doa, Profil
-            NavigationBar(
-                containerColor = MaterialTheme.colorScheme.surface,
-                tonalElevation = 8.dp
-            ) {
-                // 1. Quran
-                NavigationBarItem(
-                    selected = currentNavTab == BottomNavTab.QURAN,
-                    onClick = {
-                        currentNavTab = BottomNavTab.QURAN
-                        filterOnlyFavorites = false
-                    },
-                    icon = {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.MenuBook,
-                            contentDescription = "Quran"
-                        )
-                    },
-                    label = { Text("Quran", fontSize = 11.sp) },
-                    colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = MaterialTheme.colorScheme.primary,
-                        selectedTextColor = MaterialTheme.colorScheme.primary,
-                        indicatorColor = MaterialTheme.colorScheme.primaryContainer
-                    )
-                )
-
-                // 2. Explore
-                NavigationBarItem(
-                    selected = currentNavTab == BottomNavTab.EXPLORE,
-                    onClick = {
-                        currentNavTab = BottomNavTab.EXPLORE
-                        filterOnlyFavorites = false
-                    },
-                    icon = {
-                        Icon(
-                            imageVector = Icons.Default.Explore,
-                            contentDescription = "Explore"
-                        )
-                    },
-                    label = { Text("Explore", fontSize = 11.sp) },
-                    colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = MaterialTheme.colorScheme.primary,
-                        selectedTextColor = MaterialTheme.colorScheme.primary,
-                        indicatorColor = MaterialTheme.colorScheme.primaryContainer
-                    )
-                )
-
-                // 3. Home (Active center tab)
-                NavigationBarItem(
-                    selected = currentNavTab == BottomNavTab.HOME,
-                    onClick = {
-                        currentNavTab = BottomNavTab.HOME
-                        filterOnlyFavorites = false
-                    },
-                    icon = {
-                        Icon(
-                            imageVector = Icons.Default.Home,
-                            contentDescription = "Home"
-                        )
-                    },
-                    label = { Text("Home", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
-                    colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = MaterialTheme.colorScheme.primary,
-                        selectedTextColor = MaterialTheme.colorScheme.primary,
-                        indicatorColor = MaterialTheme.colorScheme.primaryContainer
-                    )
-                )
-
-                // 4. Doa
-                NavigationBarItem(
-                    selected = currentNavTab == BottomNavTab.DOA,
-                    onClick = {
-                        currentNavTab = BottomNavTab.DOA
-                        filterOnlyFavorites = false
-                    },
-                    icon = {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.FormatListBulleted,
-                            contentDescription = "Doa"
-                        )
-                    },
-                    label = { Text("Doa", fontSize = 11.sp) },
-                    colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = MaterialTheme.colorScheme.primary,
-                        selectedTextColor = MaterialTheme.colorScheme.primary,
-                        indicatorColor = MaterialTheme.colorScheme.primaryContainer
-                    )
-                )
-
-                // 5. Profil
-                NavigationBarItem(
-                    selected = currentNavTab == BottomNavTab.PROFIL,
-                    onClick = {
-                        currentNavTab = BottomNavTab.PROFIL
-                        filterOnlyFavorites = false
-                    },
-                    icon = {
-                        Icon(
-                            imageVector = Icons.Default.Person,
-                            contentDescription = "Profil"
-                        )
-                    },
-                    label = { Text("Profil", fontSize = 11.sp) },
-                    colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = MaterialTheme.colorScheme.primary,
-                        selectedTextColor = MaterialTheme.colorScheme.primary,
-                        indicatorColor = MaterialTheme.colorScheme.primaryContainer
-                    )
-                )
-            }
+                homeBottomBar()
             }
         }
     ) { innerPadding ->
@@ -614,7 +621,7 @@ fun HomeScreen(
                                                 currentNavTab = BottomNavTab.DOA
                                                 filterOnlyFavorites = false
                                                 filterOnlyHistory = false
-                                                selectedCategory = DoaCategory.SEMUA
+                                                selectedCategory = DoaCategory.TIDUR
                                             }
                                             MainMenuItem.DZIKIR -> activeSubScreen = ActiveSubScreen.DZIKIR
                                             MainMenuItem.TOPIK_DOA -> activeSubScreen = ActiveSubScreen.TOPIK_DOA
@@ -854,6 +861,31 @@ fun HomeScreen(
                                     it.translation.lowercase().contains(q) ||
                                     it.arabic.contains(q)
                                 }
+                            }
+                        }
+
+                        // Kategori Doa di bawah fitur pencarian (tidak tertutup pencarian)
+                        Surface(
+                            color = MaterialTheme.colorScheme.surface,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            val headerCategoryTitle = if (searchQuery.isNotEmpty()) {
+                                "Hasil Pencarian (${filteredDoas.size})"
+                            } else {
+                                "Doa Sebelum Tidur dan Bangun Tidur (${filteredDoas.size})"
+                            }
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = headerCategoryTitle,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onBackground
+                                )
                             }
                         }
 
@@ -1153,8 +1185,8 @@ private val NumberBadgeShape = CircleShape
 private fun HomeDoaListItem(
     index: Int,
     doa: Doa,
-    isFavorite: Boolean,
-    onFavoriteToggle: () -> Unit,
+    isFavorite: Boolean = false,
+    onFavoriteToggle: () -> Unit = {},
     onClick: () -> Unit
 ) {
     Surface(
@@ -1217,28 +1249,6 @@ private fun HomeDoaListItem(
                     overflow = TextOverflow.Ellipsis
                 )
             }
-
-            Spacer(modifier = Modifier.width(6.dp))
-
-            // Tombol Favorit
-            IconButton(
-                onClick = onFavoriteToggle,
-                modifier = Modifier.size(34.dp)
-            ) {
-                Icon(
-                    imageVector = if (isFavorite) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
-                    contentDescription = if (isFavorite) "Hapus Favorit" else "Tambah Favorit",
-                    tint = if (isFavorite) AccentGold else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-
-            Icon(
-                imageVector = Icons.Default.ChevronRight,
-                contentDescription = "Buka Doa",
-                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.35f),
-                modifier = Modifier.size(18.dp)
-            )
         }
     }
 }

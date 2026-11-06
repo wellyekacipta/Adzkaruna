@@ -29,8 +29,7 @@ fun CategoryChips(
     modifier: Modifier = Modifier
 ) {
     val availableCategories = remember {
-        val presentInRepo = com.example.doaharianmuslimin.data.DoaRepository.doaList.map { it.category }.toSet()
-        listOf(DoaCategory.SEMUA) + DoaCategory.entries.filter { it != DoaCategory.SEMUA && presentInRepo.contains(it) }
+        DoaCategory.entries.toList()
     }
 
     Row(
