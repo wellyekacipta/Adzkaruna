@@ -327,7 +327,7 @@ fun HomeScreen(
                                 }
                             }
                             Text(
-                                text = "Doa & Dzikir Harian Muslimin v1.57.0",
+                                text = "Doa & Dzikir Harian Muslimin v1.58.0",
                                 fontSize = 11.sp,
                                 color = Color.White.copy(alpha = 0.85f),
                                 maxLines = 1,
@@ -744,105 +744,13 @@ fun HomeScreen(
                                 }
                             }
 
-                            // Penjelasan Kategori Doa Sebelum dan Bangun Tidur
-                            if (currentNavTab == BottomNavTab.DOA && searchQuery.isEmpty() && !filterOnlyHistory && !filterOnlyFavorites) {
-                                item(key = "banner_penjelasan_kategori_tidur") {
-                                    Card(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        shape = RoundedCornerShape(16.dp),
-                                        colors = CardDefaults.cardColors(
-                                            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f)
-                                        ),
-                                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.25f))
-                                    ) {
-                                        Column(modifier = Modifier.padding(16.dp)) {
-                                            Row(
-                                                verticalAlignment = Alignment.CenterVertically,
-                                                horizontalArrangement = Arrangement.spacedBy(10.dp)
-                                            ) {
-                                                Surface(
-                                                    shape = CircleShape,
-                                                    color = MaterialTheme.colorScheme.primary,
-                                                    modifier = Modifier.size(38.dp)
-                                                ) {
-                                                    Box(contentAlignment = Alignment.Center) {
-                                                        Icon(
-                                                            imageVector = Icons.Default.Bedtime,
-                                                            contentDescription = null,
-                                                            tint = Color.White,
-                                                            modifier = Modifier.size(20.dp)
-                                                        )
-                                                    }
-                                                }
-                                                Column {
-                                                    Text(
-                                                        text = "Doa Sebelum Tidur dan Bangun Tidur",
-                                                        style = MaterialTheme.typography.titleMedium,
-                                                        fontWeight = FontWeight.Bold,
-                                                        color = MaterialTheme.colorScheme.onSurface
-                                                    )
-                                                    Text(
-                                                        text = "Kategori Utama • 21 Doa, Dzikir & Adab Sunnah",
-                                                        fontSize = 11.5.sp,
-                                                        color = MaterialTheme.colorScheme.primary,
-                                                        fontWeight = FontWeight.SemiBold
-                                                    )
-                                                }
-                                            }
-
-                                            Spacer(modifier = Modifier.height(10.dp))
-
-                                            Text(
-                                                text = "Tidur merupakan kondisi di mana manusia berada dalam titik terlemahnya. Berdzikir dan berdoa sebelum tidur serta saat bangun tidur adalah sunnah agung Rasulullah ﷺ untuk memohon perlindungan dari gangguan setan, naungan malaikat sepanjang malam, ikhtiar agar wafat di atas fitrah Islam, serta ungkapan rasa syukur atas nikmat ruh dan kesehatan raga yang dipulihkan kembali di waktu fajar.",
-                                                fontSize = 12.5.sp,
-                                                lineHeight = 18.sp,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
-
-                                            Spacer(modifier = Modifier.height(10.dp))
-
-                                            Row(
-                                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                                verticalAlignment = Alignment.CenterVertically
-                                            ) {
-                                                Surface(
-                                                    shape = RoundedCornerShape(8.dp),
-                                                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
-                                                ) {
-                                                    Text(
-                                                        text = "🌙 17 Doa Sebelum Tidur",
-                                                        fontSize = 11.sp,
-                                                        fontWeight = FontWeight.Medium,
-                                                        color = MaterialTheme.colorScheme.primary,
-                                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                                                    )
-                                                }
-                                                Surface(
-                                                    shape = RoundedCornerShape(8.dp),
-                                                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
-                                                ) {
-                                                    Text(
-                                                        text = "☀️ 4 Bangun & Terjaga",
-                                                        fontSize = 11.sp,
-                                                        fontWeight = FontWeight.Medium,
-                                                        color = MaterialTheme.colorScheme.primary,
-                                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                                                    )
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-
                             // Section header
                             item {
                                 val headerTitle = when {
                                     searchQuery.isNotEmpty() -> "Hasil Pencarian (${displayedDoas.size})"
                                     filterOnlyHistory -> "Riwayat Doa yang Dibaca"
                                     filterOnlyFavorites -> "Doa Favorit Tersimpan (${displayedDoas.size})"
-                                    selectedCategory != DoaCategory.SEMUA -> "${selectedCategory.title} (${displayedDoas.size})"
-                                    else -> "Koleksi Lengkap Doa (${displayedDoas.size})"
+                                    else -> "Doa Sebelum Tidur dan Bangun Tidur (${displayedDoas.size})"
                                 }
 
                                 Row(
@@ -1282,6 +1190,9 @@ fun HomeScreen(
     }
 }
 
+private val HomeItemShape = RoundedCornerShape(14.dp)
+private val NumberBadgeShape = CircleShape
+
 @Composable
 private fun HomeDoaListItem(
     index: Int,
@@ -1290,14 +1201,15 @@ private fun HomeDoaListItem(
     onFavoriteToggle: () -> Unit,
     onClick: () -> Unit
 ) {
-    Card(
+    Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
+            .clip(HomeItemShape)
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.25f))
+        shape = HomeItemShape,
+        color = MaterialTheme.colorScheme.surface,
+        tonalElevation = 1.dp,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
     ) {
         Row(
             modifier = Modifier
@@ -1305,9 +1217,9 @@ private fun HomeDoaListItem(
                 .padding(horizontal = 14.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Number badge (1, 2, 3...)
+            // Container badge nomor urut
             Surface(
-                shape = CircleShape,
+                shape = NumberBadgeShape,
                 color = MaterialTheme.colorScheme.primaryContainer,
                 modifier = Modifier.size(36.dp)
             ) {
@@ -1323,7 +1235,7 @@ private fun HomeDoaListItem(
 
             Spacer(modifier = Modifier.width(12.dp))
 
-            // Title and brief info
+            // Container judul doa & info sumber
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = doa.title,
@@ -1334,8 +1246,12 @@ private fun HomeDoaListItem(
                     overflow = TextOverflow.Ellipsis
                 )
                 Spacer(modifier = Modifier.height(2.dp))
-                val subtitle = doa.source.ifBlank {
-                    doa.translation.take(60)
+                val subtitle = if (doa.arabic.isBlank()) {
+                    "Keutamaan & Adab Sebelum Tidur"
+                } else if (doa.source.isNotBlank()) {
+                    doa.source
+                } else {
+                    doa.translation.take(50)
                 }
                 Text(
                     text = subtitle,
@@ -1348,7 +1264,7 @@ private fun HomeDoaListItem(
 
             Spacer(modifier = Modifier.width(6.dp))
 
-            // Favorite Bookmark Button
+            // Tombol Favorit
             IconButton(
                 onClick = onFavoriteToggle,
                 modifier = Modifier.size(34.dp)
@@ -1356,7 +1272,7 @@ private fun HomeDoaListItem(
                 Icon(
                     imageVector = if (isFavorite) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
                     contentDescription = if (isFavorite) "Hapus Favorit" else "Tambah Favorit",
-                    tint = if (isFavorite) AccentGold else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                    tint = if (isFavorite) AccentGold else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
                     modifier = Modifier.size(20.dp)
                 )
             }
@@ -1364,7 +1280,7 @@ private fun HomeDoaListItem(
             Icon(
                 imageVector = Icons.Default.ChevronRight,
                 contentDescription = "Buka Doa",
-                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.35f),
                 modifier = Modifier.size(18.dp)
             )
         }
