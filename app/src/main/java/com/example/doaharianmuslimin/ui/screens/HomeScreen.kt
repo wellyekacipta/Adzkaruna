@@ -44,6 +44,7 @@ import com.example.doaharianmuslimin.data.PreferencesManager
 import com.example.doaharianmuslimin.data.model.ArabicFontStyle
 import com.example.doaharianmuslimin.data.model.Doa
 import com.example.doaharianmuslimin.data.model.DoaCategory
+import com.example.doaharianmuslimin.data.model.sanitizeAyahBrackets
 import com.example.doaharianmuslimin.ui.components.*
 import com.example.doaharianmuslimin.ui.theme.AccentGold
 import com.example.doaharianmuslimin.ui.theme.PrimaryTosca
@@ -160,10 +161,14 @@ fun HomeScreen(
         val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
         val text = buildString {
             appendLine(doa.title)
-            appendLine()
-            appendLine(doa.arabic)
-            appendLine()
-            appendLine(doa.latin)
+            if (doa.arabic.isNotBlank()) {
+                appendLine()
+                appendLine(doa.arabic.sanitizeAyahBrackets())
+            }
+            if (doa.latin.isNotBlank()) {
+                appendLine()
+                appendLine(doa.latin)
+            }
             appendLine()
             appendLine("Artinya:")
             appendLine(doa.translation)
@@ -180,10 +185,14 @@ fun HomeScreen(
     fun shareDoa(doa: Doa) {
         val text = buildString {
             appendLine("📖 *${doa.title}*")
-            appendLine()
-            appendLine(doa.arabic)
-            appendLine()
-            appendLine("_\"${doa.latin}\"_")
+            if (doa.arabic.isNotBlank()) {
+                appendLine()
+                appendLine(doa.arabic.sanitizeAyahBrackets())
+            }
+            if (doa.latin.isNotBlank()) {
+                appendLine()
+                appendLine("_\"${doa.latin}\"_")
+            }
             appendLine()
             appendLine("Artinya:")
             appendLine(doa.translation)
@@ -329,7 +338,7 @@ fun HomeScreen(
                                 }
                             }
                             Text(
-                                text = "Doa & Dzikir Harian Muslimin v1.59.0",
+                                text = "Doa & Dzikir Harian Muslimin v1.60.0",
                                 fontSize = 11.sp,
                                 color = Color.White.copy(alpha = 0.85f),
                                 maxLines = 1,

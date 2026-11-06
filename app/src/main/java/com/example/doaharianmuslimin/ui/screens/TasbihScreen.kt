@@ -47,6 +47,7 @@ import com.example.doaharianmuslimin.data.DoaRepository
 import com.example.doaharianmuslimin.data.PreferencesManager
 import com.example.doaharianmuslimin.data.model.Doa
 import com.example.doaharianmuslimin.data.model.DoaCategory
+import com.example.doaharianmuslimin.data.model.sanitizeAyahBrackets
 import com.example.doaharianmuslimin.ui.theme.AccentGold
 import com.example.doaharianmuslimin.ui.theme.LpmqFontFamily
 import com.example.doaharianmuslimin.ui.theme.UthmanicFontFamily
@@ -168,7 +169,7 @@ fun TasbihScreen(
                                         }
                                     }
                                     Text(
-                                        text = "Doa & Dzikir Harian Muslimin v1.59.0",
+                                        text = "Doa & Dzikir Harian Muslimin v1.60.0",
                                         fontSize = 11.sp,
                                         color = Color.White.copy(alpha = 0.85f)
                                     )
@@ -275,7 +276,7 @@ fun TasbihScreen(
                     val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                     val text = buildString {
                         append("${doa.title}\n\n")
-                        append("${doa.arabic}\n\n")
+                        if (doa.arabic.isNotBlank()) append("${doa.arabic.sanitizeAyahBrackets()}\n\n")
                         if (doa.latin.isNotBlank()) append("${doa.latin}\n\n")
                         append("Artinya:\n\"${doa.translation}\"\n\n")
                         if (!doa.note.isNullOrBlank()) append("Fadhilah: ${doa.note}\n")
@@ -287,7 +288,7 @@ fun TasbihScreen(
                 fun shareDzikir(doa: Doa) {
                     val text = buildString {
                         append("🤲 ${doa.title}\n\n")
-                        append("${doa.arabic}\n\n")
+                        if (doa.arabic.isNotBlank()) append("${doa.arabic.sanitizeAyahBrackets()}\n\n")
                         if (doa.latin.isNotBlank()) append("${doa.latin}\n\n")
                         append("Artinya:\n\"${doa.translation}\"\n\n")
                         if (!doa.note.isNullOrBlank()) append("Fadhilah: ${doa.note}\n")
@@ -454,7 +455,7 @@ fun TasbihScreen(
 
                                     // Tulisan Arab
                                     Text(
-                                        text = doa.arabic,
+                                        text = doa.arabic.sanitizeAyahBrackets(),
                                         fontFamily = arabicFontFamily,
                                         fontSize = 20.sp,
                                         fontWeight = FontWeight.Bold,
