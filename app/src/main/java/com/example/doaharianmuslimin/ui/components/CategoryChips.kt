@@ -9,6 +9,7 @@ import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -27,6 +28,11 @@ fun CategoryChips(
     onHistoryClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
+    val availableCategories = remember {
+        val presentInRepo = com.example.doaharianmuslimin.data.DoaRepository.doaList.map { it.category }.toSet()
+        listOf(DoaCategory.SEMUA) + DoaCategory.entries.filter { it != DoaCategory.SEMUA && presentInRepo.contains(it) }
+    }
+
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -87,7 +93,7 @@ fun CategoryChips(
             )
         )
 
-        DoaCategory.entries.forEach { category ->
+        availableCategories.forEach { category ->
             val isSelected = !isFavoritesSelected && !isHistorySelected && (category == selectedCategory)
             FilterChip(
                 selected = isSelected,

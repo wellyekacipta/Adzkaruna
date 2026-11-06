@@ -44,14 +44,12 @@ data class TopicItem(
 
 // Static topics & shapes to prevent re-allocation on every recomposition
 private val StaticTopics = listOf(
-    TopicItem("Doa Sebelum Tidur dan Bangun Tidur", "21 doa, dzikir, keutamaan & adab tidur", Icons.Default.Bedtime, matchingCategory = DoaCategory.TIDUR),
-    TopicItem("Rezeki & Pekerjaan", "Kemudahan rizki halal & berkah", Icons.Default.MonetizationOn, keyword = "rezeki"),
-    TopicItem("Kesehatan & Kesembuhan", "Menjenguk orang sakit dan kesehatan", Icons.Default.Healing, keyword = "sakit"),
-    TopicItem("Ketenangan & Hilang Cemas", "Terhindar dari kesedihan & kegelisahan", Icons.Default.Spa, keyword = "hazan"),
-    TopicItem("Ujian & Kesabaran", "Saat tertimpa musibah & keteguhan hati", Icons.Default.Shield, keyword = "musibah"),
-    TopicItem("Keluarga & Anak Shalih", "Orang tua, pasangan & keturunan shalih", Icons.Default.FamilyRestroom, matchingCategory = DoaCategory.KELUARGA),
-    TopicItem("Sholat & Wudhu", "Adzan, qunut, setelah sholat & dhuha", Icons.Default.Mosque, matchingCategory = DoaCategory.SHOLAT),
-    TopicItem("Aktivitas Harian", "Makan, rumah, toilet & bepergian", Icons.Default.Today, matchingCategory = DoaCategory.AKTIVITAS)
+    TopicItem("Doa Sebelum Tidur dan Bangun Tidur", "Koleksi lengkap 21 doa, dzikir, keutamaan & adab tidur", Icons.Default.Bedtime, matchingCategory = DoaCategory.TIDUR),
+    TopicItem("Ayat Perlindungan Malam", "Al-Mu'awwidzaat, Ayat Kursi & 2 Ayat Terakhir Al-Baqarah", Icons.Default.Shield, keyword = "ayat"),
+    TopicItem("Doa Pasrah Diri & Fitrah", "Mati di atas fitrah, keselamatan ruh & penjagaan jiwa", Icons.Default.Favorite, keyword = "fitrah"),
+    TopicItem("Dzikir Pelepas Lelah & Hutang", "Tasbih Fatimah 100x & permohonan pelunas hutang", Icons.Default.Spa, keyword = "hutang"),
+    TopicItem("Mimpi Buruk & Rasa Cemas", "Tuntunan adab mimpi buruk, rasa takut & kesepian saat tidur", Icons.Default.NightlightRound, keyword = "mimpi"),
+    TopicItem("Doa Bangun Tidur & Terjaga", "Syukur fajar, kesehatan jasad, qiyamul lail & saat terbangun", Icons.Default.WbSunny, keyword = "bangun")
 )
 
 private val TopicCardShape = RoundedCornerShape(14.dp)
