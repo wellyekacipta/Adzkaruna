@@ -165,7 +165,7 @@ fun TasbihScreen(
                                         }
                                     }
                                     Text(
-                                        text = "Doa & Dzikir Harian Muslimin v1.54.0",
+                                        text = "Doa & Dzikir Harian Muslimin v1.55.0",
                                         fontSize = 11.sp,
                                         color = Color.White.copy(alpha = 0.85f)
                                     )
