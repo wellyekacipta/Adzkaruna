@@ -138,7 +138,7 @@ fun DoaCard(
                     color = MaterialTheme.colorScheme.primary,
                     fontFamily = arabicFontFamily,
                     fontSize = 22.sp,
-                    lineHeight = 36.sp,
+                    lineHeight = 28.sp,
                     textAlign = TextAlign.End,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
@@ -156,7 +156,7 @@ fun DoaCard(
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f),
                 maxLines = if (doa.arabic.isBlank()) 4 else 2,
                 overflow = TextOverflow.Ellipsis,
-                lineHeight = 20.sp
+                lineHeight = 18.sp
             )
 
             // Source / Hadits (Maksimal 30 huruf, jika melebihi ditambahkan ...)

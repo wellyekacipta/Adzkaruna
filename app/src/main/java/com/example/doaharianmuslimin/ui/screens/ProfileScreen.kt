@@ -525,18 +525,18 @@ fun ProfileScreen(
                     icon = when (currentThemeMode) {
                         AppThemeMode.LIGHT -> Icons.Default.LightMode
                         AppThemeMode.DARK -> Icons.Default.DarkMode
-                        AppThemeMode.RED -> Icons.Default.Palette
-                        AppThemeMode.BLUE -> Icons.Default.Palette
+                        AppThemeMode.RED -> Icons.Default.LightMode
+                        AppThemeMode.BLUE -> Icons.Default.LightMode
                         AppThemeMode.SYSTEM -> Icons.Default.BrightnessAuto
                     },
                     onClick = onOpenThemeDialog
                 )
             }
 
-            // Font Arabic Info / Setting
+            // Font Arabic Info / Setting (Khusus Doa Harian)
             item {
                 SettingTile(
-                    title = "Font Teks Arab",
+                    title = "Font Teks Arab (Doa)",
                     subtitle = arabicFontStyle.title,
                     icon = Icons.Default.FontDownload,
                     onClick = { showArabicFontDialog = true }
@@ -589,7 +589,7 @@ fun ProfileScreen(
                                     color = MaterialTheme.colorScheme.primary
                                 )
                                 Text(
-                                    text = "Doa & Dzikir Harian Muslimin v1.65.0",
+                                    text = "Doa & Dzikir Harian Muslimin v1.66.0",
                                     fontSize = 11.5.sp,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -1386,7 +1386,7 @@ fun ProfileScreen(
                     )
                     Spacer(modifier = Modifier.width(10.dp))
                     Text(
-                        text = "Pilih Font Teks Arab",
+                        text = "Pilih Font Teks Arab (Doa)",
                         fontWeight = FontWeight.Bold,
                         fontSize = 18.sp
                     )
@@ -1400,7 +1400,7 @@ fun ProfileScreen(
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     Text(
-                        text = "Pilih gaya tulisan Arab untuk Al-Qur'an per baris dan doa-doa harian:",
+                        text = "Pilih gaya tulisan Arab untuk menu doa-doa harian:",
                         fontSize = 12.5.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

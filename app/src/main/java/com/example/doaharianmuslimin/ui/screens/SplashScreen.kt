@@ -162,7 +162,7 @@ fun SplashScreen(
 
                 Text(
                     text = "Doa & Dzikir Harian Muslimin",
-                    fontSize = 13.sp,
+                    fontSize = 11.5.sp,
                     color = Color.White.copy(alpha = 0.9f),
                     fontWeight = FontWeight.Medium
                 )
@@ -180,7 +180,7 @@ fun SplashScreen(
         ) {
             Text(
                 text = "Copyright © 2026 Adzkaruna. All Rights Reserved.",
-                fontSize = 11.5.sp,
+                fontSize = 9.5.sp,
                 color = Color.White.copy(alpha = 0.92f),
                 fontWeight = FontWeight.Medium,
                 textAlign = TextAlign.Center
@@ -189,8 +189,8 @@ fun SplashScreen(
             Spacer(modifier = Modifier.height(4.dp))
 
             Text(
-                text = "Versi 1.65.0",
-                fontSize = 11.sp,
+                text = "Versi 1.66.0",
+                fontSize = 9.sp,
                 color = Color.White.copy(alpha = 0.8f),
                 fontWeight = FontWeight.Normal,
                 textAlign = TextAlign.Center

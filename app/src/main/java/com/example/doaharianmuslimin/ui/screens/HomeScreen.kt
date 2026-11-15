@@ -48,7 +48,13 @@ import com.example.doaharianmuslimin.data.model.Doa
 import com.example.doaharianmuslimin.data.model.DoaCategory
 import com.example.doaharianmuslimin.ui.components.*
 import com.example.doaharianmuslimin.ui.theme.AccentGold
-import com.example.doaharianmuslimin.ui.theme.PrimaryTosca
+import com.example.doaharianmuslimin.ui.theme.PrimaryToscaDark
+import androidx.compose.foundation.isSystemInDarkTheme
+import com.example.doaharianmuslimin.data.IslamicDateHelper
+import com.example.doaharianmuslimin.data.PrayerTimesRepository
+import com.example.doaharianmuslimin.data.model.PrayerSchedule
+import androidx.compose.ui.graphics.Brush
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.Calendar
 import java.text.SimpleDateFormat
@@ -84,6 +90,8 @@ fun HomeScreen(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    val isSystemDark = isSystemInDarkTheme()
+    val isDark = currentThemeMode == AppThemeMode.DARK || (currentThemeMode == AppThemeMode.SYSTEM && isSystemDark)
     val prefs = remember { PreferencesManager(context) }
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
@@ -115,6 +123,44 @@ fun HomeScreen(
     val doaHistoryList = remember(historyRefreshKey) { prefs.getDoaReadingHistory() }
     val quranWeeklyStats = remember(historyRefreshKey) { prefs.getQuranWeeklyStats() }
 
+    // Prayer schedule, live countdown & tracker for Home Header
+    var homePrayerSchedule by remember { mutableStateOf<PrayerSchedule?>(null) }
+    var homeCountdownText by remember { mutableStateOf("00:00:00") }
+    var homeNextPrayerName by remember { mutableStateOf("Subuh") }
+    var homeNextPrayerTime by remember { mutableStateOf("--:--") }
+    var prayerCheckinRefreshKey by remember { mutableIntStateOf(0) }
+
+    val savedCityName = remember(activeSubScreen) { prefs.getSavedCityName() }
+    val cleanCityDisplay = remember(savedCityName) {
+        savedCityName
+            .replace("KAB. ", "Kabupaten ")
+            .replace("KABUPATEN ", "Kabupaten ")
+            .replace("KOTA ", "Kota ")
+            .split(" ")
+            .joinToString(" ") { word ->
+                word.lowercase().replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.ROOT) else it.toString() }
+            }
+    }
+
+    LaunchedEffect(activeSubScreen) {
+        val cityId = prefs.getSavedCityId()
+        val cityName = prefs.getSavedCityName()
+        homePrayerSchedule = PrayerTimesRepository.fetchKemenagSchedule(cityId, cityName)
+    }
+
+    LaunchedEffect(homePrayerSchedule) {
+        while (true) {
+            val (cd, name) = PrayerTimesRepository.getCountdownToNextPrayer(homePrayerSchedule)
+            homeCountdownText = cd
+            homeNextPrayerName = name
+            val item = homePrayerSchedule?.items?.find { it.name == name }
+            if (item != null) {
+                homeNextPrayerTime = item.time
+            }
+            delay(1000)
+        }
+    }
+
     var selectedDoaForDetail by remember { mutableStateOf<Doa?>(null) }
     var isQuranImmersive by remember { mutableStateOf(false) }
     var quranTargetPage by remember { mutableStateOf<Int?>(null) }
@@ -143,18 +189,6 @@ fun HomeScreen(
             }
         }
     }
-
-    // Doa Pilihan Hari ini: Berdasarkan apa yang sudah difavoritkan user (Requirement 4)
-    val dailyFeaturedDoa = remember(favoriteIds) {
-        val favoritedDoas = DoaRepository.doaList.filter { favoriteIds.contains(it.id) }
-        val dayOfYear = Calendar.getInstance().get(Calendar.DAY_OF_YEAR)
-        if (favoritedDoas.isNotEmpty()) {
-            favoritedDoas[dayOfYear % favoritedDoas.size]
-        } else {
-            DoaRepository.doaList[dayOfYear % DoaRepository.doaList.size]
-        }
-    }
-    val isFeaturedFromFavorites = favoriteIds.isNotEmpty()
 
     fun toggleFavorite(id: Int) {
         val isFav = prefs.toggleFavorite(id)
@@ -241,6 +275,14 @@ fun HomeScreen(
     }
 
         val homeBottomBar = @Composable {
+            val navItemColors = NavigationBarItemDefaults.colors(
+                selectedIconColor = if (isDark) Color(0xFF80CBC4) else MaterialTheme.colorScheme.primary,
+                selectedTextColor = if (isDark) Color(0xFF80CBC4) else MaterialTheme.colorScheme.primary,
+                indicatorColor = Color.Transparent,
+                unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+            )
+
             NavigationBar(
                 containerColor = MaterialTheme.colorScheme.surface,
                 tonalElevation = 8.dp
@@ -255,19 +297,16 @@ fun HomeScreen(
                     },
                     icon = {
                         Icon(
-                            imageVector = Icons.AutoMirrored.Filled.MenuBook,
-                            contentDescription = "Quran"
+                            painter = painterResource(id = R.drawable.ic_menu_quran),
+                            contentDescription = "Quran",
+                            modifier = Modifier.size(24.dp)
                         )
                     },
                     label = { Text("Quran", fontSize = 11.sp) },
-                    colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = MaterialTheme.colorScheme.primary,
-                        selectedTextColor = MaterialTheme.colorScheme.primary,
-                        indicatorColor = MaterialTheme.colorScheme.primaryContainer
-                    )
+                    colors = navItemColors
                 )
 
-                // 2. Explore
+                // 2. Explore (Icon 3: Rub el Hizb)
                 NavigationBarItem(
                     selected = currentNavTab == BottomNavTab.EXPLORE && activeSubScreen == ActiveSubScreen.NONE,
                     onClick = {
@@ -277,19 +316,16 @@ fun HomeScreen(
                     },
                     icon = {
                         Icon(
-                            imageVector = Icons.Default.Explore,
-                            contentDescription = "Explore"
+                            painter = painterResource(id = R.drawable.ic_footer_explore),
+                            contentDescription = "Explore",
+                            modifier = Modifier.size(24.dp)
                         )
                     },
                     label = { Text("Explore", fontSize = 11.sp) },
-                    colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = MaterialTheme.colorScheme.primary,
-                        selectedTextColor = MaterialTheme.colorScheme.primary,
-                        indicatorColor = MaterialTheme.colorScheme.primaryContainer
-                    )
+                    colors = navItemColors
                 )
 
-                // 3. Home (Active center tab atau saat aktif di menu Dzikir)
+                // 3. Home (Icon 10: Kubah Masjid)
                 NavigationBarItem(
                     selected = (currentNavTab == BottomNavTab.HOME && activeSubScreen == ActiveSubScreen.NONE) || activeSubScreen == ActiveSubScreen.DZIKIR,
                     onClick = {
@@ -300,19 +336,16 @@ fun HomeScreen(
                     },
                     icon = {
                         Icon(
-                            imageVector = Icons.Default.Home,
-                            contentDescription = "Home"
+                            painter = painterResource(id = R.drawable.ic_footer_home),
+                            contentDescription = "Home",
+                            modifier = Modifier.size(24.dp)
                         )
                     },
                     label = { Text("Home", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
-                    colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = MaterialTheme.colorScheme.primary,
-                        selectedTextColor = MaterialTheme.colorScheme.primary,
-                        indicatorColor = MaterialTheme.colorScheme.primaryContainer
-                    )
+                    colors = navItemColors
                 )
 
-                // 4. Doa
+                // 4. Doa (Icon 15: Tangan Berdoa)
                 NavigationBarItem(
                     selected = currentNavTab == BottomNavTab.DOA && activeSubScreen == ActiveSubScreen.NONE,
                     onClick = {
@@ -322,16 +355,13 @@ fun HomeScreen(
                     },
                     icon = {
                         Icon(
-                            imageVector = Icons.AutoMirrored.Filled.FormatListBulleted,
-                            contentDescription = "Doa"
+                            painter = painterResource(id = R.drawable.ic_menu_doa),
+                            contentDescription = "Doa",
+                            modifier = Modifier.size(24.dp)
                         )
                     },
                     label = { Text("Doa", fontSize = 11.sp) },
-                    colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = MaterialTheme.colorScheme.primary,
-                        selectedTextColor = MaterialTheme.colorScheme.primary,
-                        indicatorColor = MaterialTheme.colorScheme.primaryContainer
-                    )
+                    colors = navItemColors
                 )
 
                 // 5. Profil
@@ -349,11 +379,7 @@ fun HomeScreen(
                         )
                     },
                     label = { Text("Profil", fontSize = 11.sp) },
-                    colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = MaterialTheme.colorScheme.primary,
-                        selectedTextColor = MaterialTheme.colorScheme.primary,
-                        indicatorColor = MaterialTheme.colorScheme.primaryContainer
-                    )
+                    colors = navItemColors
                 )
             }
         }
@@ -464,8 +490,8 @@ fun HomeScreen(
                                 }
                             }
                             Text(
-                                text = "Doa & Dzikir Harian Muslimin v1.65.0",
-                                fontSize = 11.sp,
+                                text = "Doa & Dzikir Harian Muslimin",
+                                fontSize = 9.5.sp,
                                 color = Color.White.copy(alpha = 0.85f),
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
@@ -490,8 +516,8 @@ fun HomeScreen(
                             imageVector = when (currentThemeMode) {
                                 AppThemeMode.LIGHT -> Icons.Default.LightMode
                                 AppThemeMode.DARK -> Icons.Default.DarkMode
-                                AppThemeMode.RED -> Icons.Default.Palette
-                                AppThemeMode.BLUE -> Icons.Default.Palette
+                                AppThemeMode.RED -> Icons.Default.LightMode
+                                AppThemeMode.BLUE -> Icons.Default.LightMode
                                 AppThemeMode.SYSTEM -> Icons.Default.BrightnessAuto
                             },
                             contentDescription = "Pengaturan Tema",
@@ -500,7 +526,7 @@ fun HomeScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary
+                    containerColor = if (isDark) PrimaryToscaDark else MaterialTheme.colorScheme.primary
                 )
             )
             }
@@ -527,8 +553,7 @@ fun HomeScreen(
                         },
                         onImmersiveModeChanged = { immersive ->
                             isQuranImmersive = immersive
-                        },
-                        arabicFontStyle = currentArabicFontStyle
+                        }
                     )
                 }
 
@@ -656,13 +681,13 @@ fun HomeScreen(
                             }
                         }
                     } else {
-                        // Tampilan Dashboard Utama Menggunakan Column + verticalScroll (100% Super Mulus, Bebas Jank/Recycling Overhead!)
+                        // Tampilan Dashboard Utama Menggunakan Column + verticalScroll Sesuai Layout Desain
                         Column(
                             modifier = Modifier
                                 .fillMaxSize()
                                 .verticalScroll(rememberScrollState())
-                                .padding(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(14.dp)
+                                .padding(horizontal = 16.dp, vertical = 10.dp),
+                            verticalArrangement = Arrangement.spacedBy(11.dp)
                         ) {
                             // Search bar when active
                             if (isSearchActive) {
@@ -690,34 +715,226 @@ fun HomeScreen(
                                 )
                             }
 
-                            // 1. Doa Pilihan Hari Ini
-                            Column {
-                                if (isFeaturedFromFavorites) {
-                                    Surface(
-                                        color = AccentGold.copy(alpha = 0.15f),
-                                        shape = RoundedCornerShape(8.dp),
-                                        modifier = Modifier.padding(bottom = 6.dp)
-                                    ) {
-                                        Text(
-                                            text = "⭐ Doa Favorit Anda",
-                                            color = MaterialTheme.colorScheme.onSurface,
-                                            fontSize = 11.sp,
-                                            fontWeight = FontWeight.SemiBold,
-                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                                        )
-                                    }
-                                }
+                            // 1. Sapaan Pengguna & Tanggal Islami (Masehi + Hijriyah)
+                            val userName = remember {
+                                val n = prefs.getUserName()
+                                if (n.isBlank()) "Hamba Allah" else n
+                            }
+                            val todayMasehi = remember { IslamicDateHelper.getTodayMasehi() }
+                            val todayHijri = remember { IslamicDateHelper.getTodayHijri() }
 
-                                DailyDoaBanner(
-                                    doa = dailyFeaturedDoa,
-                                    isFavorite = favoriteIds.contains(dailyFeaturedDoa.id),
-                                    onFavoriteToggle = { toggleFavorite(dailyFeaturedDoa.id) },
-                                    onClick = { selectedDoaForDetail = dailyFeaturedDoa },
-                                    arabicFontFamily = currentArabicFontStyle.fontFamily
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 2.dp)
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "Assalamu'alaikum, $userName",
+                                        fontSize = 15.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        lineHeight = 18.sp,
+                                        color = MaterialTheme.colorScheme.onBackground
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Icon(
+                                        imageVector = Icons.Default.Verified,
+                                        contentDescription = "Terverifikasi",
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(1.dp))
+                                Text(
+                                    text = "$todayMasehi · $todayHijri",
+                                    fontSize = 9.5.sp,
+                                    lineHeight = 13.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
 
-                            // 2. Menu Grid (6 Menu)
+                            // 2. Hero Card: Jadwal Salat Berikutnya & Absen Sholat
+                            val todayDateKey = remember {
+                                SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Calendar.getInstance().time)
+                            }
+                            val currentHour = remember { Calendar.getInstance().get(Calendar.HOUR_OF_DAY) }
+                            val prayerToTrack = remember(currentHour) {
+                                when {
+                                    currentHour < 12 -> "Subuh"
+                                    currentHour < 15 -> "Dzuhur"
+                                    currentHour < 18 -> "Ashar"
+                                    currentHour < 20 -> "Maghrib"
+                                    else -> "Isya"
+                                }
+                            }
+                            var isPrayerChecked by remember(prayerCheckinRefreshKey) {
+                                mutableStateOf(prefs.isPrayerCheckedIn(todayDateKey, prayerToTrack))
+                            }
+
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(22.dp)),
+                                shape = RoundedCornerShape(22.dp),
+                                elevation = CardDefaults.cardElevation(2.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .background(
+                                            Brush.verticalGradient(
+                                                colors = if (isDark) {
+                                                    listOf(PrimaryToscaDark, PrimaryToscaDark)
+                                                } else {
+                                                    listOf(
+                                                        MaterialTheme.colorScheme.primary,
+                                                        MaterialTheme.colorScheme.primary.copy(alpha = 0.90f)
+                                                    )
+                                                }
+                                            )
+                                        )
+                                        .padding(20.dp)
+                                ) {
+                                    Column {
+                                        // Clickable upper part to open PrayerTimesScreen
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .clickable { activeSubScreen = ActiveSubScreen.WAKTU_SHOLAT },
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Column(modifier = Modifier.weight(1f)) {
+                                                Text(
+                                                    text = "SALAT BERIKUTNYA",
+                                                    fontSize = 11.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = Color.White.copy(alpha = 0.85f),
+                                                    letterSpacing = 1.sp
+                                                )
+
+                                                Spacer(modifier = Modifier.height(8.dp))
+
+                                                Row(
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    val prayerIcon = when (homeNextPrayerName.lowercase(Locale.ROOT)) {
+                                                        "subuh" -> Icons.Default.Brightness3
+                                                        "dzuhur" -> Icons.Default.WbSunny
+                                                        "ashar" -> Icons.Default.Brightness5
+                                                        "maghrib" -> Icons.Default.Brightness4
+                                                        "isya" -> Icons.Default.NightlightRound
+                                                        else -> Icons.Default.WbSunny
+                                                    }
+                                                    Icon(
+                                                        imageVector = prayerIcon,
+                                                        contentDescription = null,
+                                                        tint = Color.White,
+                                                        modifier = Modifier.size(19.dp)
+                                                    )
+                                                    Spacer(modifier = Modifier.width(6.dp))
+                                                    Text(
+                                                        text = homeNextPrayerName,
+                                                        fontSize = 18.sp,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = Color.White
+                                                    )
+                                                }
+
+                                                Spacer(modifier = Modifier.height(4.dp))
+
+                                                Text(
+                                                    text = homeCountdownText,
+                                                    fontSize = 28.sp,
+                                                    fontWeight = FontWeight.Black,
+                                                    color = Color.White,
+                                                    letterSpacing = 1.sp
+                                                )
+
+                                                Spacer(modifier = Modifier.height(4.dp))
+
+                                                Text(
+                                                    text = "$homeNextPrayerTime · $cleanCityDisplay",
+                                                    fontSize = 11.5.sp,
+                                                    color = Color.White.copy(alpha = 0.88f)
+                                                )
+                                            }
+
+                                            // Logo Adzkaruna Kufi di samping hitungan mundur sholat (persis seperti foto)
+                                            Image(
+                                                painter = painterResource(id = R.drawable.app_logo_kufi),
+                                                contentDescription = "Logo Adzkaruna",
+                                                modifier = Modifier
+                                                    .size(68.dp)
+                                                    .padding(end = 4.dp)
+                                            )
+                                        }
+
+                                        Spacer(modifier = Modifier.height(18.dp))
+
+                                        // Absen Sholat row inside the card
+                                        Surface(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            color = Color.White.copy(alpha = 0.15f),
+                                            shape = RoundedCornerShape(16.dp)
+                                        ) {
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(horizontal = 14.dp, vertical = 10.dp),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                                    Icon(
+                                                        imageVector = if (isPrayerChecked) Icons.Default.CheckCircle else Icons.Default.Person,
+                                                        contentDescription = null,
+                                                        tint = if (isPrayerChecked) AccentGold else Color.White,
+                                                        modifier = Modifier.size(22.dp)
+                                                    )
+                                                    Spacer(modifier = Modifier.width(10.dp))
+                                                    Column {
+                                                        Text(
+                                                            text = "Absen $prayerToTrack",
+                                                            fontSize = 13.5.sp,
+                                                            fontWeight = FontWeight.Bold,
+                                                            color = Color.White
+                                                        )
+                                                        Text(
+                                                            text = if (isPrayerChecked) "Sudah dicatat ✓" else "Belum dicatat",
+                                                            fontSize = 11.sp,
+                                                            color = if (isPrayerChecked) AccentGold else Color.White.copy(alpha = 0.8f)
+                                                        )
+                                                    }
+                                                }
+
+                                                // Capsule button
+                                                Surface(
+                                                    shape = RoundedCornerShape(20.dp),
+                                                    color = if (isPrayerChecked) AccentGold else Color.White,
+                                                    modifier = Modifier.clickable {
+                                                        val nextState = !isPrayerChecked
+                                                        prefs.setPrayerCheckedIn(todayDateKey, prayerToTrack, nextState)
+                                                        isPrayerChecked = nextState
+                                                        prayerCheckinRefreshKey++
+                                                    }
+                                                ) {
+                                                    Text(
+                                                        text = if (isPrayerChecked) "Tercatat ✓" else "Catat",
+                                                        color = if (isPrayerChecked) Color.White else MaterialTheme.colorScheme.primary,
+                                                        fontWeight = FontWeight.Bold,
+                                                        fontSize = 12.sp,
+                                                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 7.dp)
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            // 3. Grid 8 Menu Utama (4 Kolom x 2 Baris)
                             MainMenuGrid(
                                 onMenuItemClick = { menuItem ->
                                     when (menuItem) {
@@ -727,16 +944,201 @@ fun HomeScreen(
                                             filterOnlyHistory = false
                                             selectedCategory = DoaCategory.TIDUR
                                         }
+                                        MainMenuItem.QURAN -> {
+                                            currentNavTab = BottomNavTab.QURAN
+                                        }
                                         MainMenuItem.DZIKIR -> activeSubScreen = ActiveSubScreen.DZIKIR
+                                        MainMenuItem.WAKTU_SHOLAT -> activeSubScreen = ActiveSubScreen.WAKTU_SHOLAT
+                                        MainMenuItem.QIBLAT -> activeSubScreen = ActiveSubScreen.QIBLAT
                                         MainMenuItem.TOPIK_DOA -> activeSubScreen = ActiveSubScreen.TOPIK_DOA
                                         MainMenuItem.FAVORIT -> activeSubScreen = ActiveSubScreen.FAVORIT
-                                        MainMenuItem.QIBLAT -> activeSubScreen = ActiveSubScreen.QIBLAT
                                         MainMenuItem.BELAJAR_ISLAM -> activeSubScreen = ActiveSubScreen.BELAJAR_ISLAM
                                     }
                                 }
                             )
 
-                            // 3. Quick Access: Tilawah Terakhir Al-Qur'an & Doa (Riwayat Nyata)
+                            // 4. Baris 3 Kartu Tracker & Statistik - Menyesuaikan 3 Warna Tema
+                            val todayStat = remember(historyRefreshKey, quranWeeklyStats) {
+                                quranWeeklyStats.days.find { it.isToday }
+                            }
+                            val todayPagesRead = todayStat?.pagesRead ?: 0
+                            val todayStreak = quranWeeklyStats.currentStreak
+                            val todayXp = remember(todayPagesRead, isPrayerChecked, historyRefreshKey) {
+                                (todayPagesRead * 10) + (if (isPrayerChecked) 20 else 0) + (if (homeDoaHistory != null) 5 else 0)
+                            }
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                // Kartu 1: Hari Beruntun (Streak)
+                                Card(
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(16.dp),
+                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.25f))
+                                ) {
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(12.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.LocalFireDepartment,
+                                            contentDescription = null,
+                                            tint = Color(0xFFFF6D00),
+                                            modifier = Modifier.size(22.dp)
+                                        )
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(
+                                            text = "$todayStreak",
+                                            fontSize = 20.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                        Text(
+                                            text = "hari beruntun",
+                                            fontSize = 11.sp,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+
+                                // Kartu 2: XP Hari Ini (Theme Adaptive)
+                                Card(
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(16.dp),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+                                    ),
+                                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.25f))
+                                ) {
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(12.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Bolt,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(22.dp)
+                                        )
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(
+                                            text = "+$todayXp",
+                                            fontSize = 20.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                        Text(
+                                            text = "XP hari ini",
+                                            fontSize = 11.sp,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+
+                                // Kartu 3: Ngaji Hari Ini (Theme Adaptive)
+                                Card(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clip(RoundedCornerShape(16.dp))
+                                        .clickable { currentNavTab = BottomNavTab.QURAN },
+                                    shape = RoundedCornerShape(16.dp),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+                                    ),
+                                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.25f))
+                                ) {
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(12.dp)
+                                    ) {
+                                        Icon(
+                                            painter = painterResource(id = R.drawable.ic_menu_quran),
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(22.dp)
+                                        )
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(
+                                            text = "$todayPagesRead/5 hlm",
+                                            fontSize = 17.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                        Text(
+                                            text = "ngaji hari ini",
+                                            fontSize = 11.sp,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+                            }
+
+                            // 5. Kartu Kutipan Hari Ini (Hadis) - Theme Adaptive
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(20.dp)),
+                                shape = RoundedCornerShape(20.dp),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.65f)
+                                ),
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.25f))
+                            ) {
+                                Column(modifier = Modifier.padding(14.dp)) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = "KUTIPAN HARI INI",
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.primary,
+                                            letterSpacing = 0.8.sp
+                                        )
+                                        Surface(
+                                            shape = RoundedCornerShape(12.dp),
+                                            color = MaterialTheme.colorScheme.surface,
+                                            border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+                                        ) {
+                                            Text(
+                                                text = "HADIS",
+                                                fontSize = 9.5.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = MaterialTheme.colorScheme.primary,
+                                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                                            )
+                                        }
+                                    }
+
+                                    Spacer(modifier = Modifier.height(7.dp))
+
+                                    Text(
+                                        text = "“Sesungguhnya setiap amalan tergantung pada niatnya.”",
+                                        fontSize = 13.5.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        lineHeight = 18.sp
+                                    )
+
+                                    Spacer(modifier = Modifier.height(3.dp))
+
+                                    Text(
+                                        text = "HR. Al-Bukhari no. 1 & Muslim no. 1907",
+                                        fontSize = 11.sp,
+                                        lineHeight = 14.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+
+                            // 6. Quick Access: Tilawah Terakhir Al-Qur'an & Doa (Riwayat Nyata)
                             val quranHist = homeQuranHistory
                             val doaHist = homeDoaHistory
                             if (quranHist != null || doaHist != null) {
@@ -841,14 +1243,6 @@ fun HomeScreen(
                                     }
                                 }
                             }
-
-                            // 4. Catatan Tilawah (Senin - Ahad)
-                            QuranWeeklyStatsCard(
-                                weeklyStats = quranWeeklyStats,
-                                onNavigateToQuran = {
-                                    currentNavTab = BottomNavTab.QURAN
-                                }
-                            )
                         }
                     }
                 }
@@ -1038,8 +1432,8 @@ fun HomeScreen(
                                                 imageVector = when (mode) {
                                                     AppThemeMode.LIGHT -> Icons.Default.LightMode
                                                     AppThemeMode.DARK -> Icons.Default.DarkMode
-                                                    AppThemeMode.RED -> Icons.Default.Palette
-                                                    AppThemeMode.BLUE -> Icons.Default.Palette
+                                                    AppThemeMode.RED -> Icons.Default.LightMode
+                                                    AppThemeMode.BLUE -> Icons.Default.LightMode
                                                     AppThemeMode.SYSTEM -> Icons.Default.BrightnessAuto
                                                 },
                                                 contentDescription = null,

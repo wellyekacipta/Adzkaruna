@@ -13,10 +13,10 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 enum class AppThemeMode(val title: String) {
-    LIGHT("Hijau Tosca & Putih (Default)"),
+    LIGHT("Hijau Tosca"),
     DARK("Mode Gelap"),
-    RED("Merah & Putih"),
-    BLUE("Biru & Putih"),
+    RED("Merah"),
+    BLUE("Biru"),
     SYSTEM("Ikuti Sistem")
 }
 
@@ -183,6 +183,15 @@ class PreferencesManager(private val context: Context) {
     // --- Profil & Edit Nama ---
     fun getUserName(): String = prefs.getString(KEY_USER_NAME, "Hamba Allah") ?: "Hamba Allah"
     fun setUserName(name: String) = prefs.edit().putString(KEY_USER_NAME, name.trim().ifBlank { "Hamba Allah" }).apply()
+
+    // --- Absen / Checklist Sholat Harian ---
+    fun isPrayerCheckedIn(dateStr: String, prayerName: String): Boolean {
+        return prefs.getBoolean("prayer_checkin_${dateStr}_$prayerName", false)
+    }
+
+    fun setPrayerCheckedIn(dateStr: String, prayerName: String, checked: Boolean) {
+        prefs.edit().putBoolean("prayer_checkin_${dateStr}_$prayerName", checked).apply()
+    }
 
     // --- Riwayat & Favorit Al-Qur'an ---
     fun getQuranReadingHistory(): List<QuranHistoryItem> {

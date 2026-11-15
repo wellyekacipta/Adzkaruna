@@ -153,7 +153,7 @@ fun PromisesScreen(
                             color = MaterialTheme.colorScheme.primary,
                             fontFamily = UthmanicFontFamily,
                             fontSize = 21.sp,
-                            lineHeight = 36.sp,
+                            lineHeight = 28.sp,
                             textAlign = TextAlign.End,
                             modifier = Modifier.fillMaxWidth()
                         )

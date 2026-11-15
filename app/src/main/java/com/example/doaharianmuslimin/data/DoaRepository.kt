@@ -305,6 +305,238 @@ Di saat anda tidur, anda sangat butuh pertolongan dan pengamanan dari Allah. Unt
             category = DoaCategory.KAMAR_MANDI,
             note = "Sunnah mendahulukan kaki kanan ketika melangkah keluar dari kamar mandi/WC.",
             repeatCount = 1
+        ),
+
+        // ==================== DOA SEPUTAR WUDHU ====================
+        Doa(
+            id = 24,
+            title = "Doa Sebelum Wudhu",
+            arabic = "بِسْمِ اللَّهِ",
+            latin = "Bismillaah.",
+            translation = "Dengan nama Allah (aku berwudhu).",
+            source = "HR. Abu Dawud, Ibnu Majah dan Ahmad. Lihat Irwa'ul Ghalil 1/122.",
+            category = DoaCategory.WUDHU,
+            note = "Sunnah membaca basmalah sebelum memulai wudhu.",
+            repeatCount = 1
+        ),
+        Doa(
+            id = 25,
+            title = "Doa Setelah Wudhu 1",
+            arabic = "أَشْهَدُ أَنْ لاَ إِلَـٰهَ إِلاَّ اللَّهُ، وَحْدَهُ لاَ شَرِيْكَ لَهُ، وَأَشْهَدُ أَنَّ مُحَمَّدًا عَبْدُهُ وَرَسُوْلُهُ",
+            latin = "Asyhadu al-laa ilaaha illallaah, wahdahu laa syariika lah, wa asyhadu anna muhammadan 'abduhu wa rosuuluh.",
+            translation = "Aku bersaksi, bahwa tidak ada sesembahan yang berhak disembah kecuali Allah, Yang Maha Esa dan tiada sekutu bagiNya. Aku bersaksi, bahwa Muhammad adalah hamba dan utusanNya.",
+            source = "HR. Muslim 1/209.",
+            category = DoaCategory.WUDHU,
+            note = "Rasulullah shallallahu 'alaihi wa sallam bersabda: \"Barangsiapa berwudhu dengan menyempurnakan wudhunya lalu mengucapkan doa ini, dibukakan untuknya delapan pintu surga dan ia boleh masuk dari pintu mana saja yang ia sukai.\"",
+            repeatCount = 1
+        ),
+        Doa(
+            id = 26,
+            title = "Doa Setelah Wudhu 2",
+            arabic = "اَللَّهُمَّ اجْعَلْنِيْ مِنَ التَّوَّابِيْنَ وَاجْعَلْنِيْ مِنَ الْمُتَطَهِّرِيْنَ",
+            latin = "Allaahummaj 'alnii minat-tawwaabiina waj 'alnii minal mutathohhiriin.",
+            translation = "Ya Allah, jadikanlah aku termasuk orang-orang yang bertaubat dan jadikanlah aku termasuk orang-orang (yang senang) bersuci.",
+            source = "HR. At-Tirmidzi 1/78, dan lihat Shahih At-Tirmidzi 1/18.",
+            category = DoaCategory.WUDHU,
+            note = "Tambahan doa setelah wudhu untuk memohon dijadikan hamba yang senantiasa bertaubat dan gemar bersuci.",
+            repeatCount = 1
+        ),
+        Doa(
+            id = 27,
+            title = "Doa Setelah Wudhu 3",
+            arabic = "سُبْحَانَكَ اللَّهُمَّ وَبِحَمْدِكَ، أَشْهَدُ أَنْ لاَ إِلَـٰهَ إِلاَّ أَنْتَ، أَسْتَغْفِرُكَ، وَأَتُوْبُ إِلَيْكَ",
+            latin = "Subhaanakallaahumma wa bihamdika, asyhadu al-laa ilaaha illaa anta, astaghfiruka, wa atuubu ilaik.",
+            translation = "Maha Suci Engkau ya Allah, aku memuji-Mu. Aku bersaksi bahwa tidak ada sesembahan yang berhak disembah kecuali Engkau, aku minta ampun dan bertaubat kepada-Mu.",
+            source = "HR. An-Nasai dalam 'Amalul Yaumi wal Lailah, halaman 173 dan lihat Irwa'ul Ghalil, 1/135 dan 2/94.",
+            category = DoaCategory.WUDHU,
+            note = "Nabi shallallahu 'alaihi wa sallam bersabda bahwa doa kafaratul majlis ini yang dibaca setelah wudhu akan dicetak dalam selembar kertas lalu distempel dan tidak akan rusak hingga hari kiamat.",
+            repeatCount = 1
+        ),
+
+        // ==================== DOA MENGENAKAN DAN MELEPAS PAKAIAN ====================
+        Doa(
+            id = 28,
+            title = "Doa Mengenakan Pakaian",
+            arabic = "اَلْحَمْدُ لِلَّهِ الَّذِيْ كَسَانِيْ هَـٰذَا (الثَّوْبَ) وَرَزَقَنِيْهِ مِنْ غَيْرِ حَوْلٍ مِنِّيْ وَلاَ قُوَّةٍ",
+            latin = "Alhamdulillaahil-ladzii kasaanii haadzats-tsauba wa rozaqoniihi min ghoiri haulin minnii wa laa quwwah.",
+            translation = "Segala puji bagi Allah yang memberi pakaian ini kepadaku sebagai rezeki dariNya tanpa daya dan kekuatan dariku.",
+            source = "HR. Seluruh penyusun kitab Sunan, kecuali An-Nasai, lihat kitab Irwa'ul Ghalil 7/47.",
+            category = DoaCategory.PAKAIAN,
+            note = "Nabi shallallahu 'alaihi wa sallam bersabda bahwa barangsiapa mengenakan pakaian lalu membaca doa ini, maka akan diampuni dosanya yang telah lalu.",
+            repeatCount = 1
+        ),
+        Doa(
+            id = 29,
+            title = "Doa Mengenakan Pakaian Baru",
+            arabic = "اَللَّهُمَّ لَكَ الْحَمْدُ أَنْتَ كَسَوْتَنِيْهِ، أَسْأَلُكَ مِنْ خَيْرِهِ وَخَيْرِ مَا صُنِعَ لَهُ، وَأَعُوْذُ بِكَ مِنْ شَرِّهِ وَشَرِّ مَا صُنِعَ لَهُ",
+            latin = "Allaahumma lakal hamdu anta kasautaniihi, as-aluka min khoirihi wa khoiri maa shuni'a lahu, wa a'uudzu bika min syarrihi wa syarri maa shuni'a lah.",
+            translation = "Ya Allah, hanya milikMu segala puji, Engkaulah yang memberi pakaian ini kepadaku. Aku mohon kepadaMu untuk memperoleh kebaikannya dan kebaikan yang ia diciptakan karenanya. Aku berlindung kepadaMu dari kejahatannya dan kejahatan yang ia diciptakan karenanya.",
+            source = "HR. Abu Dawud, At-Tirmidzi, Al-Baghawi dan lihat Mukhtashar Syamaailit Tirmidzi, oleh Al-Albani, halaman 47.",
+            category = DoaCategory.PAKAIAN,
+            note = "Rasulullah shallallahu 'alaihi wa sallam apabila mengenakan pakaian baru, baik gamis, sorban atau selendang, beliau menyebut namanya lalu membaca doa ini.",
+            repeatCount = 1
+        ),
+        Doa(
+            id = 30,
+            title = "Doa Kepada Orang Yang Mengenakan Pakaian Baru 1",
+            arabic = "تُبْلِي وَيُخْلِفُ اللَّهُ تَعَالَى",
+            latin = "Tublii wa yukhlifullaahu ta'aalaa.",
+            translation = "Kenakanlah sampai lusuh, semoga Allah ta'ala memberikan gantinya kepadamu.",
+            source = "HR. Abu Daud 4/41 dan lihat pula Shahih Abi Dawud, 2/760.",
+            category = DoaCategory.PAKAIAN,
+            note = "Doa kebaikan yang diucapkan kepada sesama muslim saat melihatnya mengenakan pakaian baru.",
+            repeatCount = 1
+        ),
+        Doa(
+            id = 31,
+            title = "Doa Kepada Orang Yang Mengenakan Pakaian Baru 2",
+            arabic = "اِلْبَسْ جَدِيْدًا، وَعِشْ حَمِيْدًا، وَمُتْ شَهِيْدًا",
+            latin = "Ilbas jadiidan, wa 'isy hamiidan, wa mut syahiidan.",
+            translation = "Berpakaianlah yang baru, hiduplah dengan terpuji dan matilah dalam keadaan syahid.",
+            source = "HR. Ibnu Majah 2/1178, Al-Baghawi 12/41 dan lihat Shahih Ibnu Majah 2/275.",
+            category = DoaCategory.PAKAIAN,
+            note = "Doa Rasulullah shallallahu 'alaihi wa sallam kepada sahabat beliau ketika melihatnya memakai pakaian baru.",
+            repeatCount = 1
+        ),
+        Doa(
+            id = 32,
+            title = "Doa Melepas/Meletakkan Pakaian",
+            arabic = "بِسْمِ اللَّهِ",
+            latin = "Bismillaah.",
+            translation = "Dengan nama Allah (aku meletakkan baju).",
+            source = "HR. At-Tirmidzi 2/505 dan Imam yang lain. Lihat Irwa'ul Ghalil, 49 dan Shahihul Jami' 3/203.",
+            category = DoaCategory.PAKAIAN,
+            note = "Nabi shallallahu 'alaihi wa sallam bersabda: Penutup antara pandangan jin dan aurat manusia apabila menanggalkan pakaiannya adalah membaca bismillah.",
+            repeatCount = 1
+        ),
+
+        // ==================== DOA MASUK DAN KELUAR RUMAH ====================
+        Doa(
+            id = 33,
+            title = "Doa Keluar Rumah 1",
+            arabic = "بِسْمِ اللَّهِ، تَوَكَّلْتُ عَلَى اللَّهِ، لاَ حَوْلَ وَلاَ قُوَّةَ إِلاَّ بِاللَّهِ",
+            latin = "Bismillaah, tawakkaltu 'alallaah, laa haula wa laa quwwata illaa billaah.",
+            translation = "Dengan nama Allah, aku bertawakkal kepada Allah, tiada daya dan kekuatan kecuali dengan pertolongan Allah.",
+            source = "HR. Abu Daud 5095, Turmudzi 3426 dan dishahihkan al-Albani.",
+            category = DoaCategory.RUMAH,
+            note = """Keutamaan:
+Dalam hadis dari Anas bin Malik radhiyallahu ‘anhu, Rasulullah shallallahu ‘alaihi wa sallam menjelaskan keutamaan doa ini, “Apabila seseorang keluar dari rumahnya kemudian dia membaca: (doa di atas), maka disampaikan kepadanya, ‘Kamu diberi petunjuk, kamu dicukupi kebutuhannya, dan kamu dilindungi.’ Seketika itu setan-setanpun menjauh darinya. Lalu salah satu setan berkata kepada temannya, ‘Bagaimana mungkin kalian bisa mengganggu orang yang telah diberi petunjuk, dicukupi, dan dilindungi.’”
+
+Keterangan:
+Makna “disampaikan kepadanya”: yang menyampaikan adalah Malaikat. Malaikat itu mengatakan kepada orang yang membaca doa ini ketika keluar rumah, ‘Wahai hamba Allah, kamu telah diberi petunjuk, dicukupi, dan dilindungi.’ (Tuhfatul Ahwadzi, Syarh Sunan Turmudzi, 9/271).""".trimIndent(),
+            repeatCount = 1
+        ),
+        Doa(
+            id = 34,
+            title = "Doa Keluar Rumah 2",
+            arabic = "اَللَّهُمَّ إِنِّيْ أَعُوْذُ بِكَ أَنْ أَضِلَّ أَوْ أُضَلَّ، أَوْ أَزِلَّ أَوْ أُزَلَّ، أَوْ أَظْلِمَ أَوْ أُظْلَمَ، أَوْ أَجْهَلَ أَوْ يُجْهَلَ عَلَيَّ",
+            latin = "Allaahumma innii a'uudzu bika an adhilla au udholla, au azilla au uzalla, au azhlima au uzhlama, au ajhala au yujhala 'alayya.",
+            translation = "Ya Allah, aku berlindung kepada-Mu, jangan sampai aku sesat atau disesatkan (setan atau orang yang berwatak setan), berbuat kesalahan atau disalahi, menganiaya atau dianiaya (orang), dan berbuat bodoh atau dibodohi.",
+            source = "HR. Abu Dawud 5094, Nasai 5486, Ibnu Majah 3884 dan dishahihkan al-Albani.",
+            category = DoaCategory.RUMAH,
+            note = """Selengkapnya:
+Dari Ummu Salamah radhiyallahu ‘anha, beliau menceritakan, “Setiap kali Rasulullah shallallahu ‘alaihi wa sallam keluar dari rumahku, beliau mengarahkan pandangannya ke langit, kemudian berdoa: (doa di atas).”
+
+Keterangan:
+• Doa ini menunjukkan bagaimana ketergantungan Nabi shallallahu ‘alaihi wa sallam kepada Allah. Sekalipun beliau seorang nabi, beliau tetap memohon perlindungan kepada Allah.
+• Doa ini dibaca persis ketika di luar rumah, sambil menengadahkan pandangan ke langit, sebagaimana yang dituturkan Ummu Salamah radhiyallahu ‘anha.""".trimIndent(),
+            repeatCount = 1
+        ),
+        Doa(
+            id = 35,
+            title = "Doa Masuk Rumah 1 (Bismillah)",
+            arabic = "بِسْمِ اللَّهِ",
+            latin = "Bismillaah.",
+            translation = "Dengan nama Allah.",
+            source = "HR. Muslim 2018.",
+            category = DoaCategory.RUMAH,
+            note = """Hadis selengkapnya:
+Ada hadis yang menganjurkan agar kita menyebut nama Allah saat masuk rumah. Tujuannya adalah agar setan dari luar tidak turut masuk rumah bersama kita. Dalam hadis dari Jabir bin 'Abdillah radhiyallahu 'anhuma, Rasulullah shallallahu 'alaihi wa sallam bersabda, “Jika seseorang memasuki rumahnya lalu dia menyebut nama Allah saat masuk rumah, begitu pula saat dia makan, maka setan pun berkata (kepada teman-temannya), ‘Kalian tidak ada tempat untuk bermalam dan tidak ada jatah makan.’ Ketika dia masuk rumahnya tanpa menyebut nama Allah, setan-pun mengatakan (kepada teman-temannya), ‘Saat ini kalian mendapatkan tempat untuk bermalam.’ Dan ketika dia lupa menyebut nama Allah saat makan, maka setanpun berkata, ‘Kalian mendapat tempat bermalam dan jatah makan malam.’”
+
+Hadis ini secara umum menunjukkan anjuran untuk berdzikir, menyebut nama Allah ketika masuk rumah dan ketika hendak makan.""".trimIndent(),
+            repeatCount = 1
+        ),
+        Doa(
+            id = 36,
+            title = "Doa Masuk Rumah 2 (Salam)",
+            arabic = "اَلسَّلَامُ عَلَيْكُمْ",
+            latin = "As-salaamu 'alaikum.",
+            translation = "Semoga keselamatan atas kalian.",
+            source = "HR. Tirmidzi no. 2698, Al Adabul Mufrod no. 1095, HR. Abu Dawud no. 2494.",
+            category = DoaCategory.RUMAH,
+            note = """Dari Anas bin Malik –radhiyallahu ‘anhu-, ia berkata bahwa Rasulullah shallallahu ‘alaihi wa sallam berkata padanya, “Wahai anakku, jika engkau memasuki rumah dan menemui keluargamu, ucapkanlah salam biar datang berkah padamu dan juga pada keluargamu.” (HR. Tirmidzi no. 2698. Al Hafizh Abu Thohir mengatakan bahwa sanad hadits ini dho’if. Namun Syaikh Al Albani merujuk pendapatnya dan menshahihkan hadits ini dalam Shohih Al Kalim 47).
+
+Juga terdapat perintah dalam ayat Al Qur’an, “Maka apabila kamu memasuki (suatu rumah dari) rumah-rumah (ini) hendaklah kamu memberi salam kepada (penghuninya yang berarti memberi salam) kepada dirimu sendiri, salam yang ditetapkan dari sisi Allah, yang diberi berkat lagi baik.” (An-Nur [24]: 61).
+
+Jabir bin ‘Abdillah radhiyallahu ‘anhu berkata, “Jika engkau masuk rumah dan menemui keluargamu, maka ucapkanlah salam pada mereka sebagai salam penghormatan di sisi Allah dan juga untuk mendapatkan berkah yang baik.” (Diriwayatkan dalam Al Adabul Mufrod no. 1095).
+
+Jika diberi salam, maka hendaklah dibalas sebagaimana perintah Allah, “Apabila kamu diberi penghormatan dengan sesuatu penghormatan, maka balaslah penghormatan itu dengan yang lebih baik dari padanya, atau balaslah penghormatan itu (dengan yang serupa).” (An-Nisa’ [4]: 86).
+
+Sebagian ulama mengatakan, jika ada yang memberi salam, maka balaslah dengan yang lebih sempurna atau balaslah dengan yang semisal. Membalas dengan lebih sempurna dihukumi sunnah, sedangkan membalas dengan yang semisal dihukumi wajib (Shahih Al Adab Al Mufrod, 3: 219). Misalnya, ketika memasuki rumah diucapkan salam “assalamu ‘alaikum wa rahmatullah,” yang lebih sempurna adalah menjawab dengan “assalamu ‘alaikum wa rahmatullah wa barakatuh.” Yang semisal adalah membalas dengan ucapan “assalamu ‘alaikum wa rahmatullah.”
+
+Syaikh Muhammad bin Sholeh Al ‘Utsaimin berkata, “Jika engkau memasuki suatu rumah, maka ucapkanlah salam pada orang yang ada di dalam baik pada keluarga, teman, atau selain itu. Ini termasuk sunnah. Wallahul muwaffiq.” (Syarh Riyadhis Sholihin, 4: 414).
+
+Diriwayatkan oleh Abu Umamah Al-Bahili, dari Rasulullah shallallahu ‘alaihi wa sallam, “Ada tiga orang yang mendapat jaminan dari Allah, (di antaranya) seseorang yang masuk rumahnya dengan mengucapkan salam, maka dia mendapatkan jaminan dari Allah.” (HR. Abu Dawud no. 2494, dikatakan oleh Asy-Syaikh Al-Albani dalam Shahih Sunan Abi Dawud: shahih).""".trimIndent(),
+            repeatCount = 1
+        ),
+        Doa(
+            id = 37,
+            title = "Doa Masuk Rumah Ketika Tidak Ada Orang",
+            arabic = "اَلسَّلَامُ عَلَيْنَا وَعَلَى عِبَادِ اللَّهِ الصَّالِحِيْنَ",
+            latin = "As-salaamu 'alainaa wa 'alaa 'ibaadillaahish-shoolihiin.",
+            translation = "Semoga keselamatan atas kami dan hamba-hamba Allah yang shalih.",
+            source = "HR. Bukhari dalam Adabul Mufrod 806/1055. Sanad hadits ini hasan sebagaimana dikatakan oleh Al Hafizh Ibnu Hajar dalam Al Fath, 11: 17.",
+            category = DoaCategory.RUMAH,
+            note = """Mengucapkan salam pada rumah yang tidak berpenghuni atau tidak ada seorangpun di rumah tersebut tidaklah wajib, namun disunnahkan.
+
+Ibnu ‘Umar radhiyallahu ‘anhuma berkata, “Jika seseorang masuk rumah yang tidak didiami, maka ucapkanlah: (doa di atas).”
+
+Hal di atas diucapkan ketika rumah kosong. Namun jika ada keluarga atau pembantu di dalamnya, maka ucapkanlah “Assalamu ‘alaikum”. Namun jika memasuki masjid, maka ucapkanlah “Assalamu ‘alainaa wa ‘alaa ‘ibadillahish sholihiin”. Sedangkan Ibnu ‘Umar menganggap salam yang terakhir ini diucapkan ketika memasuki rumah kosong.
+
+Imam Nawawi rahimahullah dalam kitab Al Adzkar berkata, “Disunnahkan bila seseorang memasuki rumah sendiri untuk mengucapkan salam meskipun tidak ada penghuninya. Yaitu ucapkanlah: (doa di atas). Begitu pula ketika memasuki masjid, rumah orang lain yang kosong, disunnahkan pula mengucapkan salam “Assalamu ‘alainaa wa ‘alaa ‘ibadillahish sholihiin. Assalamu ‘alaikum ahlal bait wa rahmatullah wa barakatuh”. (Al Adzkar, hal. 468-469).
+
+Maksud kalimat “Assalamu ‘alainaa” menunjukkan seharusnya do’a dimulai untuk diri sendiri dulu baru orang lain.
+
+Sedangkan kalimat “wa ‘ala ‘ibadillahish sholihiin”, yaitu salam pada hamba yang sholeh, maksud sholeh adalah orang yang menjalani kewajiban, hak Allah dan juga hak hamba. (Syarh Shahih Al Adabil Mufrod, 3: 186).""".trimIndent(),
+            repeatCount = 1
+        ),
+        Doa(
+            id = 38,
+            title = "Cara Mengusir Setan/Jin Dari Rumah",
+            arabic = "",
+            latin = "Membaca Surah Al-Baqarah secara penuh di dalam rumah.",
+            translation = """Cara yang paling efektif dalam hal ini adalah membacakan surat Al-Baqarah, satu surat penuh. Ini berdasarkan hadis dari Abu Hurairah radhiallahu ‘anhu, bahwa Nabi shallallahu ‘alaihi wa sallam bersabda, “Jangan kalian jadikan rumah kalian seperti kuburan. Sesungguhnya setan lari dari rumah yang dibacakan surat Al-Baqarah di dalamnya.” (HR. Muslim 780, At-Turmudzi 2877).
+
+Sahabat Ibnu Mas’ud mengatakan, “Sesungguhnya setan, apabila mendengar surat Al-Baqarah dibacakan dalam rumah, maka dia akan keluar dari rumah itu.” (HR. Ad-Darimi 3422, At-thabrani dalam Mu’jam Al-Kabir 8642).
+
+Hanya Tiga Hari?
+Terdapat keterangan bahwa setan meninggalkan rumah itu selama 3 hari. Ini berdasarkan hadis dari Sahl bin Sa’d radhiallahu ‘anhu, Nabi shallallahu ‘alaihi wa sallam bersabda, “Siapa yang membaca surat Al-Baqarah di malam hari maka setan tidak akan memasuki rumahnya selama tiga hari…” (HR. Ibnu Hibban dalam Shahihnya 780).
+Hanya saja, keterangan tambahan tiga hari dalam riwayat tersebut dinilai lemah oleh al-Albani, sebagaimana keterangan beliau di Silsilah Ad-Dhaifah no. 1349.
+
+Hanya Setan Yang Mengganggu
+Setan yang lari dari rumah yang dibacakan surat Al-Baqarah adalah setan yang mengganggu secara zahir. Sebagaimana keterangan yang dinukil Ibnu Hibban, dari Imam Abu Hatim, “Sabda Nabi shallallahu ‘alaihi wa sallam ‘setan tidak akan memasuki rumahnya’ maksudnya adalah setan yang membangkang (mengganggu) bukan yang lainnya.” (Shahih Ibnu Hibban, 3:59).
+
+Siapa Yang Membaca?
+Siapa saja, tidak harus tuan rumah. Lebih-lebih, jika tuan rumah sendiri tidak bisa membaca Al-Quran. Karena lafal dalam hadis: “yang dibacakan surat Al-Baqarah” dengan bentuk kalimat pasif. Artinya siapapun yang membaca, selama dilakukan di dalam rumah, telah memenuhi syarat untuk mengusir setan.
+
+Hanya saja tidak boleh menggunakan rekaman MP3 atau sejenisnya. Karena membaca butuh niat, dan audio player atau komputer tidak bisa berniat.""".trimIndent(),
+            source = "HR. Muslim 780, At-Turmudzi 2877, Ad-Darimi 3422 & Ibnu Hibban",
+            category = DoaCategory.RUMAH,
+            note = "Membaca surat Al-Baqarah secara langsung (bukan rekaman audio) di dalam rumah untuk mengusir setan dan jin.",
+            repeatCount = 1
+        ),
+        Doa(
+            id = 39,
+            title = "Hadis Dho'if (Lemah) Doa Masuk Rumah",
+            arabic = "اَللَّهُمَّ إِنِّيْ أَسْأَلُكَ خَيْرَ الْمَوْلَجِ وَخَيْرَ الْمَخْرَجِ، بِسْمِ اللَّهِ وَلَجْنَا، وَبِسْمِ اللَّهِ خَرَجْنَا، وَعَلَى اللَّهِ رَبِّنَا تَوَكَّلْنَا",
+            latin = "Allaahumma innii as-aluka khoirol mawlaji wa khoirol makhroji, bismillaahi walajnaa wa bismillaahi khorojnaa wa 'alallaahi robbinaa tawakkalnaa.",
+            translation = """Terdapat sebuah hadis yang menyebutkan bacaan khusus ketika masuk rumah. Hadis dari Abu Malik al-Asy'ari radhiyallahu 'anhu, Rasulullah shallallahu 'alaihi wa sallam bersabda, “Apabila seseorang memasuki rumahnya, maka hendaknya dia mengucapkan, 'Allahumma inni as-aluka khoirol mawlaji wa khoirol makhroji, bismillahi walajnaa wa bismillahi khorojnaa wa alallahi robbinaa tawakkalnaa.' (Ya Allah, aku memohon pada-Mu kebaikan ketika masuk dan keluar dari rumah. Dengan nama Allah kami masuk, dan dengan nama Allah kami keluar, dan hanya kepada Allah Rabb kami, kami bertawakkal). Lalu hendaklah menyampaikan salam pada keluarganya.” (HR. Abu Daud 5096. Al-Hafizh Abu Thohir mengatakan bahwa sanad hadits ini dho'if. Hadis ini juga dinilai dho'if oleh al-Albani).
+
+Mengingat hadis ini statusnya dho'if, maka kita tidak merekomendasikan untuk merutinkannya. Hanya saja, dianjurkan bagi kita untuk berdzikir, menyebut nama Allah ketika masuk rumah dengan kalimat umum, misalnya dengan mengucapkan bismillah, selanjutnya ucapkan salam untuk yang ada di dalam rumah.""".trimIndent(),
+            source = "HR. Abu Daud 5096 (Sanad Dho'if / Lemah)",
+            category = DoaCategory.RUMAH,
+            note = "Sanad hadits ini dinilai dho'if oleh para ulama hadits (Al-Hafizh Abu Thohir & Syaikh Al-Albani). Tidak dianjurkan untuk dirutinkan sebagai doa khusus.",
+            repeatCount = 1
         )
     )
 

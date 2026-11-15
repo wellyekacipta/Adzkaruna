@@ -186,8 +186,8 @@ fun ExploreScreen(
                                             }
                                         }
                                         Text(
-                                            text = "Doa & Dzikir Harian Muslimin v1.65.0",
-                                            fontSize = 11.sp,
+                                            text = "Doa & Dzikir Harian Muslimin",
+                                            fontSize = 9.5.sp,
                                             color = Color.White.copy(alpha = 0.85f),
                                             maxLines = 1,
                                             overflow = TextOverflow.Ellipsis

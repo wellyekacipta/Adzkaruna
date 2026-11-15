@@ -118,20 +118,20 @@ fun DailyDoaBanner(
                     color = Color.White,
                     fontFamily = effectiveFontFamily,
                     fontSize = 20.sp,
-                    lineHeight = 34.sp,
+                    lineHeight = 28.sp,
                     textAlign = TextAlign.End,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(6.dp))
 
                 Text(
                     text = "\"${doa.translation}\"",
                     color = Color.White.copy(alpha = 0.9f),
                     fontSize = 12.5.sp,
-                    lineHeight = 18.sp,
+                    lineHeight = 16.sp,
                     maxLines = 3,
                     overflow = TextOverflow.Ellipsis
                 )

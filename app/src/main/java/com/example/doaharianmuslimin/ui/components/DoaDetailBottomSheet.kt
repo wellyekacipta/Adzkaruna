@@ -231,7 +231,7 @@ fun DoaDetailBottomSheet(
                             color = MaterialTheme.colorScheme.primary,
                             fontFamily = effectiveArabicFontFamily,
                             fontSize = arabicFontSize.sp,
-                            lineHeight = (arabicFontSize * 1.9f).sp,
+                            lineHeight = (arabicFontSize * 1.55f).sp,
                             textAlign = TextAlign.End,
                             fontWeight = FontWeight.Normal,
                             modifier = Modifier.fillMaxWidth()
@@ -241,24 +241,24 @@ fun DoaDetailBottomSheet(
 
                 // Latin transliteration
                 if (showLatin && doa.latin.isNotBlank()) {
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(14.dp))
                     Text(
                         text = "Pelafalan (Latin):",
                         fontSize = 12.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.primary
                     )
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier.height(3.dp))
                     Text(
                         text = doa.latin,
                         style = MaterialTheme.typography.bodyLarge,
                         fontStyle = FontStyle.Italic,
-                        lineHeight = 22.sp,
+                        lineHeight = 19.sp,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.88f)
                     )
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(14.dp))
 
                 // Indonesian translation
                 Text(
@@ -267,11 +267,11 @@ fun DoaDetailBottomSheet(
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.primary
                 )
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(3.dp))
                 Text(
                     text = doa.translation,
                     style = MaterialTheme.typography.bodyLarge,
-                    lineHeight = 22.sp,
+                    lineHeight = 19.sp,
                     color = MaterialTheme.colorScheme.onSurface
                 )
             } else {
@@ -321,8 +321,8 @@ fun DoaDetailBottomSheet(
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(18.dp),
-                        verticalArrangement = Arrangement.spacedBy(14.dp)
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         val paragraphs = doa.translation.split("\n\n")
                         for (p in paragraphs) {
@@ -344,7 +344,7 @@ fun DoaDetailBottomSheet(
                                         Text(
                                             text = trimmed,
                                             fontSize = 11.5.sp,
-                                            lineHeight = 18.sp,
+                                            lineHeight = 17.sp,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                                             modifier = Modifier.padding(10.dp)
                                         )
@@ -353,8 +353,8 @@ fun DoaDetailBottomSheet(
                                     Text(
                                         text = trimmed,
                                         style = MaterialTheme.typography.bodyMedium,
-                                        fontSize = 14.5.sp,
-                                        lineHeight = 23.sp,
+                                        fontSize = 14.sp,
+                                        lineHeight = 19.sp,
                                         color = MaterialTheme.colorScheme.onSurface
                                     )
                                 }

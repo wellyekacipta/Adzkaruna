@@ -1,132 +1,92 @@
 package com.example.doaharianmuslimin.ui.components
 
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.MenuBook
-import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.doaharianmuslimin.ui.theme.AccentGold
+import com.example.doaharianmuslimin.R
 
 enum class MainMenuItem(
     val title: String,
-    val subtitle: String,
-    val icon: ImageVector
+    @param:DrawableRes val iconRes: Int
 ) {
-    DOA_HARIAN("Doa Harian", "552 Kumpulan Doa", Icons.AutoMirrored.Filled.MenuBook),
-    DZIKIR("Dzikir", "Dzikir Pagi & Petang", Icons.Default.SelfImprovement),
-    TOPIK_DOA("Topik Doa", "Kategori Doa Harian", Icons.Default.Category),
-    FAVORIT("Favorit Doa & Al-Qur'an", "Doa & Al-Qur'an Tersimpan", Icons.Default.Bookmark),
-    QIBLAT("Kiblat Sholat", "Arah Kiblat 295° Ka'bah", Icons.Default.Explore),
-    BELAJAR_ISLAM("Belajar Islam", "Perluas Wawasan Keislaman", Icons.Default.AutoAwesome)
+    DOA_HARIAN("Doa", R.drawable.ic_menu_doa),                      // Icon 15: Dua Tangan Berdoa
+    QURAN("Al-Qur'an", R.drawable.ic_menu_quran),                   // Icon 4: Mushaf Al-Qur'an
+    DZIKIR("Dzikir", R.drawable.ic_menu_dzikir),                   // Icon 18: Matahari & Awan
+    WAKTU_SHOLAT("Sholat", R.drawable.ic_menu_jadwal_salat),       // Icon 29: Pin Lokasi Bulan Bintang
+    QIBLAT("Kiblat", R.drawable.ic_menu_kiblat),                   // Icon 30: Ka'bah
+    TOPIK_DOA("Topik", R.drawable.ic_menu_topik_doa),              // Icon 3: Rub el Hizb
+    FAVORIT("Favorit", R.drawable.ic_menu_favorit_love),            // Icon Love
+    BELAJAR_ISLAM("Sirah", R.drawable.ic_menu_belajar_islam)
 }
 
-// Static values to avoid re-allocations on every frame
-private val MenuCardShape = RoundedCornerShape(16.dp)
-private val MenuIconShape = RoundedCornerShape(12.dp)
-private val ChunkedMenuItems2Col = MainMenuItem.entries.chunked(2)
-private val ChunkedMenuItems3Col = MainMenuItem.entries.chunked(3)
+// 4 Kolom x 2 Baris = 8 Menu Utama
+private val ChunkedMenuItems4Col = MainMenuItem.entries.chunked(4)
+private val MenuBoxShape = RoundedCornerShape(18.dp)
 
 @Composable
 fun MainMenuGrid(
     onMenuItemClick: (MainMenuItem) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val configuration = LocalConfiguration.current
-    val screenWidth = configuration.screenWidthDp.dp
-    // Responsif: 3 kolom untuk tablet / layar lebar (>= 600dp), 2 kolom untuk ponsel (< 600dp)
-    val columns = if (screenWidth >= 600.dp) 3 else 2
-    val chunkedMenuItems = if (columns == 3) ChunkedMenuItems3Col else ChunkedMenuItems2Col
-
     Column(
         modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
+        verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        chunkedMenuItems.forEach { rowItems ->
+        ChunkedMenuItems4Col.forEach { rowItems ->
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 rowItems.forEach { item ->
-                    Card(
+                    Column(
                         modifier = Modifier
                             .weight(1f)
-                            .defaultMinSize(minHeight = 104.dp)
-                            .clip(MenuCardShape)
-                            .clickable { onMenuItemClick(item) },
-                        shape = MenuCardShape,
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surface
-                        ),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                            .clip(RoundedCornerShape(14.dp))
+                            .clickable { onMenuItemClick(item) }
+                            .padding(vertical = 4.dp, horizontal = 2.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 8.dp, vertical = 12.dp),
-                            verticalArrangement = Arrangement.Center,
-                            horizontalAlignment = Alignment.CenterHorizontally
+                        Surface(
+                            shape = MenuBoxShape,
+                            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f),
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.25f)),
+                            modifier = Modifier.size(56.dp)
                         ) {
-                            Surface(
-                                color = MaterialTheme.colorScheme.primaryContainer,
-                                shape = MenuIconShape,
-                                modifier = Modifier.size(38.dp)
-                            ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Icon(
-                                        imageVector = item.icon,
-                                        contentDescription = item.title,
-                                        tint = if (item == MainMenuItem.FAVORIT || item == MainMenuItem.BELAJAR_ISLAM) AccentGold else MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                }
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    painter = painterResource(id = item.iconRes),
+                                    contentDescription = item.title,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(28.dp)
+                                )
                             }
-
-                            Spacer(modifier = Modifier.height(7.dp))
-
-                            Text(
-                                text = item.title,
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface,
-                                textAlign = TextAlign.Center,
-                                fontSize = if (item.title.length > 15) 11.5.sp else 12.5.sp,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-
-                            Spacer(modifier = Modifier.height(2.dp))
-
-                            Text(
-                                text = item.subtitle,
-                                fontSize = 10.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                textAlign = TextAlign.Center,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
                         }
-                    }
-                }
 
-                val remaining = columns - rowItems.size
-                if (remaining > 0) {
-                    repeat(remaining) {
-                        Spacer(modifier = Modifier.weight(1f))
+                        Spacer(modifier = Modifier.height(6.dp))
+
+                        Text(
+                            text = item.title,
+                            fontSize = 11.5.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            textAlign = TextAlign.Center,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
                     }
                 }
             }

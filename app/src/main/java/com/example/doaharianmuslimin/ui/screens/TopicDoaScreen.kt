@@ -45,7 +45,10 @@ data class TopicItem(
 // Static topics & shapes to prevent re-allocation on every recomposition
 private val StaticTopics = listOf(
     TopicItem("Doa Sebelum Tidur dan Bangun Tidur", "Koleksi lengkap 21 doa sebelum dan bangun tidur", Icons.Default.Bedtime, matchingCategory = DoaCategory.TIDUR),
-    TopicItem("Doa Masuk dan Keluar Kamar Mandi", "Koleksi 2 doa masuk dan keluar WC / kamar mandi", Icons.Default.MeetingRoom, matchingCategory = DoaCategory.KAMAR_MANDI)
+    TopicItem("Doa Masuk dan Keluar Kamar Mandi", "Koleksi 2 doa masuk dan keluar WC / kamar mandi", Icons.Default.MeetingRoom, matchingCategory = DoaCategory.KAMAR_MANDI),
+    TopicItem("Doa Seputar Wudhu", "Koleksi 4 doa sebelum dan setelah wudhu", Icons.Default.WaterDrop, matchingCategory = DoaCategory.WUDHU),
+    TopicItem("Doa Mengenakan dan Melepas Pakaian", "Koleksi 5 doa mengenakan & melepas pakaian", Icons.Default.Checkroom, matchingCategory = DoaCategory.PAKAIAN),
+    TopicItem("Doa Masuk dan Keluar Rumah", "Koleksi 7 doa seputar masuk dan keluar rumah", Icons.Default.Home, matchingCategory = DoaCategory.RUMAH)
 )
 
 private val TopicCardShape = RoundedCornerShape(14.dp)

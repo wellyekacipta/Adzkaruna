@@ -14,10 +14,10 @@ import androidx.core.view.WindowCompat
 import com.example.doaharianmuslimin.data.AppThemeMode
 
 private val DarkColorScheme = darkColorScheme(
-    primary = PrimaryToscaDarkTheme,
+    primary = Color(0xFF80CBC4),
     onPrimary = DarkBackground,
     primaryContainer = ToscaContainerDark,
-    onPrimaryContainer = OnToscaContainerDark,
+    onPrimaryContainer = Color(0xFFE0F2F1),
     secondary = AccentGold,
     onSecondary = DarkBackground,
     tertiary = PrimaryToscaLight,
@@ -99,7 +99,8 @@ fun DoaHarianMusliminTheme(
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-            window.statusBarColor = colorScheme.primary.toArgb()
+            val isDarkEffective = themeMode == AppThemeMode.DARK || (themeMode == AppThemeMode.SYSTEM && isSystemDark)
+            window.statusBarColor = if (isDarkEffective) PrimaryToscaDark.toArgb() else colorScheme.primary.toArgb()
             WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = false
         }
     }

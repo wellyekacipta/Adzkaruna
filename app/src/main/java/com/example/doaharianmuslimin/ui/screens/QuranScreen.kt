@@ -124,9 +124,7 @@ fun QuranScreen(
     var isImmersiveBarsVisible by remember { mutableStateOf(false) }
 
     val prefs = remember { PreferencesManager(context) }
-    val effectiveArabicFontFamily = arabicFontStyle?.fontFamily ?: remember(prefs.getArabicFontStyle()) {
-        prefs.getArabicFontStyle().fontFamily
-    }
+    val quranFontFamily = LpmqFontFamily // Font Al-Qur'an Standar Indo-Pak (LPMQ Kemenag RI)
     var currentMushafStyle by remember { mutableStateOf(prefs.getMushafStyle()) }
     var showMushafStyleDialog by remember { mutableStateOf(false) }
     var showDownloadPromptDialog by remember { mutableStateOf(false) }
@@ -835,7 +833,7 @@ fun QuranScreen(
                                 ) {
                                     Text(
                                         text = surah.arabicName,
-                                        fontFamily = effectiveArabicFontFamily,
+                                        fontFamily = quranFontFamily,
                                         fontSize = 20.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = if (isDark) Color(0xFFFFFFFF) else Color(0xFF000000),
@@ -1044,7 +1042,7 @@ fun QuranScreen(
                                             val bismillahColor = if (isDark) Color(0xFFFFFFFF) else Color(0xFF000000)
                                             Text(
                                                 text = "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ",
-                                                fontFamily = effectiveArabicFontFamily,
+                                                fontFamily = quranFontFamily,
                                                 fontSize = 26.sp,
                                                 fontWeight = FontWeight.Bold,
                                                 color = bismillahColor
@@ -1184,13 +1182,13 @@ fun QuranScreen(
 
                                         Spacer(modifier = Modifier.height(10.dp))
 
-                                        // Arabic Text in Solid Pure Black (#000000) - Font LPMQ Isep Misbah Kemenag RI
+                                        // Arabic Text in Solid Pure Black (#000000) - Font Quran Indo-Pak (LPMQ Kemenag RI)
                                         Text(
                                             text = ayat.arabic,
-                                            fontFamily = effectiveArabicFontFamily,
+                                            fontFamily = quranFontFamily,
                                             fontSize = 26.sp,
                                             fontWeight = FontWeight.Bold,
-                                            lineHeight = 48.sp,
+                                            lineHeight = 38.sp,
                                             textAlign = TextAlign.End,
                                             color = if (isDark) Color(0xFFFFFFFF) else Color(0xFF000000),
                                             modifier = Modifier.fillMaxWidth()
@@ -2025,29 +2023,17 @@ fun QuranScreen(
 
                                                         Spacer(modifier = Modifier.height(8.dp))
 
-                                                        // Teks Arab - Font LPMQ Isep Misbah (Tajwid Berwarna vs Biasa)
-                                                        if (currentMushafStyle == MushafStyle.TAJWEED) {
-                                                            Text(
-                                                                text = buildTajweedAnnotatedString(ayatItem.arabic, isDark),
-                                                                fontFamily = effectiveArabicFontFamily,
-                                                                fontSize = 20.sp,
-                                                                fontWeight = FontWeight.Bold,
-                                                                lineHeight = 36.sp,
-                                                                textAlign = TextAlign.End,
-                                                                modifier = Modifier.fillMaxWidth()
-                                                            )
-                                                        } else {
-                                                            Text(
-                                                                text = ayatItem.arabic,
-                                                                fontFamily = effectiveArabicFontFamily,
-                                                                fontSize = 20.sp,
-                                                                fontWeight = FontWeight.Bold,
-                                                                lineHeight = 36.sp,
-                                                                textAlign = TextAlign.End,
-                                                                color = if (isDark) Color(0xFFFFFFFF) else Color(0xFF000000),
-                                                                modifier = Modifier.fillMaxWidth()
-                                                            )
-                                                        }
+                                                        // Teks Arab - Font Quran Indo-Pak (LPMQ) biasa tanpa tajwid
+                                                        Text(
+                                                            text = ayatItem.arabic,
+                                                            fontFamily = quranFontFamily,
+                                                            fontSize = 20.sp,
+                                                            fontWeight = FontWeight.Bold,
+                                                            lineHeight = 30.sp,
+                                                            textAlign = TextAlign.End,
+                                                            color = if (isDark) Color(0xFFFFFFFF) else Color(0xFF000000),
+                                                            modifier = Modifier.fillMaxWidth()
+                                                        )
 
                                                         if (ayatItem.latin.isNotBlank()) {
                                                             Spacer(modifier = Modifier.height(4.dp))
@@ -2528,29 +2514,17 @@ fun QuranScreen(
 
                     Spacer(modifier = Modifier.height(14.dp))
 
-                    // Lafadz Ayat Arab (Tajwid Berwarna vs Biasa)
-                    if (currentMushafStyle == MushafStyle.TAJWEED) {
-                        Text(
-                            text = buildTajweedAnnotatedString(ayat.arabic, isDark),
-                            fontFamily = effectiveArabicFontFamily,
-                            fontSize = 26.sp,
-                            fontWeight = FontWeight.Bold,
-                            lineHeight = 48.sp,
-                            textAlign = TextAlign.End,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    } else {
-                        Text(
-                            text = ayat.arabic,
-                            fontFamily = effectiveArabicFontFamily,
-                            fontSize = 26.sp,
-                            fontWeight = FontWeight.Bold,
-                            lineHeight = 48.sp,
-                            textAlign = TextAlign.End,
-                            color = if (isDark) Color(0xFFFFFFFF) else Color(0xFF000000),
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
+                    // Lafadz Ayat Arab - Font Quran Indo-Pak (LPMQ) biasa tanpa tajwid
+                    Text(
+                        text = ayat.arabic,
+                        fontFamily = quranFontFamily,
+                        fontSize = 26.sp,
+                        fontWeight = FontWeight.Bold,
+                        lineHeight = 40.sp,
+                        textAlign = TextAlign.End,
+                        color = if (isDark) Color(0xFFFFFFFF) else Color(0xFF000000),
+                        modifier = Modifier.fillMaxWidth()
+                    )
 
                     if (ayat.latin.isNotBlank()) {
                         Spacer(modifier = Modifier.height(10.dp))
@@ -2626,7 +2600,7 @@ fun QuranScreen(
                         Text(
                             text = tafsirContent ?: "Tafsir belum tersedia.",
                             style = MaterialTheme.typography.bodyMedium,
-                            lineHeight = 22.sp,
+                            lineHeight = 18.sp,
                             color = if (isDark) Color(0xFFECEFF1) else Color.Black
                         )
                     }

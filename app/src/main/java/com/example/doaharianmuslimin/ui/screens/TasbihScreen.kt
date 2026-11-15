@@ -145,8 +145,8 @@ fun TasbihScreen(
                                     }
                                 }
                                 Text(
-                                    text = "Doa & Dzikir Harian Muslimin v1.65.0",
-                                    fontSize = 11.sp,
+                                    text = "Doa & Dzikir Harian Muslimin",
+                                    fontSize = 9.5.sp,
                                     color = Color.White.copy(alpha = 0.85f),
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
@@ -351,7 +351,7 @@ fun TasbihScreen(
                                         fontFamily = arabicFontFamily,
                                         fontSize = 20.sp,
                                         fontWeight = FontWeight.Bold,
-                                        lineHeight = 36.sp,
+                                        lineHeight = 28.sp,
                                         textAlign = TextAlign.End,
                                         color = MaterialTheme.colorScheme.onSurface,
                                         modifier = Modifier.fillMaxWidth()
