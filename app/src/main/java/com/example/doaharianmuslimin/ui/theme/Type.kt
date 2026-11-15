@@ -28,6 +28,13 @@ val IsepMisbahFontFamily = FontFamily(
     Font(R.font.lpmq, FontWeight.SemiBold)
 )
 
+// 4. Font Al-Qur'an Indo-Pak Asli
+val IndoPakFontFamily = FontFamily(
+    Font(R.font.indopak, FontWeight.Normal),
+    Font(R.font.indopak, FontWeight.Bold),
+    Font(R.font.indopak, FontWeight.SemiBold)
+)
+
 // Alias kompatibilitas
 val UthmanicFontFamily = RasmUtsmaniFontFamily
 val MadinahFontFamily = KfgqpcFontFamily

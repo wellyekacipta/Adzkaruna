@@ -75,7 +75,7 @@ import com.example.doaharianmuslimin.data.model.QuranSurah
 import com.example.doaharianmuslimin.ui.theme.AccentGold
 import com.example.doaharianmuslimin.ui.theme.PrimaryTosca
 import com.example.doaharianmuslimin.ui.theme.UthmanicFontFamily
-import com.example.doaharianmuslimin.ui.theme.LpmqFontFamily
+import com.example.doaharianmuslimin.ui.theme.IndoPakFontFamily
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -124,7 +124,7 @@ fun QuranScreen(
     var isImmersiveBarsVisible by remember { mutableStateOf(false) }
 
     val prefs = remember { PreferencesManager(context) }
-    val quranFontFamily = LpmqFontFamily // Font Al-Qur'an Standar Indo-Pak (LPMQ Kemenag RI)
+    val quranFontFamily = IndoPakFontFamily // Font Al-Qur'an Indo-Pak Asli
     var currentMushafStyle by remember { mutableStateOf(prefs.getMushafStyle()) }
     var showMushafStyleDialog by remember { mutableStateOf(false) }
     var showDownloadPromptDialog by remember { mutableStateOf(false) }
