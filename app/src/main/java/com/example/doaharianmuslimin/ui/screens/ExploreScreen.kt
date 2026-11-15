@@ -103,7 +103,7 @@ fun ExploreScreen(
     onNavigateToPromises: () -> Unit,
     onNavigateToPrayerTimes: () -> Unit,
     onNavigateToQibla: () -> Unit,
-    onBack: (() -> Unit)? = null,
+    onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var searchQuery by remember { mutableStateOf("") }
@@ -129,116 +129,100 @@ fun ExploreScreen(
     val showPrayerTimesCard = query.isBlank() || "sholat jadwal waktu adzan kemenag hitung mundur".contains(query)
     val showQiblaCard = query.isBlank() || "kiblat qiblat kompas ka'bah ka'bah arah mekkah".contains(query)
 
-    if (onBack != null) {
-        Scaffold(
-            modifier = modifier
-                .fillMaxSize()
-                .navigationBarsPadding(),
-            containerColor = MaterialTheme.colorScheme.background,
-            topBar = {
-                Surface(
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.fillMaxWidth()
+    Scaffold(
+        modifier = modifier
+            .fillMaxSize()
+            .navigationBarsPadding(),
+        containerColor = MaterialTheme.colorScheme.background,
+        topBar = {
+            Surface(
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .statusBarsPadding()
                 ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .statusBarsPadding()
-                    ) {
-                        TopAppBar(
-                            windowInsets = WindowInsets(0.dp),
-                            title = {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Image(
-                                        painter = painterResource(id = R.drawable.app_logo_kufi),
-                                        contentDescription = "Logo Adzkaruna",
-                                        modifier = Modifier.size(34.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(10.dp))
-                                    Column(modifier = Modifier.weight(1f, fill = false)) {
-                                        Row(verticalAlignment = Alignment.CenterVertically) {
-                                            Text(
-                                                text = "Adzkaruna",
-                                                fontSize = 18.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                color = Color.White,
-                                                maxLines = 1,
-                                                overflow = TextOverflow.Ellipsis
-                                            )
-                                            Spacer(modifier = Modifier.width(5.dp))
-                                            Box(
-                                                modifier = Modifier
-                                                    .background(AccentGold, shape = RoundedCornerShape(3.dp))
-                                                    .padding(horizontal = 3.dp, vertical = 0.5.dp),
-                                                contentAlignment = Alignment.Center
-                                            ) {
-                                                Text(
-                                                    text = "PRO",
-                                                    fontSize = 8.5.sp,
-                                                    fontWeight = FontWeight.Black,
-                                                    color = Color(0xFF3E2723),
-                                                    letterSpacing = 0.2.sp,
-                                                    style = TextStyle(
-                                                        platformStyle = PlatformTextStyle(includeFontPadding = false),
-                                                        lineHeight = 9.sp
-                                                    )
-                                                )
-                                            }
-                                        }
+                    TopAppBar(
+                        windowInsets = WindowInsets(0.dp),
+                        title = {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Image(
+                                    painter = painterResource(id = R.drawable.app_logo_kufi),
+                                    contentDescription = "Logo Adzkaruna",
+                                    modifier = Modifier.size(34.dp)
+                                )
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Column(modifier = Modifier.weight(1f, fill = false)) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
                                         Text(
-                                            text = "Doa & Dzikir Harian Muslimin",
-                                            fontSize = 9.5.sp,
-                                            color = Color.White.copy(alpha = 0.85f),
+                                            text = "Adzkaruna",
+                                            fontSize = 18.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color.White,
                                             maxLines = 1,
                                             overflow = TextOverflow.Ellipsis
                                         )
+                                        Spacer(modifier = Modifier.width(5.dp))
+                                        Box(
+                                            modifier = Modifier
+                                                .background(AccentGold, shape = RoundedCornerShape(3.dp))
+                                                .padding(horizontal = 3.dp, vertical = 0.5.dp),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Text(
+                                                text = "PRO",
+                                                fontSize = 8.5.sp,
+                                                fontWeight = FontWeight.Black,
+                                                color = Color(0xFF3E2723),
+                                                letterSpacing = 0.2.sp,
+                                                style = TextStyle(
+                                                    platformStyle = PlatformTextStyle(includeFontPadding = false),
+                                                    lineHeight = 9.sp
+                                                )
+                                            )
+                                        }
                                     }
-                                }
-                            },
-                            navigationIcon = {
-                                IconButton(onClick = onBack) {
-                                    Icon(
-                                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                        contentDescription = "Kembali",
-                                        tint = Color.White
+                                    Text(
+                                        text = "Doa & Dzikir Harian Muslimin",
+                                        fontSize = 9.5.sp,
+                                        color = Color.White.copy(alpha = 0.85f),
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
                                     )
                                 }
-                            },
-                            colors = TopAppBarDefaults.topAppBarColors(
-                                containerColor = Color.Transparent
-                            )
+                            }
+                        },
+                        navigationIcon = {
+                            IconButton(onClick = onBack) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                    contentDescription = "Kembali",
+                                    tint = Color.White
+                                )
+                            }
+                        },
+                        colors = TopAppBarDefaults.topAppBarColors(
+                            containerColor = Color.Transparent
                         )
-                    }
+                    )
                 }
             }
-        ) { innerPadding ->
-            ExploreBody(
-                searchQuery = searchQuery,
-                onSearchQueryChange = { searchQuery = it },
-                filteredInsights = filteredInsights,
-                showPromisesCard = showPromisesCard,
-                showPrayerTimesCard = showPrayerTimesCard,
-                showQiblaCard = showQiblaCard,
-                onNavigateToPromises = onNavigateToPromises,
-                onNavigateToPrayerTimes = onNavigateToPrayerTimes,
-                onNavigateToQibla = onNavigateToQibla,
-                modifier = Modifier.padding(innerPadding)
-            )
         }
-    } else {
-        Box(modifier = modifier.fillMaxSize()) {
-            ExploreBody(
-                searchQuery = searchQuery,
-                onSearchQueryChange = { searchQuery = it },
-                filteredInsights = filteredInsights,
-                showPromisesCard = showPromisesCard,
-                showPrayerTimesCard = showPrayerTimesCard,
-                showQiblaCard = showQiblaCard,
-                onNavigateToPromises = onNavigateToPromises,
-                onNavigateToPrayerTimes = onNavigateToPrayerTimes,
-                onNavigateToQibla = onNavigateToQibla
-            )
-        }
+    ) { innerPadding ->
+        ExploreBody(
+            searchQuery = searchQuery,
+            onSearchQueryChange = { searchQuery = it },
+            filteredInsights = filteredInsights,
+            showPromisesCard = showPromisesCard,
+            showPrayerTimesCard = showPrayerTimesCard,
+            showQiblaCard = showQiblaCard,
+            onNavigateToPromises = onNavigateToPromises,
+            onNavigateToPrayerTimes = onNavigateToPrayerTimes,
+            onNavigateToQibla = onNavigateToQibla,
+            modifier = Modifier.padding(innerPadding)
+        )
     }
 }
 

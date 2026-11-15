@@ -24,7 +24,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.FormatListBulleted
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -50,7 +49,6 @@ import com.example.doaharianmuslimin.data.QuoteRepository
 import com.example.doaharianmuslimin.data.model.QuoteItem
 import com.example.doaharianmuslimin.data.model.ArabicFontStyle
 import com.example.doaharianmuslimin.data.model.Doa
-import com.example.doaharianmuslimin.data.model.DoaCategory
 import com.example.doaharianmuslimin.ui.components.*
 import com.example.doaharianmuslimin.ui.theme.AccentGold
 import com.example.doaharianmuslimin.ui.theme.PrimaryToscaDark
@@ -107,12 +105,10 @@ fun HomeScreen(
 
     var currentNavTab by remember { mutableStateOf(BottomNavTab.HOME) }
     var activeSubScreen by remember { mutableStateOf(ActiveSubScreen.NONE) }
-    var selectedCategory by remember { mutableStateOf(DoaCategory.TIDUR) }
     var searchQuery by remember { mutableStateOf("") }
     var isSearchActive by remember { mutableStateOf(false) }
     var showThemeDialog by remember { mutableStateOf(false) }
     var filterOnlyFavorites by remember { mutableStateOf(false) }
-    var filterOnlyHistory by remember { mutableStateOf(false) }
 
     var favoriteIds by remember { mutableStateOf(prefs.getFavoriteIds()) }
     var currentArabicFontStyle by remember { mutableStateOf(prefs.getArabicFontStyle()) }
@@ -218,7 +214,6 @@ fun HomeScreen(
             currentNavTab != BottomNavTab.HOME -> {
                 currentNavTab = BottomNavTab.HOME
                 filterOnlyFavorites = false
-                filterOnlyHistory = false
             }
             else -> {
                 showExitConfirmationDialog = true
@@ -288,21 +283,19 @@ fun HomeScreen(
         context.startActivity(Intent.createChooser(sendIntent, "Bagikan Doa Melalui"))
     }
 
-    // Filter list according to category, search, and favorites (di-cache tanpa re-filter saat ganti tab)
-    val displayedDoas = remember(selectedCategory, searchQuery, favoriteIds, filterOnlyFavorites) {
+    // Filter list according to search and favorites (di-cache tanpa re-filter saat ganti tab)
+    val displayedDoas = remember(searchQuery, favoriteIds, filterOnlyFavorites) {
         val baseList = if (filterOnlyFavorites) {
             DoaRepository.doaList.filter { favoriteIds.contains(it.id) }
         } else {
             DoaRepository.doaList
         }
 
-        val categoryFiltered = baseList
-
         if (searchQuery.isBlank()) {
-            categoryFiltered
+            baseList
         } else {
             val q = searchQuery.trim().lowercase()
-            categoryFiltered.filter {
+            baseList.filter {
                 it.title.lowercase().contains(q) ||
                 it.latin.lowercase().contains(q) ||
                 it.translation.lowercase().contains(q)
@@ -1019,8 +1012,6 @@ fun HomeScreen(
                                         MainMenuItem.DOA_HARIAN -> {
                                             activeSubScreen = ActiveSubScreen.DOA_HARIAN
                                             filterOnlyFavorites = false
-                                            filterOnlyHistory = false
-                                            selectedCategory = DoaCategory.TIDUR
                                         }
                                         MainMenuItem.QURAN -> {
                                             currentNavTab = BottomNavTab.QURAN

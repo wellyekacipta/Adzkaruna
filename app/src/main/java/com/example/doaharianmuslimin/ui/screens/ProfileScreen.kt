@@ -898,7 +898,7 @@ fun ProfileScreen(
                                     )
                                 }
                             } else {
-                                items(quranHistory.take(10)) { item ->
+                                items(quranHistory.take(10), key = { "${it.surahNumber}_${it.pageNumber}_${it.timestamp}" }) { item ->
                                     Surface(
                                         modifier = Modifier
                                             .fillMaxWidth()
@@ -960,7 +960,7 @@ fun ProfileScreen(
                                     )
                                 }
                             } else {
-                                items(quranFavorites) { item ->
+                                items(quranFavorites, key = { "${it.surahNumber}_${it.pageNumber}" }) { item ->
                                     Surface(
                                         modifier = Modifier
                                             .fillMaxWidth()
@@ -1025,7 +1025,7 @@ fun ProfileScreen(
                                     )
                                 }
                             } else {
-                                items(doaFavorites) { doa ->
+                                items(doaFavorites, key = { it.id }) { doa ->
                                     Surface(
                                         modifier = Modifier
                                             .fillMaxWidth()
@@ -1114,7 +1114,7 @@ fun ProfileScreen(
                                     )
                                 }
                             } else {
-                                items(doaHistory.take(10)) { item ->
+                                items(doaHistory.take(10), key = { "${it.doaId}_${it.timestamp}" }) { item ->
                                     Surface(
                                         modifier = Modifier
                                             .fillMaxWidth()

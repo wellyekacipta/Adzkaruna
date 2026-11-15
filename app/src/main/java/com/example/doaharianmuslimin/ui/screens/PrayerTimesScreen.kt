@@ -529,7 +529,7 @@ fun PrayerTimesScreen(
             } else {
                 schedule?.let { s ->
                     val prayerItems = s.items
-                    items(prayerItems) { item ->
+                    items(prayerItems, key = { it.name }) { item ->
                         val isFardhu = fardhuNames.contains(item.name)
                         val isReminderActive = prayerReminderToggles[item.name] ?: true
                         val status = remember(refreshKey, targetDateKey, item.name) {
@@ -912,7 +912,7 @@ fun PrayerTimesScreen(
                         modifier = Modifier.fillMaxSize(),
                         verticalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
-                        items(searchResults) { city ->
+                        items(searchResults, key = { it.id }) { city ->
                             val isSelected = city.id == selectedCity.id
                             Surface(
                                 modifier = Modifier
