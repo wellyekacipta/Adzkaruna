@@ -65,9 +65,9 @@ import androidx.compose.foundation.shape.CircleShape
 
 enum class BottomNavTab(val title: String) {
     QURAN("Quran"),
-    EXPLORE("Explore"),
+    TRACKER("Tracker"),
     HOME("Home"),
-    DOA("Doa"),
+    MUROTAL("Murotal"),
     PROFIL("Profil")
 }
 
@@ -79,7 +79,8 @@ enum class ActiveSubScreen {
     TOPIK_DOA,
     DZIKIR,
     FAVORIT,
-    BELAJAR_ISLAM
+    BELAJAR_ISLAM,
+    DOA_HARIAN
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -306,22 +307,22 @@ fun HomeScreen(
                     colors = navItemColors
                 )
 
-                // 2. Explore (Icon 3: Rub el Hizb)
+                // 2. Tracker (Habit & Ibadah Tracker)
                 NavigationBarItem(
-                    selected = currentNavTab == BottomNavTab.EXPLORE && activeSubScreen == ActiveSubScreen.NONE,
+                    selected = currentNavTab == BottomNavTab.TRACKER && activeSubScreen == ActiveSubScreen.NONE,
                     onClick = {
                         activeSubScreen = ActiveSubScreen.NONE
-                        currentNavTab = BottomNavTab.EXPLORE
+                        currentNavTab = BottomNavTab.TRACKER
                         filterOnlyFavorites = false
                     },
                     icon = {
                         Icon(
-                            painter = painterResource(id = R.drawable.ic_footer_explore),
-                            contentDescription = "Explore",
+                            painter = painterResource(id = R.drawable.ic_footer_tracker),
+                            contentDescription = "Tracker",
                             modifier = Modifier.size(24.dp)
                         )
                     },
-                    label = { Text("Explore", fontSize = 11.sp) },
+                    label = { Text("Tracker", fontSize = 11.sp) },
                     colors = navItemColors
                 )
 
@@ -345,22 +346,22 @@ fun HomeScreen(
                     colors = navItemColors
                 )
 
-                // 4. Doa (Icon 15: Tangan Berdoa)
+                // 4. Murotal (Audio Murotal Al-Qur'an & Suara Alam)
                 NavigationBarItem(
-                    selected = currentNavTab == BottomNavTab.DOA && activeSubScreen == ActiveSubScreen.NONE,
+                    selected = currentNavTab == BottomNavTab.MUROTAL && activeSubScreen == ActiveSubScreen.NONE,
                     onClick = {
                         activeSubScreen = ActiveSubScreen.NONE
-                        currentNavTab = BottomNavTab.DOA
+                        currentNavTab = BottomNavTab.MUROTAL
                         filterOnlyFavorites = false
                     },
                     icon = {
                         Icon(
-                            painter = painterResource(id = R.drawable.ic_menu_doa),
-                            contentDescription = "Doa",
+                            painter = painterResource(id = R.drawable.ic_footer_murotal),
+                            contentDescription = "Murotal",
                             modifier = Modifier.size(24.dp)
                         )
                     },
-                    label = { Text("Doa", fontSize = 11.sp) },
+                    label = { Text("Murotal", fontSize = 11.sp) },
                     colors = navItemColors
                 )
 
@@ -442,6 +443,19 @@ fun HomeScreen(
             )
             return
         }
+        ActiveSubScreen.DOA_HARIAN -> {
+            DoaHarianScreen(
+                onBack = { activeSubScreen = ActiveSubScreen.NONE },
+                favoriteIds = favoriteIds,
+                onToggleFavorite = { toggleFavorite(it) },
+                onSelectDoa = { doa ->
+                    prefs.addDoaReadingHistory(doa.id, doa.title)
+                    historyRefreshKey++
+                    selectedDoaForDetail = doa
+                }
+            )
+            return
+        }
         ActiveSubScreen.NONE -> { /* Continue with Main Flow */ }
     }
 
@@ -449,7 +463,7 @@ fun HomeScreen(
         modifier = modifier.fillMaxSize(),
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
-            if (!isQuranImmersive || currentNavTab != BottomNavTab.QURAN) {
+            if ((!isQuranImmersive || currentNavTab != BottomNavTab.QURAN) && currentNavTab != BottomNavTab.MUROTAL && currentNavTab != BottomNavTab.TRACKER) {
                 TopAppBar(
                 title = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -532,12 +546,18 @@ fun HomeScreen(
             }
         },
         bottomBar = {
-            if (!isQuranImmersive || currentNavTab != BottomNavTab.QURAN) {
+            if ((!isQuranImmersive || currentNavTab != BottomNavTab.QURAN) && currentNavTab != BottomNavTab.MUROTAL) {
                 homeBottomBar()
             }
         }
     ) { innerPadding ->
-        val contentPadding = if (isQuranImmersive && currentNavTab == BottomNavTab.QURAN) PaddingValues(0.dp) else innerPadding
+        val contentPadding = if ((isQuranImmersive && currentNavTab == BottomNavTab.QURAN) || currentNavTab == BottomNavTab.MUROTAL) {
+            PaddingValues(0.dp)
+        } else if (currentNavTab == BottomNavTab.TRACKER) {
+            PaddingValues(bottom = innerPadding.calculateBottomPadding())
+        } else {
+            innerPadding
+        }
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -557,11 +577,11 @@ fun HomeScreen(
                     )
                 }
 
-                BottomNavTab.EXPLORE -> {
-                    ExploreScreen(
-                        onNavigateToPromises = { activeSubScreen = ActiveSubScreen.PROMISES },
-                        onNavigateToPrayerTimes = { activeSubScreen = ActiveSubScreen.WAKTU_SHOLAT },
-                        onNavigateToQibla = { activeSubScreen = ActiveSubScreen.QIBLAT }
+                BottomNavTab.TRACKER -> {
+                    TrackerScreen(
+                        onBack = { currentNavTab = BottomNavTab.HOME },
+                        onNavigateToQuran = { currentNavTab = BottomNavTab.QURAN },
+                        onNavigateToTasbih = { activeSubScreen = ActiveSubScreen.DZIKIR }
                     )
                 }
 
@@ -939,7 +959,7 @@ fun HomeScreen(
                                 onMenuItemClick = { menuItem ->
                                     when (menuItem) {
                                         MainMenuItem.DOA_HARIAN -> {
-                                            currentNavTab = BottomNavTab.DOA
+                                            activeSubScreen = ActiveSubScreen.DOA_HARIAN
                                             filterOnlyFavorites = false
                                             filterOnlyHistory = false
                                             selectedCategory = DoaCategory.TIDUR
@@ -1247,139 +1267,16 @@ fun HomeScreen(
                     }
                 }
 
-                // ==================== KHUSUS TAB DOA ====================
-                BottomNavTab.DOA -> {
-                    Column(
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        // Kolom Pencarian Pinned (Tetap berada di atas saat user scroll doa-doa ke bawah, seperti di menu explore)
-                        Surface(
-                            color = MaterialTheme.colorScheme.surface,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            OutlinedTextField(
-                                value = searchQuery,
-                                onValueChange = { searchQuery = it },
-                                placeholder = {
-                                    Text(
-                                        text = "Cari judul doa, arti, atau lafadz...",
-                                        fontSize = 12.5.sp,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-                                    )
-                                },
-                                singleLine = true,
-                                leadingIcon = {
-                                    Icon(Icons.Default.Search, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                                },
-                                trailingIcon = {
-                                    if (searchQuery.isNotBlank()) {
-                                        IconButton(onClick = { searchQuery = "" }) {
-                                            Icon(Icons.Default.Clear, contentDescription = "Hapus", tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                                        }
-                                    }
-                                },
-                                shape = RoundedCornerShape(12.dp),
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedContainerColor = MaterialTheme.colorScheme.surface,
-                                    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                    unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.4f)
-                                ),
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 16.dp, vertical = 10.dp)
-                            )
+                // ==================== KHUSUS TAB MUROTAL ====================
+                BottomNavTab.MUROTAL -> {
+                    MurotalScreen(
+                        onBack = {
+                            currentNavTab = BottomNavTab.HOME
+                        },
+                        onOpenQuran = { _ ->
+                            currentNavTab = BottomNavTab.QURAN
                         }
-
-                        // List doa yang dapat di-scroll
-                        val filteredDoas = remember(searchQuery) {
-                            if (searchQuery.isBlank()) {
-                                DoaRepository.doaList
-                            } else {
-                                val q = searchQuery.trim().lowercase()
-                                DoaRepository.doaList.filter {
-                                    it.title.lowercase().contains(q) ||
-                                    it.latin.lowercase().contains(q) ||
-                                    it.translation.lowercase().contains(q) ||
-                                    it.arabic.contains(q)
-                                }
-                            }
-                        }
-
-                        val groupedDoas = remember(filteredDoas) {
-                            filteredDoas.groupBy { it.category }
-                        }
-
-                        LazyColumn(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .weight(1f),
-                            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 16.dp),
-                            verticalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            if (filteredDoas.isEmpty()) {
-                                item {
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(vertical = 40.dp),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                            Icon(
-                                                imageVector = Icons.Default.SearchOff,
-                                                contentDescription = null,
-                                                tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
-                                                modifier = Modifier.size(64.dp)
-                                            )
-                                            Spacer(modifier = Modifier.height(12.dp))
-                                            Text(
-                                                text = "Doa tidak ditemukan",
-                                                fontWeight = FontWeight.SemiBold,
-                                                color = MaterialTheme.colorScheme.onSurface
-                                            )
-                                            Spacer(modifier = Modifier.height(4.dp))
-                                            Text(
-                                                text = "Coba gunakan kata kunci pencarian yang lain",
-                                                fontSize = 12.sp,
-                                                textAlign = TextAlign.Center,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
-                                        }
-                                    }
-                                }
-                            } else {
-                                groupedDoas.forEach { (cat, doasInCategory) ->
-                                    item(key = "header_${cat.name}", contentType = "category_header") {
-                                        Text(
-                                            text = "${cat.title} (${doasInCategory.size})",
-                                            style = MaterialTheme.typography.titleMedium,
-                                            fontWeight = FontWeight.Bold,
-                                            color = MaterialTheme.colorScheme.onBackground,
-                                            modifier = Modifier.padding(top = 8.dp, bottom = 2.dp)
-                                        )
-                                    }
-                                    itemsIndexed(
-                                        items = doasInCategory,
-                                        key = { _, doa -> doa.id },
-                                        contentType = { _, _ -> "HomeDoaListItem" }
-                                    ) { index, doa ->
-                                        HomeDoaListItem(
-                                            index = index,
-                                            doa = doa,
-                                            isFavorite = favoriteIds.contains(doa.id),
-                                            onFavoriteToggle = { toggleFavorite(doa.id) },
-                                            onClick = {
-                                                prefs.addDoaReadingHistory(doa.id, doa.title)
-                                                historyRefreshKey++
-                                                selectedDoaForDetail = doa
-                                            }
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    )
                 }
             }
         }
@@ -1614,7 +1511,7 @@ private val HomeItemShape = RoundedCornerShape(14.dp)
 private val NumberBadgeShape = CircleShape
 
 @Composable
-private fun HomeDoaListItem(
+fun HomeDoaListItem(
     index: Int,
     doa: Doa,
     isFavorite: Boolean = false,

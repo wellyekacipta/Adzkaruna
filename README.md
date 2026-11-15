@@ -30,15 +30,21 @@ Aplikasi Kumpulan Doa Harian Muslimin modern berbasis **Android (Jetpack Compose
 5. **Qiblat**: Kompas penunjuk arah Ka'bah (295° Arah Barat Laut dari Indonesia) dengan visual derajat dan jarak ke Makkah.
 6. **Favorit**: Akses cepat doa-doa yang disimpan.
 
-### 5. 📖 Al-Qur'an Pilihan & Eksplorasi
-- **Tab Quran**: Surat-surat pilihan yang rutin dibaca (Al-Fatihah, Al-Ikhlas, Al-Falaq, An-Nas, Al-Mulk).
-- **Tab Explore**: Mutiara hadits hari ini, 5 waktu paling mustajab berdoa, dan artikel adab berdoa.
-- **Tab Profil**: Profil pengguna, statistik doa, pengaturan tema, dan informasi aplikasi.
+### 5. 🎧 Audio Murotal Al-Qur'an & Suara Alam
+- **Murotal 114 Surah**: Akses pemutaran audio murotal jernih dengan 6 pilihan Qari ternama dunia (Syaikh Misyari Rasyid Al-Afasi, Abdurrahman as-Sudais, Abdullah Al-Juhany, Abdul-Muhsin Al-Qasim, Ibrahim Al-Dossari, Yasser Al-Dosari).
+- **Suara Alam (Nature Ambient Mixer)**: Relaksasi suara alam (Hujan, Api unggun, Jangkrik malam, Gemericik sungai) dengan pengaturan volume terpisah untuk relaksasi dan meditasi saat tadabbur Al-Qur'an.
+- **Visual Malam Khusyuk**: Suasana malam tenang dengan pendaran cahaya Al-Qur'an di atas Rehal kayu dan animasi rintik hujan dinamis saat fitur hujan diaktifkan.
 
-### 6. 🎨 Desain & Aksesibilitas
+### 6. 📊 Tracker Ibadah & Kalender Islam
+- **Tilawah (Ngaji)**: Target halaman harian dengan indikator cincin melingkar, pencatatan sesi ngaji, *Heatmap* konsistensi bulanan, serta estimasi perjalanan khatam 30 Juz.
+- **Salat Fardhu**: Absensi dan riwayat 5 waktu salat dengan status (Tepat Waktu, Berjamaah, Terlambat, Terlewat) dan metrik bulanan.
+- **Salat Sunnah**: Pemantauan rutin Salat Tahajud (dengan pemilihan raka'at) dan Salat Dhuha, serta Rawatib & Witir.
+- **Dzikir**: Rutinitas Dzikir Pagi, Dzikir Petang, Dzikir Setelah Salat, dan penghitung Tasbih digital ringkas (+33).
+- **Puasa & Kalender Hijriyah**: Kalender Islam lengkap dengan penanda Ayyamul Bidh (13, 14, 15), hari besar Islam, pencatatan puasa sunnah/wajib, serta hitung mundur (*live countdown*) Awal Ramadhan 1448 H.
+
+### 7. 🎨 Desain, Multi-Tema & Aksesibilitas
+- **Pilihan 4 Tema Tampilan**: Hijau Tosca (Default), Merah Marun, Biru Islami, serta Mode Gelap (*Midnight Deep*).
 - **Font Uthmanic Asli**: Menggunakan font Mushaf standar Madinah (`res/font/uthmanic.ttf`).
-- **Palet Warna Tosca & Putih**: Hijau Tosca Segar (`#00897B`), Hijau Tosca Tua (`#004D40`), dan Putih Bersih (`#FFFFFF`).
-- **Mode Gelap & Terang**: Dukungan Dark Mode (*Midnight Deep Tosca*) dan Light Mode dengan saklar dinamis.
 - **Pengatur Ukuran Font**: Tombol perbesar/perkecil huruf Arab (`A-` / `A+`) langsung di layar doa.
 - **Salin & Bagikan**: Fitur *Copy to Clipboard* dan *Share to WhatsApp/Social Media*.
 
