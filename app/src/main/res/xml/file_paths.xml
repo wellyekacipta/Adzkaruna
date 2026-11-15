@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <cache-path name="quote_images" path="quote_images/" />
+    <external-cache-path name="ext_quote_images" path="quote_images/" />
+</paths>

@@ -98,7 +98,7 @@ fun TopicDoaScreen(
                             Column {
                                 Text(
                                     text = selectedTopic?.title ?: "Topik Kategori Doa",
-                                    fontSize = 16.sp,
+                                    fontSize = 18.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = Color.White,
                                     maxLines = 1,
@@ -106,7 +106,7 @@ fun TopicDoaScreen(
                                 )
                                 Text(
                                     text = if (selectedTopic == null) "Pilih topik kebutuhan doa Anda" else "Daftar Doa Pilihan",
-                                    fontSize = 11.sp,
+                                    fontSize = 9.5.sp,
                                     color = Color.White.copy(alpha = 0.85f),
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis

@@ -41,6 +41,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.doaharianmuslimin.ui.theme.AccentGold
@@ -170,15 +171,19 @@ fun QiblaScreen(
                 title = {
                     Column {
                         Text(
-                            text = "Petunjuk Arah Qiblat",
+                            text = "Arah Kiblat Sholat",
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color.White
+                            color = Color.White,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                         Text(
-                            text = "Akurasi Tinggi • Sensor Magnetik Halus",
-                            fontSize = 11.sp,
-                            color = Color.White.copy(alpha = 0.85f)
+                            text = "Kalibrasi Kompas",
+                            fontSize = 9.5.sp,
+                            color = Color.White.copy(alpha = 0.85f),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
                 },

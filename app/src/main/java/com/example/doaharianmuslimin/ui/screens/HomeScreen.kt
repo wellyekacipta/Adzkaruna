@@ -17,7 +17,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -43,6 +46,8 @@ import com.example.doaharianmuslimin.R
 import com.example.doaharianmuslimin.data.AppThemeMode
 import com.example.doaharianmuslimin.data.DoaRepository
 import com.example.doaharianmuslimin.data.PreferencesManager
+import com.example.doaharianmuslimin.data.QuoteRepository
+import com.example.doaharianmuslimin.data.model.QuoteItem
 import com.example.doaharianmuslimin.data.model.ArabicFontStyle
 import com.example.doaharianmuslimin.data.model.Doa
 import com.example.doaharianmuslimin.data.model.DoaCategory
@@ -80,7 +85,10 @@ enum class ActiveSubScreen {
     DZIKIR,
     FAVORIT,
     BELAJAR_ISLAM,
-    DOA_HARIAN
+    DOA_HARIAN,
+    KALENDER,
+    HADITS,
+    SAVED_QUOTES
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -123,6 +131,33 @@ fun HomeScreen(
     val homeDoaHistory = remember(historyRefreshKey) { prefs.getDoaReadingHistory().firstOrNull() }
     val doaHistoryList = remember(historyRefreshKey) { prefs.getDoaReadingHistory() }
     val quranWeeklyStats = remember(historyRefreshKey) { prefs.getQuranWeeklyStats() }
+
+    // Quote Repository, Auto-slide Pager & Export State
+    val quoteRepo = remember { QuoteRepository(context) }
+    var quoteRefreshKey by remember { mutableIntStateOf(0) }
+    var quoteToExport by remember { mutableStateOf<QuoteItem?>(null) }
+    val homeQuotes = remember(quoteRefreshKey) {
+        (quoteRepo.getSavedQuotes().filter { it.isCustom } + QuoteRepository.defaultQuotes).distinctBy { it.id }
+    }
+    val quotePagerState = rememberPagerState(pageCount = { homeQuotes.size })
+
+    LaunchedEffect(activeSubScreen) {
+        if (activeSubScreen == ActiveSubScreen.NONE) {
+            quoteRefreshKey++
+        }
+    }
+
+    LaunchedEffect(homeQuotes.size) {
+        if (homeQuotes.size > 1) {
+            while (true) {
+                delay(5500)
+                if (!quotePagerState.isScrollInProgress) {
+                    val nextPage = (quotePagerState.currentPage + 1) % homeQuotes.size
+                    quotePagerState.animateScrollToPage(nextPage)
+                }
+            }
+        }
+    }
 
     // Prayer schedule, live countdown & tracker for Home Header
     var homePrayerSchedule by remember { mutableStateOf<PrayerSchedule?>(null) }
@@ -456,6 +491,18 @@ fun HomeScreen(
             )
             return
         }
+        ActiveSubScreen.KALENDER -> {
+            IslamicCalendarScreen(onBack = { activeSubScreen = ActiveSubScreen.NONE })
+            return
+        }
+        ActiveSubScreen.HADITS -> {
+            HaditsScreen(onBack = { activeSubScreen = ActiveSubScreen.NONE })
+            return
+        }
+        ActiveSubScreen.SAVED_QUOTES -> {
+            SavedQuotesScreen(onBack = { activeSubScreen = ActiveSubScreen.NONE })
+            return
+        }
         ActiveSubScreen.NONE -> { /* Continue with Main Flow */ }
     }
 
@@ -746,7 +793,9 @@ fun HomeScreen(
                             Column(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(horizontal = 2.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .clickable { activeSubScreen = ActiveSubScreen.KALENDER }
+                                    .padding(horizontal = 2.dp, vertical = 2.dp)
                             ) {
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically
@@ -768,7 +817,7 @@ fun HomeScreen(
                                 }
                                 Spacer(modifier = Modifier.height(1.dp))
                                 Text(
-                                    text = "$todayMasehi · $todayHijri",
+                                    text = "$todayMasehi · $todayHijri ›",
                                     fontSize = 9.5.sp,
                                     lineHeight = 13.sp,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -954,6 +1003,15 @@ fun HomeScreen(
                                 }
                             }
 
+                            // Tulisan Menu dibawah kotak hitungan mundur sholat
+                            Text(
+                                text = "Menu",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.padding(start = 2.dp, top = 2.dp, bottom = 0.dp)
+                            )
+
                             // 3. Grid 8 Menu Utama (4 Kolom x 2 Baris)
                             MainMenuGrid(
                                 onMenuItemClick = { menuItem ->
@@ -967,8 +1025,10 @@ fun HomeScreen(
                                         MainMenuItem.QURAN -> {
                                             currentNavTab = BottomNavTab.QURAN
                                         }
+                                        MainMenuItem.HADITS -> activeSubScreen = ActiveSubScreen.HADITS
                                         MainMenuItem.DZIKIR -> activeSubScreen = ActiveSubScreen.DZIKIR
                                         MainMenuItem.WAKTU_SHOLAT -> activeSubScreen = ActiveSubScreen.WAKTU_SHOLAT
+                                        MainMenuItem.KALENDER -> activeSubScreen = ActiveSubScreen.KALENDER
                                         MainMenuItem.QIBLAT -> activeSubScreen = ActiveSubScreen.QIBLAT
                                         MainMenuItem.TOPIK_DOA -> activeSubScreen = ActiveSubScreen.TOPIK_DOA
                                         MainMenuItem.FAVORIT -> activeSubScreen = ActiveSubScreen.FAVORIT
@@ -977,188 +1037,7 @@ fun HomeScreen(
                                 }
                             )
 
-                            // 4. Baris 3 Kartu Tracker & Statistik - Menyesuaikan 3 Warna Tema
-                            val todayStat = remember(historyRefreshKey, quranWeeklyStats) {
-                                quranWeeklyStats.days.find { it.isToday }
-                            }
-                            val todayPagesRead = todayStat?.pagesRead ?: 0
-                            val todayStreak = quranWeeklyStats.currentStreak
-                            val todayXp = remember(todayPagesRead, isPrayerChecked, historyRefreshKey) {
-                                (todayPagesRead * 10) + (if (isPrayerChecked) 20 else 0) + (if (homeDoaHistory != null) 5 else 0)
-                            }
-
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(10.dp)
-                            ) {
-                                // Kartu 1: Hari Beruntun (Streak)
-                                Card(
-                                    modifier = Modifier.weight(1f),
-                                    shape = RoundedCornerShape(16.dp),
-                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.25f))
-                                ) {
-                                    Column(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(12.dp)
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.LocalFireDepartment,
-                                            contentDescription = null,
-                                            tint = Color(0xFFFF6D00),
-                                            modifier = Modifier.size(22.dp)
-                                        )
-                                        Spacer(modifier = Modifier.height(4.dp))
-                                        Text(
-                                            text = "$todayStreak",
-                                            fontSize = 20.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = MaterialTheme.colorScheme.onSurface
-                                        )
-                                        Text(
-                                            text = "hari beruntun",
-                                            fontSize = 11.sp,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
-                                }
-
-                                // Kartu 2: XP Hari Ini (Theme Adaptive)
-                                Card(
-                                    modifier = Modifier.weight(1f),
-                                    shape = RoundedCornerShape(16.dp),
-                                    colors = CardDefaults.cardColors(
-                                        containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
-                                    ),
-                                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.25f))
-                                ) {
-                                    Column(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(12.dp)
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.Bolt,
-                                            contentDescription = null,
-                                            tint = MaterialTheme.colorScheme.primary,
-                                            modifier = Modifier.size(22.dp)
-                                        )
-                                        Spacer(modifier = Modifier.height(4.dp))
-                                        Text(
-                                            text = "+$todayXp",
-                                            fontSize = 20.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = MaterialTheme.colorScheme.primary
-                                        )
-                                        Text(
-                                            text = "XP hari ini",
-                                            fontSize = 11.sp,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
-                                }
-
-                                // Kartu 3: Ngaji Hari Ini (Theme Adaptive)
-                                Card(
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .clip(RoundedCornerShape(16.dp))
-                                        .clickable { currentNavTab = BottomNavTab.QURAN },
-                                    shape = RoundedCornerShape(16.dp),
-                                    colors = CardDefaults.cardColors(
-                                        containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
-                                    ),
-                                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.25f))
-                                ) {
-                                    Column(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(12.dp)
-                                    ) {
-                                        Icon(
-                                            painter = painterResource(id = R.drawable.ic_menu_quran),
-                                            contentDescription = null,
-                                            tint = MaterialTheme.colorScheme.primary,
-                                            modifier = Modifier.size(22.dp)
-                                        )
-                                        Spacer(modifier = Modifier.height(4.dp))
-                                        Text(
-                                            text = "$todayPagesRead/5 hlm",
-                                            fontSize = 17.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = MaterialTheme.colorScheme.primary
-                                        )
-                                        Text(
-                                            text = "ngaji hari ini",
-                                            fontSize = 11.sp,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
-                                }
-                            }
-
-                            // 5. Kartu Kutipan Hari Ini (Hadis) - Theme Adaptive
-                            Card(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(20.dp)),
-                                shape = RoundedCornerShape(20.dp),
-                                colors = CardDefaults.cardColors(
-                                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.65f)
-                                ),
-                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.25f))
-                            ) {
-                                Column(modifier = Modifier.padding(14.dp)) {
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Text(
-                                            text = "KUTIPAN HARI INI",
-                                            fontSize = 11.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = MaterialTheme.colorScheme.primary,
-                                            letterSpacing = 0.8.sp
-                                        )
-                                        Surface(
-                                            shape = RoundedCornerShape(12.dp),
-                                            color = MaterialTheme.colorScheme.surface,
-                                            border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
-                                        ) {
-                                            Text(
-                                                text = "HADIS",
-                                                fontSize = 9.5.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                color = MaterialTheme.colorScheme.primary,
-                                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
-                                            )
-                                        }
-                                    }
-
-                                    Spacer(modifier = Modifier.height(7.dp))
-
-                                    Text(
-                                        text = "“Sesungguhnya setiap amalan tergantung pada niatnya.”",
-                                        fontSize = 13.5.sp,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = MaterialTheme.colorScheme.onSurface,
-                                        lineHeight = 18.sp
-                                    )
-
-                                    Spacer(modifier = Modifier.height(3.dp))
-
-                                    Text(
-                                        text = "HR. Al-Bukhari no. 1 & Muslim no. 1907",
-                                        fontSize = 11.sp,
-                                        lineHeight = 14.sp,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                            }
-
-                            // 6. Quick Access: Tilawah Terakhir Al-Qur'an & Doa (Riwayat Nyata)
+                            // Quick Access: Tilawah Terakhir Al-Qur'an & Doa (Riwayat Nyata) - Tepat di bawah Menu
                             val quranHist = homeQuranHistory
                             val doaHist = homeDoaHistory
                             if (quranHist != null || doaHist != null) {
@@ -1258,6 +1137,248 @@ fun HomeScreen(
                                                         Text("Buka Doa ›", fontSize = 10.5.sp, color = MaterialTheme.colorScheme.primary)
                                                     }
                                                 }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            // 4. Baris 2 Kartu Tracker & Statistik (Streak Ungu & XP Kuning, Compact)
+                            val todayStat = remember(historyRefreshKey, quranWeeklyStats) {
+                                quranWeeklyStats.days.find { it.isToday }
+                            }
+                            val todayPagesRead = todayStat?.pagesRead ?: 0
+                            val todayStreak = quranWeeklyStats.currentStreak
+                            val todayXp = remember(todayPagesRead, isPrayerChecked, historyRefreshKey) {
+                                (todayPagesRead * 10) + (if (isPrayerChecked) 20 else 0) + (if (homeDoaHistory != null) 5 else 0)
+                            }
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                // Kartu 1: Hari Berurutan (Ungu)
+                                val purpleBg = if (isDark) Color(0xFF311B92).copy(alpha = 0.4f) else Color(0xFFF3E5F5)
+                                val purpleBorder = if (isDark) Color(0xFF7E57C2).copy(alpha = 0.5f) else Color(0xFFCE93D8)
+                                val purpleContent = if (isDark) Color(0xFFBA68C8) else Color(0xFF8E24AA)
+
+                                Card(
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(14.dp),
+                                    colors = CardDefaults.cardColors(containerColor = purpleBg),
+                                    border = BorderStroke(1.dp, purpleBorder)
+                                ) {
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 10.dp, vertical = 8.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.LocalFireDepartment,
+                                            contentDescription = null,
+                                            tint = purpleContent,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                        Spacer(modifier = Modifier.height(2.dp))
+                                        Text(
+                                            text = "$todayStreak",
+                                            fontSize = 17.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = purpleContent
+                                        )
+                                        Text(
+                                            text = "hari berurutan",
+                                            fontSize = 10.5.sp,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+
+                                // Kartu 2: XP Hari Ini (Kuning)
+                                val yellowBg = if (isDark) Color(0xFF423800).copy(alpha = 0.45f) else Color(0xFFFFF9C4).copy(alpha = 0.75f)
+                                val yellowBorder = if (isDark) Color(0xFFFFD54F).copy(alpha = 0.5f) else Color(0xFFFFE082)
+                                val yellowContent = if (isDark) Color(0xFFFFD54F) else Color(0xFFF57F17)
+
+                                Card(
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(14.dp),
+                                    colors = CardDefaults.cardColors(containerColor = yellowBg),
+                                    border = BorderStroke(1.dp, yellowBorder)
+                                ) {
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 10.dp, vertical = 8.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Bolt,
+                                            contentDescription = null,
+                                            tint = yellowContent,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                        Spacer(modifier = Modifier.height(2.dp))
+                                        Text(
+                                            text = "+$todayXp",
+                                            fontSize = 17.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = yellowContent
+                                        )
+                                        Text(
+                                            text = "XP hari ini",
+                                            fontSize = 10.5.sp,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+                            }
+
+                            // 5. Kartu Kutipan Hari Ini - Auto-slide Carousel (Theme Adaptive & Clickable)
+                            if (homeQuotes.isNotEmpty()) {
+                                Column(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    HorizontalPager(
+                                        state = quotePagerState,
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) { page ->
+                                        val quote = homeQuotes[page]
+                                        val isSaved = remember(quote.id, quoteRefreshKey) { quoteRepo.isQuoteSaved(quote.id) }
+
+                                        Card(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .clip(RoundedCornerShape(20.dp))
+                                                .clickable { activeSubScreen = ActiveSubScreen.SAVED_QUOTES },
+                                            shape = RoundedCornerShape(20.dp),
+                                            colors = CardDefaults.cardColors(
+                                                containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.65f)
+                                            ),
+                                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.25f))
+                                        ) {
+                                            Column(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(14.dp)
+                                            ) {
+                                                // Header: KUTIPAN HARI INI + Badge Kategori + Aksi (Bookmark & Bagikan)
+                                                Row(
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    Row(
+                                                        verticalAlignment = Alignment.CenterVertically,
+                                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                                    ) {
+                                                        Text(
+                                                            text = "KUTIPAN HARI INI",
+                                                            fontSize = 11.sp,
+                                                            fontWeight = FontWeight.Bold,
+                                                            color = MaterialTheme.colorScheme.primary,
+                                                            letterSpacing = 0.8.sp
+                                                        )
+                                                        Surface(
+                                                            shape = RoundedCornerShape(12.dp),
+                                                            color = MaterialTheme.colorScheme.surface,
+                                                            border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+                                                        ) {
+                                                            Text(
+                                                                text = quote.category.uppercase(),
+                                                                fontSize = 9.sp,
+                                                                fontWeight = FontWeight.Bold,
+                                                                color = MaterialTheme.colorScheme.primary,
+                                                                modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp)
+                                                            )
+                                                        }
+                                                    }
+
+                                                    // Tombol Bookmark & Share
+                                                    Row(
+                                                        verticalAlignment = Alignment.CenterVertically,
+                                                        horizontalArrangement = Arrangement.spacedBy(2.dp)
+                                                    ) {
+                                                        IconButton(
+                                                            onClick = {
+                                                                val saved = quoteRepo.toggleSaveQuote(quote)
+                                                                quoteRefreshKey++
+                                                                coroutineScope.launch {
+                                                                    snackbarHostState.showSnackbar(
+                                                                        if (saved) "Kutipan disimpan ke tersimpan" else "Kutipan dihapus dari tersimpan"
+                                                                    )
+                                                                }
+                                                            },
+                                                            modifier = Modifier.size(32.dp)
+                                                        ) {
+                                                            Icon(
+                                                                imageVector = if (isSaved) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
+                                                                contentDescription = "Simpan",
+                                                                tint = if (isSaved) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                                                modifier = Modifier.size(19.dp)
+                                                            )
+                                                        }
+                                                        IconButton(
+                                                            onClick = {
+                                                                quoteToExport = quote
+                                                            },
+                                                            modifier = Modifier.size(32.dp)
+                                                        ) {
+                                                            Icon(
+                                                                imageVector = Icons.Default.Share,
+                                                                contentDescription = "Bagikan",
+                                                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                                modifier = Modifier.size(18.dp)
+                                                            )
+                                                        }
+                                                    }
+                                                }
+
+                                                Spacer(modifier = Modifier.height(6.dp))
+
+                                                Text(
+                                                    text = "“${quote.text}”",
+                                                    fontSize = 13.5.sp,
+                                                    fontWeight = FontWeight.SemiBold,
+                                                    color = MaterialTheme.colorScheme.onSurface,
+                                                    lineHeight = 18.sp,
+                                                    maxLines = 3,
+                                                    overflow = TextOverflow.Ellipsis
+                                                )
+
+                                                Spacer(modifier = Modifier.height(4.dp))
+
+                                                Text(
+                                                    text = quote.source,
+                                                    fontSize = 11.sp,
+                                                    lineHeight = 14.sp,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                            }
+                                        }
+                                    }
+
+                                    // Dot Page Indicators jika kutipan > 1
+                                    if (homeQuotes.size > 1) {
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(top = 2.dp),
+                                            horizontalArrangement = Arrangement.Center,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            repeat(homeQuotes.size) { index ->
+                                                val isSelected = quotePagerState.currentPage == index
+                                                Box(
+                                                    modifier = Modifier
+                                                        .padding(horizontal = 2.5.dp)
+                                                        .height(4.dp)
+                                                        .width(if (isSelected) 16.dp else 4.dp)
+                                                        .clip(CircleShape)
+                                                        .background(
+                                                            if (isSelected) MaterialTheme.colorScheme.primary
+                                                            else MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+                                                        )
+                                                )
                                             }
                                         }
                                     }
@@ -1502,6 +1623,15 @@ fun HomeScreen(
                 },
                 shape = RoundedCornerShape(20.dp),
                 containerColor = MaterialTheme.colorScheme.surface
+            )
+        }
+
+        // Dialog Export & Bagikan Kutipan
+        if (quoteToExport != null) {
+            QuoteExportDialog(
+                quote = quoteToExport!!,
+                repo = quoteRepo,
+                onDismiss = { quoteToExport = null }
             )
         }
     }

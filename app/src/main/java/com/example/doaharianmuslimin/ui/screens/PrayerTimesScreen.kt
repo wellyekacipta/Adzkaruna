@@ -2,16 +2,21 @@ package com.example.doaharianmuslimin.ui.screens
 
 import android.Manifest
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.media.AudioAttributes
 import android.media.MediaPlayer
 import android.media.RingtoneManager
+import android.net.Uri
+import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -26,10 +31,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -38,15 +43,18 @@ import com.example.doaharianmuslimin.data.AdhanVoiceOption
 import com.example.doaharianmuslimin.data.CityOption
 import com.example.doaharianmuslimin.data.PreferencesManager
 import com.example.doaharianmuslimin.data.PrayerTimesRepository
+import com.example.doaharianmuslimin.data.TrackerRepository
+import com.example.doaharianmuslimin.data.model.PrayerCheckStatus
 import com.example.doaharianmuslimin.data.model.PrayerSchedule
 import com.example.doaharianmuslimin.data.model.PrayerTimeItem
 import com.example.doaharianmuslimin.service.AdhanReminderHelper
 import com.example.doaharianmuslimin.ui.theme.AccentGold
-import com.example.doaharianmuslimin.ui.theme.PrimaryTosca
-import com.example.doaharianmuslimin.ui.theme.PrimaryToscaLight
-import com.example.doaharianmuslimin.ui.theme.UthmanicFontFamily
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -58,6 +66,8 @@ fun PrayerTimesScreen(
     val coroutineScope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
     val prefs = remember { PreferencesManager(context) }
+    val trackerRepo = remember { TrackerRepository(context) }
+    val isDark = isSystemInDarkTheme()
 
     var selectedCity by remember {
         mutableStateOf(CityOption(prefs.getSavedCityId(), prefs.getSavedCityName()))
@@ -68,14 +78,40 @@ fun PrayerTimesScreen(
 
     // Dialog state
     var showCityDialog by remember { mutableStateOf(false) }
+    var showAdhanVoiceDialog by remember { mutableStateOf(false) }
     var citySearchQuery by remember { mutableStateOf("") }
     var searchResults by remember { mutableStateOf<List<CityOption>>(emptyList()) }
+
+    // Selected prayer for marking status (Modal Sheet)
+    var markingPrayerName by remember { mutableStateOf<String?>(null) }
+    var refreshKey by remember { mutableIntStateOf(0) }
+
+    // Date Navigation State (0 = Hari ini, -1 = Kemarin, 1 = Besok)
+    var dayOffset by remember { mutableIntStateOf(0) }
+    val targetCalendar = remember(dayOffset) {
+        Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, dayOffset) }
+    }
+    val targetDateKey = remember(targetCalendar) {
+        SimpleDateFormat("yyyy-MM-dd", Locale.US).format(targetCalendar.time)
+    }
+    val targetDateDisplay = remember(targetCalendar) {
+        val sdf = SimpleDateFormat("EEEE, d MMMM yyyy", Locale("id", "ID"))
+        sdf.format(targetCalendar.time)
+    }
+    val targetRelativeText = remember(dayOffset) {
+        when (dayOffset) {
+            0 -> "Hari ini"
+            -1 -> "Kemarin"
+            1 -> "Besok"
+            else -> if (dayOffset < 0) "${-dayOffset} hari lalu" else "${dayOffset} hari lagi"
+        }
+    }
 
     // Live Countdown state
     var countdownText by remember { mutableStateOf("00:00:00") }
     var nextPrayerName by remember { mutableStateOf("Subuh") }
 
-    // Adhan Reminders & Voice Settings (Tersimpan permanen di PreferencesManager)
+    // Adhan Reminders & Voice Settings
     var isAdhanEnabled by remember { mutableStateOf(prefs.isAdhanEnabled()) }
     var selectedAdhanVoice by remember {
         mutableStateOf(
@@ -99,53 +135,55 @@ fun PrayerTimesScreen(
         isLoading = false
     }
 
-    // Live 1-second ticking countdown timer
+    // Live countdown update loop
     LaunchedEffect(schedule) {
         while (true) {
-            val (cd, name) = PrayerTimesRepository.getCountdownToNextPrayer(schedule)
-            countdownText = cd
-            nextPrayerName = name
-            delay(1000)
-        }
-    }
+            val sched = schedule
+            if (sched != null) {
+                val nowCal = Calendar.getInstance()
+                val nowMinutes = nowCal.get(Calendar.HOUR_OF_DAY) * 60 + nowCal.get(Calendar.MINUTE)
+                val nowSeconds = nowCal.get(Calendar.SECOND)
 
-    // Cleanup MediaPlayer on exit
-    DisposableEffect(Unit) {
-        onDispose {
-            try {
-                mediaPlayer?.stop()
-                mediaPlayer?.release()
-            } catch (_: Exception) {}
-            mediaPlayer = null
+                val prayersWithMinutes = sched.items.mapNotNull { item ->
+                    val parts = item.time.split(":")
+                    if (parts.size == 2) {
+                        val h = parts[0].trim().toIntOrNull() ?: 0
+                        val m = parts[1].trim().toIntOrNull() ?: 0
+                        Triple(item.name, h * 60 + m, item)
+                    } else null
+                }.sortedBy { it.second }
+
+                val next = prayersWithMinutes.find { it.second > nowMinutes }
+                    ?: prayersWithMinutes.firstOrNull()
+
+                if (next != null) {
+                    nextPrayerName = next.first
+
+                    var diffMinutes = next.second - nowMinutes
+                    if (diffMinutes <= 0) diffMinutes += 24 * 60
+                    var remainingSecs = 60 - nowSeconds
+                    if (remainingSecs == 60) remainingSecs = 0 else diffMinutes -= 1
+
+                    val hours = diffMinutes / 60
+                    val mins = diffMinutes % 60
+                    countdownText = String.format("%02d:%02d:%02d", hours, mins, remainingSecs)
+                }
+            }
+            delay(1000)
         }
     }
 
     fun playAudioPreview(option: AdhanVoiceOption) {
         if (currentlyPlayingVoice == option) {
-            // Hentikan jika sedang memutar opsi yang sama
-            try {
-                mediaPlayer?.stop()
-                mediaPlayer?.release()
-            } catch (_: Exception) {}
+            try { mediaPlayer?.stop(); mediaPlayer?.release() } catch (_: Exception) {}
             mediaPlayer = null
             currentlyPlayingVoice = null
             return
         }
 
-        // Hentikan pemutaran sebelumnya
-        try {
-            mediaPlayer?.stop()
-            mediaPlayer?.release()
-        } catch (_: Exception) {}
+        try { mediaPlayer?.stop(); mediaPlayer?.release() } catch (_: Exception) {}
         mediaPlayer = null
         currentlyPlayingVoice = option
-        selectedAdhanVoice = option
-        prefs.setSelectedAdhanVoice(option.name)
-        AdhanReminderHelper.scheduleAllPrayerAlarms(context)
-
-        coroutineScope.launch {
-            snackbarHostState.showSnackbar("Memutar: ${option.displayName}...")
-        }
 
         try {
             mediaPlayer = MediaPlayer().apply {
@@ -157,9 +195,7 @@ fun PrayerTimesScreen(
                 )
                 setDataSource(option.audioUrl)
                 setOnPreparedListener {
-                    try {
-                        start()
-                    } catch (_: Exception) {}
+                    try { start() } catch (_: Exception) {}
                 }
                 setOnCompletionListener {
                     currentlyPlayingVoice = null
@@ -170,10 +206,8 @@ fun PrayerTimesScreen(
                     currentlyPlayingVoice = null
                     try { release() } catch (_: Exception) {}
                     mediaPlayer = null
-                    // Fallback ke nada sistem jika jaringan lambat
                     try {
-                        val alertUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
-                            ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+                        val alertUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
                         val r = RingtoneManager.getRingtone(context, alertUri)
                         r?.play()
                     } catch (_: Exception) {}
@@ -183,11 +217,6 @@ fun PrayerTimesScreen(
             }
         } catch (_: Exception) {
             currentlyPlayingVoice = null
-            try {
-                val alertUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
-                val r = RingtoneManager.getRingtone(context, alertUri)
-                r?.play()
-            } catch (_: Exception) {}
         }
     }
 
@@ -207,13 +236,9 @@ fun PrayerTimesScreen(
                     AdhanReminderHelper.scheduleAllPrayerAlarms(context)
                     snackbarHostState.showSnackbar("Lokasi berhasil disinkronkan: ${detected.name}")
                 } else {
-                    snackbarHostState.showSnackbar("Gagal mendeteksi nama kota dari GPS.")
+                    snackbarHostState.showSnackbar("Gagal mendeteksi kota dari GPS.")
                 }
                 isLocatingGps = false
-            }
-        } else {
-            coroutineScope.launch {
-                snackbarHostState.showSnackbar("Izin lokasi diperlukan untuk deteksi otomatis.")
             }
         }
     }
@@ -230,9 +255,7 @@ fun PrayerTimesScreen(
                     selectedCity = detected
                     prefs.setSavedCity(detected.id, detected.name)
                     AdhanReminderHelper.scheduleAllPrayerAlarms(context)
-                    snackbarHostState.showSnackbar("Lokasi berhasil diperbarui: ${detected.name}")
-                } else {
-                    snackbarHostState.showSnackbar("GPS aktif tapi kota belum terdeteksi. Silakan pilih dari daftar.")
+                    snackbarHostState.showSnackbar("Lokasi diperbarui: ${detected.name}")
                 }
                 isLocatingGps = false
             }
@@ -243,20 +266,23 @@ fun PrayerTimesScreen(
         }
     }
 
-    // Auto detect GPS & schedule alarms on first mount
-    LaunchedEffect(Unit) {
-        AdhanReminderHelper.createNotificationChannel(context)
-        AdhanReminderHelper.scheduleAllPrayerAlarms(context)
-
-        val fineGranted = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
-        val coarseGranted = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
-        if (fineGranted || coarseGranted) {
-            val detected = PrayerTimesRepository.detectCityFromLocation(context)
-            if (detected != null && (detected.id != selectedCity.id || detected.name != selectedCity.name)) {
-                selectedCity = detected
-                prefs.setSavedCity(detected.id, detected.name)
-                AdhanReminderHelper.scheduleAllPrayerAlarms(context)
+    // Formatted City Name
+    val displayCityName = remember(selectedCity) {
+        selectedCity.name
+            .replace("KAB. ", "Kabupaten ")
+            .replace("KABUPATEN ", "Kabupaten ")
+            .replace("KOTA ", "Kota ")
+            .split(" ")
+            .joinToString(" ") { word ->
+                word.lowercase().replaceFirstChar { it.uppercase() }
             }
+    }
+
+    // Fardhu prayers list for tracking count
+    val fardhuNames = remember { listOf("Subuh", "Dzuhur", "Ashar", "Maghrib", "Isya") }
+    val recordedFardhuCount = remember(refreshKey, targetDateKey) {
+        fardhuNames.count {
+            trackerRepo.getPrayerStatus(targetDateKey, it) != PrayerCheckStatus.BELUM
         }
     }
 
@@ -268,16 +294,16 @@ fun PrayerTimesScreen(
                 title = {
                     Column(modifier = Modifier.fillMaxWidth()) {
                         Text(
-                            text = "Jadwal Sholat Kemenag RI",
-                            fontSize = 17.sp,
+                            text = "Jadwal Sholat",
+                            fontSize = 18.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.White,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
                         Text(
-                            text = "Hitung Mundur & Data Resmi 518 Kota",
-                            fontSize = 11.sp,
+                            text = "API Kemenag RI",
+                            fontSize = 9.5.sp,
                             color = Color.White.copy(alpha = 0.85f),
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
@@ -294,7 +320,6 @@ fun PrayerTimesScreen(
                     }
                 },
                 actions = {
-                    // Tombol GPS otomatis
                     IconButton(onClick = { requestGpsLocation() }) {
                         Icon(
                             imageVector = if (isLocatingGps) Icons.Default.Sync else Icons.Default.MyLocation,
@@ -302,8 +327,6 @@ fun PrayerTimesScreen(
                             tint = AccentGold
                         )
                     }
-
-                    // Tombol ganti kota
                     IconButton(onClick = {
                         citySearchQuery = ""
                         showCityDialog = true
@@ -325,154 +348,179 @@ fun PrayerTimesScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 14.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // Hero Card: Live countdown timer and next prayer info (Dinamis bukan Maghrib terus!)
+            // ==================== 1. HEADER: JUDUL "Salat" & PILL KOTA ====================
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f, fill = false)) {
+                        Text(
+                            text = "Salat",
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = "Jadwal & absen salat wajibmu.",
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+
+                    // Pill Lokasi Kota
+                    Surface(
+                        shape = RoundedCornerShape(20.dp),
+                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.65f),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.35f)),
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(20.dp))
+                            .clickable {
+                                citySearchQuery = ""
+                                showCityDialog = true
+                            }
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.LocationOn,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(15.dp)
+                            )
+                            Spacer(modifier = Modifier.width(5.dp))
+                            Text(
+                                text = displayCityName,
+                                fontSize = 11.5.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
+                }
+            }
+
+            // ==================== 2. DATE SELECTOR CARD (NAVIGASI TANGGAL) ====================
             item {
                 Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(20.dp),
-                    elevation = CardDefaults.cardElevation(3.dp)
+                    shape = RoundedCornerShape(18.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)),
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Box(
+                    Row(
                         modifier = Modifier
-                            .background(
-                                Brush.horizontalGradient(
-                                    colors = listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.tertiary)
-                                )
-                            )
-                            .padding(20.dp)
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Column {
-                            // City switcher and API badge
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Surface(
-                                    color = Color.White.copy(alpha = 0.25f),
-                                    shape = RoundedCornerShape(10.dp),
-                                    modifier = Modifier.clickable {
-                                        citySearchQuery = ""
-                                        showCityDialog = true
-                                    }
-                                ) {
-                                    Row(
-                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.LocationOn,
-                                            contentDescription = null,
-                                            tint = AccentGold,
-                                            modifier = Modifier.size(16.dp)
-                                        )
-                                        Spacer(modifier = Modifier.width(6.dp))
-                                        Text(
-                                            text = selectedCity.name,
-                                            color = Color.White,
-                                            fontSize = 12.5.sp,
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                        Spacer(modifier = Modifier.width(4.dp))
-                                        Icon(
-                                            imageVector = Icons.Default.ArrowDropDown,
-                                            contentDescription = null,
-                                            tint = Color.White,
-                                            modifier = Modifier.size(18.dp)
-                                        )
-                                    }
-                                }
-
-                                Surface(
-                                    color = Color.White.copy(alpha = 0.2f),
-                                    shape = RoundedCornerShape(8.dp)
-                                ) {
-                                    Row(
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.CheckCircle,
-                                            contentDescription = null,
-                                            tint = AccentGold,
-                                            modifier = Modifier.size(12.dp)
-                                        )
-                                        Spacer(modifier = Modifier.width(4.dp))
-                                        Text(
-                                            text = "API Kemenag",
-                                            color = Color.White,
-                                            fontSize = 10.sp,
-                                            fontWeight = FontWeight.SemiBold
-                                        )
-                                    }
-                                }
+                        Surface(
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.surface,
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(CircleShape)
+                                .clickable { dayOffset-- }
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(Icons.Default.ChevronLeft, contentDescription = "Hari Sebelumnya", modifier = Modifier.size(20.dp))
                             }
+                        }
 
-                            Spacer(modifier = Modifier.height(16.dp))
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier
+                                .weight(1f)
+                                .clickable { dayOffset = 0 }
+                        ) {
+                            Text(
+                                text = targetDateDisplay,
+                                fontSize = 14.5.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                textAlign = TextAlign.Center
+                            )
+                            Text(
+                                text = targetRelativeText,
+                                fontSize = 11.5.sp,
+                                color = if (dayOffset == 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontWeight = if (dayOffset == 0) FontWeight.Bold else FontWeight.Normal
+                            )
+                        }
 
-                            // Next Prayer & Live Countdown
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Column {
-                                    Text(
-                                        text = "Waktu Sholat Berikutnya:",
-                                        color = Color.White.copy(alpha = 0.85f),
-                                        fontSize = 12.sp
-                                    )
-                                    Text(
-                                        text = nextPrayerName,
-                                        color = Color.White,
-                                        fontSize = 28.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                    Text(
-                                        text = schedule?.date ?: "Memuat...",
-                                        color = Color.White.copy(alpha = 0.85f),
-                                        fontSize = 12.sp
-                                    )
-                                }
-
-                                // Live Countdown Ticker
-                                Column(horizontalAlignment = Alignment.End) {
-                                    Surface(
-                                        color = Color.Black.copy(alpha = 0.25f),
-                                        shape = RoundedCornerShape(10.dp)
-                                    ) {
-                                        Text(
-                                            text = "- $countdownText",
-                                            color = AccentGold,
-                                            fontSize = 20.sp,
-                                            fontWeight = FontWeight.ExtraBold,
-                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                                        )
-                                    }
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Text(
-                                        text = "Waktu: ${schedule?.items?.find { it.isNext }?.time ?: "--:--"}",
-                                        color = Color.White,
-                                        fontSize = 13.sp,
-                                        fontWeight = FontWeight.SemiBold
-                                    )
-                                }
+                        Surface(
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.surface,
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(CircleShape)
+                                .clickable { dayOffset++ }
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(Icons.Default.ChevronRight, contentDescription = "Hari Berikutnya", modifier = Modifier.size(20.dp))
                             }
                         }
                     }
                 }
             }
 
-            // ==================== DAFTAR WAKTU SHOLAT ====================
+            // ==================== 3. ABSEN SALAT TRACKER BAR ====================
+            item {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 4.dp, bottom = 2.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "ABSEN SALAT",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            letterSpacing = 0.8.sp
+                        )
+                        Text(
+                            text = "$recordedFardhuCount / 5 tercatat",
+                            fontSize = 11.5.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (recordedFardhuCount == 5) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    LinearProgressIndicator(
+                        progress = { (recordedFardhuCount / 5f).coerceIn(0f, 1f) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(5.dp)
+                            .clip(RoundedCornerShape(3.dp)),
+                        color = MaterialTheme.colorScheme.primary,
+                        trackColor = MaterialTheme.colorScheme.surfaceVariant
+                    )
+                }
+            }
+
+            // ==================== 4. LIST 7 WAKTU SHOLAT ====================
             if (isLoading) {
                 item {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 30.dp),
+                            .padding(vertical = 40.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
@@ -480,288 +528,348 @@ fun PrayerTimesScreen(
                 }
             } else {
                 schedule?.let { s ->
-                    items(s.items) { item ->
-                        val isReminderActive = prayerReminderToggles[item.name] ?: false
-                        val isMajorPrayer = listOf("Subuh", "Dzuhur", "Ashar", "Maghrib", "Isya").contains(item.name)
+                    val prayerItems = s.items
+                    items(prayerItems) { item ->
+                        val isFardhu = fardhuNames.contains(item.name)
+                        val isReminderActive = prayerReminderToggles[item.name] ?: true
+                        val status = remember(refreshKey, targetDateKey, item.name) {
+                            if (isFardhu) trackerRepo.getPrayerStatus(targetDateKey, item.name) else PrayerCheckStatus.BELUM
+                        }
+                        val isNext = (item.name == nextPrayerName) && (dayOffset == 0)
 
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(14.dp),
-                            colors = CardDefaults.cardColors(
-                                containerColor = if (item.isNext) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface
-                            ),
-                            border = BorderStroke(
-                                1.dp,
-                                if (item.isNext) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.35f)
-                            )
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Surface(
-                                        shape = CircleShape,
-                                        color = if (item.isNext) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primaryContainer,
-                                        modifier = Modifier.size(38.dp)
-                                    ) {
-                                        Box(contentAlignment = Alignment.Center) {
-                                            Icon(
-                                                imageVector = when (item.name) {
-                                                    "Subuh", "Imsak" -> Icons.Default.WbTwilight
-                                                    "Terbit", "Dhuha" -> Icons.Default.WbSunny
-                                                    "Dzuhur" -> Icons.Default.LightMode
-                                                    "Ashar" -> Icons.Default.WbCloudy
-                                                    "Maghrib" -> Icons.Default.NightsStay
-                                                    else -> Icons.Default.Bedtime
-                                                },
-                                                contentDescription = null,
-                                                tint = if (item.isNext) Color.White else PrimaryTosca,
-                                                modifier = Modifier.size(20.dp)
-                                            )
-                                        }
-                                    }
-
-                                    Spacer(modifier = Modifier.width(14.dp))
-
-                                    Column {
-                                        Row(verticalAlignment = Alignment.CenterVertically) {
-                                            Text(
-                                                text = item.name,
-                                                fontWeight = FontWeight.Bold,
-                                                fontSize = 15.sp,
-                                                color = if (item.isNext) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-                                            )
-                                            if (item.isNext) {
-                                                Spacer(modifier = Modifier.width(6.dp))
-                                                Surface(
-                                                    color = MaterialTheme.colorScheme.primary,
-                                                    shape = RoundedCornerShape(4.dp)
-                                                ) {
-                                                    Text(
-                                                        text = "Berikutnya",
-                                                        color = Color.White,
-                                                        fontSize = 9.sp,
-                                                        fontWeight = FontWeight.Bold,
-                                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                                    )
-                                                }
-                                            }
-                                        }
-                                        Text(
-                                            text = item.arabicName,
-                                            fontFamily = UthmanicFontFamily,
-                                            fontSize = 13.sp,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
+                        PrayerRowCard(
+                            item = item,
+                            isFardhu = isFardhu,
+                            isNext = isNext,
+                            countdownText = countdownText,
+                            status = status,
+                            isReminderActive = isReminderActive,
+                            isDark = isDark,
+                            onRowClick = {
+                                if (isFardhu) {
+                                    markingPrayerName = item.name
                                 }
-
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text(
-                                        text = item.time,
-                                        fontWeight = FontWeight.ExtraBold,
-                                        fontSize = 18.sp,
-                                        color = if (item.isNext) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                            },
+                            onReminderToggle = {
+                                val nextVal = !isReminderActive
+                                prayerReminderToggles = prayerReminderToggles.toMutableMap().apply {
+                                    put(item.name, nextVal)
+                                }
+                                prefs.setPrayerReminderToggle(item.name, nextVal)
+                                AdhanReminderHelper.scheduleAllPrayerAlarms(context)
+                                coroutineScope.launch {
+                                    snackbarHostState.showSnackbar(
+                                        if (nextVal) "Pengingat ${item.name} diaktifkan 🔔" else "Pengingat ${item.name} dinonaktifkan 🔕"
                                     )
-
-                                    if (isMajorPrayer) {
-                                        Spacer(modifier = Modifier.width(10.dp))
-                                        IconButton(
-                                            onClick = {
-                                                val nextVal = !isReminderActive
-                                                prayerReminderToggles = prayerReminderToggles.toMutableMap().apply {
-                                                    put(item.name, nextVal)
-                                                }
-                                                prefs.setPrayerReminderToggle(item.name, nextVal)
-                                                AdhanReminderHelper.scheduleAllPrayerAlarms(context)
-                                                coroutineScope.launch {
-                                                    snackbarHostState.showSnackbar(
-                                                        if (nextVal) "Pengingat adzan ${item.name} diaktifkan 🔔" else "Pengingat ${item.name} dinonaktifkan 🔕"
-                                                    )
-                                                }
-                                            },
-                                            modifier = Modifier.size(34.dp)
-                                        ) {
-                                            Icon(
-                                                imageVector = if (isReminderActive) Icons.Default.NotificationsActive else Icons.Default.NotificationsOff,
-                                                contentDescription = "Pengingat",
-                                                tint = if (isReminderActive) PrimaryTosca else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                                                modifier = Modifier.size(20.dp)
-                                            )
-                                        }
-                                    }
                                 }
                             }
-                        }
+                        )
                     }
                 }
             }
 
-            // ==================== PENGATURAN SUARA ADZAN ====================
+            // ==================== 5. HINT TEXT ====================
+            item {
+                Text(
+                    text = "Ketuk baris untuk catat status · ketuk ikon untuk atur notifikasi",
+                    fontSize = 11.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp)
+                )
+            }
+
+            // ==================== 6. BANNER PENGATURAN ADZAN & BATERAI ====================
             item {
                 Card(
-                    modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f))
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f)),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.25f)),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(16.dp))
+                        .clickable { showAdhanVoiceDialog = true }
                 ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 14.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Surface(
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(34.dp)
                         ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    imageVector = Icons.AutoMirrored.Filled.VolumeUp,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(22.dp)
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Column {
-                                    Text(
-                                        text = "Pengingat Suara Adzan",
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 14.sp
-                                    )
-                                    Text(
-                                        text = "Pilih muadzin & dengarkan contoh suara",
-                                        fontSize = 11.sp,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(Icons.Default.NotificationsActive, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
                             }
-
-                            Switch(
-                                checked = isAdhanEnabled,
-                                onCheckedChange = {
-                                    isAdhanEnabled = it
-                                    prefs.setAdhanEnabled(it)
-                                    AdhanReminderHelper.scheduleAllPrayerAlarms(context)
-                                }
-                            )
                         }
-
-                        if (isAdhanEnabled) {
-                            HorizontalDivider(
-                                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f),
-                                modifier = Modifier.padding(vertical = 10.dp)
-                            )
-
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "Pilihan Muadzin / Nada Pengingat:",
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(bottom = 6.dp)
+                                text = "Pengaturan Suara Adzan",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
                             )
+                            Text(
+                                text = "Suara: ${selectedAdhanVoice.displayName} — Ketuk untuk pilih ›",
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Icon(Icons.Default.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                    }
+                }
+            }
 
-                            val onSelectVoice = { opt: AdhanVoiceOption ->
-                                selectedAdhanVoice = opt
-                                prefs.setSelectedAdhanVoice(opt.name)
-                                AdhanReminderHelper.scheduleAllPrayerAlarms(context)
-                            }
-
-                            AdhanVoiceOption.entries.forEach { option ->
-                                val isSelected = option == selectedAdhanVoice
-                                Surface(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 4.dp)
-                                        .clip(RoundedCornerShape(10.dp))
-                                        .clickable { onSelectVoice(option) },
-                                    color = if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.1f) else Color.Transparent,
-                                    border = BorderStroke(
-                                        1.dp,
-                                        if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
-                                    ),
-                                    shape = RoundedCornerShape(10.dp)
-                                ) {
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(horizontal = 12.dp, vertical = 8.dp),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Row(
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            modifier = Modifier.weight(1f)
-                                        ) {
-                                            RadioButton(
-                                                selected = isSelected,
-                                                onClick = { onSelectVoice(option) }
-                                            )
-                                            Spacer(modifier = Modifier.width(6.dp))
-                                            Text(
-                                                text = option.displayName,
-                                                fontSize = 12.5.sp,
-                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-                                            )
-                                        }
-
-                                        FilledTonalButton(
-                                            onClick = { playAudioPreview(option) },
-                                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
-                                            shape = RoundedCornerShape(8.dp),
-                                            colors = ButtonDefaults.filledTonalButtonColors(
-                                                containerColor = if (currentlyPlayingVoice == option) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.primaryContainer,
-                                                contentColor = if (currentlyPlayingVoice == option) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
-                                            )
-                                        ) {
-                                            Icon(
-                                                imageVector = if (currentlyPlayingVoice == option) Icons.Default.Stop else Icons.Default.PlayArrow,
-                                                contentDescription = null,
-                                                modifier = Modifier.size(16.dp)
-                                            )
-                                            Spacer(modifier = Modifier.width(4.dp))
-                                            Text(
-                                                text = if (currentlyPlayingVoice == option) "Stop" else "Dengar",
-                                                fontSize = 11.5.sp,
-                                                fontWeight = FontWeight.Bold
-                                            )
-                                        }
-                                    }
+            item {
+                Card(
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(16.dp))
+                        .clickable {
+                            try {
+                                val intent = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
+                                context.startActivity(intent)
+                            } catch (_: Exception) {
+                                coroutineScope.launch {
+                                    snackbarHostState.showSnackbar("Buka Pengaturan Baterai di HP Anda untuk mengizinkan aplikasi berjalan di latar belakang.")
                                 }
                             }
                         }
-
-                        Spacer(modifier = Modifier.height(14.dp))
-
-                        // Tombol Tes Azan Langsung
-                        Button(
-                            onClick = { playAudioPreview(selectedAdhanVoice) },
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = if (currentlyPlayingVoice != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
-                            )
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 14.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Surface(
+                            shape = CircleShape,
+                            color = AccentGold.copy(alpha = 0.2f),
+                            modifier = Modifier.size(34.dp)
                         ) {
-                            Icon(
-                                imageVector = if (currentlyPlayingVoice != null) Icons.Default.Stop else Icons.AutoMirrored.Filled.VolumeUp,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(Icons.Default.Bolt, contentDescription = null, tint = AccentGold, modifier = Modifier.size(20.dp))
+                            }
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = if (currentlyPlayingVoice != null) "Hentikan Suara Azan" else "Tes Bunyikan Azan Sekarang",
-                                fontWeight = FontWeight.Bold
+                                text = "Lepas pembatasan baterai",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = "Agar adzan dan alarm sholat tepat waktu saat HP terkunci ›",
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
+                        Icon(Icons.Default.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
         }
     }
 
-    // ==================== DIALOG PILIH DARI 518 KOTA / KABUPATEN ====================
+    // ==================== 7. MODAL BOTTOM SHEET: TANDAI STATUS SALAT ====================
+    if (markingPrayerName != null) {
+        val prayerName = markingPrayerName!!
+        ModalBottomSheet(
+            onDismissRequest = { markingPrayerName = null },
+            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+            containerColor = MaterialTheme.colorScheme.surface
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp)
+                    .padding(bottom = 32.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Text(
+                    text = "Tandai $prayerName",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 6.dp)
+                )
+
+                // 1. Tepat Waktu (Hijau)
+                val greenBg = if (isDark) Color(0xFF1B5E20).copy(alpha = 0.35f) else Color(0xFFE8F5E9)
+                val greenContent = if (isDark) Color(0xFF81C784) else Color(0xFF2E7D32)
+                PrayerStatusOptionPill(
+                    icon = Icons.Default.Check,
+                    label = "Tepat waktu",
+                    containerColor = greenBg,
+                    contentColor = greenContent,
+                    onClick = {
+                        trackerRepo.setPrayerStatus(targetDateKey, prayerName, PrayerCheckStatus.TEPAT_WAKTU)
+                        refreshKey++
+                        markingPrayerName = null
+                    }
+                )
+
+                // 2. Berjamaah (Ungu)
+                val purpleBg = if (isDark) Color(0xFF311B92).copy(alpha = 0.35f) else Color(0xFFEDE7F6)
+                val purpleContent = if (isDark) Color(0xFFB39DDB) else Color(0xFF5E35B1)
+                PrayerStatusOptionPill(
+                    icon = Icons.Default.Groups,
+                    label = "Berjamaah",
+                    containerColor = purpleBg,
+                    contentColor = purpleContent,
+                    onClick = {
+                        trackerRepo.setPrayerStatus(targetDateKey, prayerName, PrayerCheckStatus.BERJAMAAH)
+                        refreshKey++
+                        markingPrayerName = null
+                    }
+                )
+
+                // 3. Terlambat (Kuning / Oranye)
+                val orangeBg = if (isDark) Color(0xFFE65100).copy(alpha = 0.3f) else Color(0xFFFFF3E0)
+                val orangeContent = if (isDark) Color(0xFFFFB74D) else Color(0xFFE65100)
+                PrayerStatusOptionPill(
+                    icon = Icons.Default.Schedule,
+                    label = "Terlambat",
+                    containerColor = orangeBg,
+                    contentColor = orangeContent,
+                    onClick = {
+                        trackerRepo.setPrayerStatus(targetDateKey, prayerName, PrayerCheckStatus.TERLAMBAT)
+                        refreshKey++
+                        markingPrayerName = null
+                    }
+                )
+
+                // 4. Terlewat (Netral / Abu-abu)
+                val neutralBg = if (isDark) Color(0xFF424242).copy(alpha = 0.35f) else Color(0xFFEFEBE9)
+                val neutralContent = if (isDark) Color(0xFFBDBDBD) else Color(0xFF616161)
+                PrayerStatusOptionPill(
+                    icon = Icons.Default.Remove,
+                    label = "Terlewat",
+                    containerColor = neutralBg,
+                    contentColor = neutralContent,
+                    onClick = {
+                        trackerRepo.setPrayerStatus(targetDateKey, prayerName, PrayerCheckStatus.TERLEWAT)
+                        refreshKey++
+                        markingPrayerName = null
+                    }
+                )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                // 5. Hapus Tanda
+                TextButton(
+                    onClick = {
+                        trackerRepo.setPrayerStatus(targetDateKey, prayerName, PrayerCheckStatus.BELUM)
+                        refreshKey++
+                        markingPrayerName = null
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(Icons.Default.Close, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "Hapus tanda",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 13.5.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            }
+        }
+    }
+
+    // ==================== 8. DIALOG SUARA ADZAN ====================
+    if (showAdhanVoiceDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                try { mediaPlayer?.stop(); mediaPlayer?.release() } catch (_: Exception) {}
+                mediaPlayer = null
+                currentlyPlayingVoice = null
+                showAdhanVoiceDialog = false
+            },
+            title = {
+                Text("Pilih Suara Adzan", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    AdhanVoiceOption.entries.forEach { option ->
+                        val isSelected = option == selectedAdhanVoice
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                            border = BorderStroke(1.dp, if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .clickable {
+                                    selectedAdhanVoice = option
+                                    prefs.setSelectedAdhanVoice(option.name)
+                                    AdhanReminderHelper.scheduleAllPrayerAlarms(context)
+                                }
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                                    RadioButton(
+                                        selected = isSelected,
+                                        onClick = {
+                                            selectedAdhanVoice = option
+                                            prefs.setSelectedAdhanVoice(option.name)
+                                            AdhanReminderHelper.scheduleAllPrayerAlarms(context)
+                                        }
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = option.displayName,
+                                        fontSize = 13.sp,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                    )
+                                }
+                                IconButton(onClick = { playAudioPreview(option) }) {
+                                    Icon(
+                                        imageVector = if (currentlyPlayingVoice == option) Icons.Default.Stop else Icons.Default.PlayArrow,
+                                        contentDescription = "Dengar",
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                Button(onClick = {
+                    try { mediaPlayer?.stop(); mediaPlayer?.release() } catch (_: Exception) {}
+                    mediaPlayer = null
+                    currentlyPlayingVoice = null
+                    showAdhanVoiceDialog = false
+                }) {
+                    Text("Selesai")
+                }
+            }
+        )
+    }
+
+    // ==================== 9. DIALOG PILIH DARI 518 KOTA ====================
     if (showCityDialog) {
-        // Trigger live search when query changes
         LaunchedEffect(citySearchQuery) {
             searchResults = PrayerTimesRepository.searchCities(citySearchQuery)
         }
@@ -781,15 +889,12 @@ fun PrayerTimesScreen(
                         .fillMaxWidth()
                         .height(380.dp)
                 ) {
-                    // Search Bar
                     OutlinedTextField(
                         value = citySearchQuery,
                         onValueChange = { citySearchQuery = it },
                         modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text("Ketik nama kota / kabupaten...", fontSize = 12.sp) },
-                        leadingIcon = {
-                            Icon(Icons.Default.Search, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                        },
+                        placeholder = { Text("Ketik nama kota/kabupaten...", fontSize = 13.sp) },
+                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
                         trailingIcon = {
                             if (citySearchQuery.isNotEmpty()) {
                                 IconButton(onClick = { citySearchQuery = "" }) {
@@ -797,44 +902,14 @@ fun PrayerTimesScreen(
                                 }
                             }
                         },
-                        shape = RoundedCornerShape(12.dp),
-                        singleLine = true
+                        singleLine = true,
+                        shape = RoundedCornerShape(12.dp)
                     )
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
 
-                    // Auto GPS Location Button inside Dialog
-                    Surface(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(10.dp))
-                            .clickable {
-                                showCityDialog = false
-                                requestGpsLocation()
-                            },
-                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(10.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(Icons.Default.MyLocation, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "Gunakan Lokasi Terkini Saya (GPS)",
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    // List of cities
                     LazyColumn(
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.fillMaxSize(),
                         verticalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         items(searchResults) { city ->
@@ -846,15 +921,15 @@ fun PrayerTimesScreen(
                                     .clickable {
                                         selectedCity = city
                                         prefs.setSavedCity(city.id, city.name)
-                                        AdhanReminderHelper.scheduleAllPrayerAlarms(context)
                                         showCityDialog = false
+                                        AdhanReminderHelper.scheduleAllPrayerAlarms(context)
                                     },
-                                color = if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f) else Color.Transparent
+                                color = if (isSelected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent
                             ) {
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(horizontal = 10.dp, vertical = 10.dp),
+                                        .padding(horizontal = 12.dp, vertical = 10.dp),
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
@@ -865,7 +940,12 @@ fun PrayerTimesScreen(
                                         color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                                     )
                                     if (isSelected) {
-                                        Icon(Icons.Default.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
+                                        Icon(
+                                            imageVector = Icons.Default.Check,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(16.dp)
+                                        )
                                     }
                                 }
                             }
@@ -873,11 +953,212 @@ fun PrayerTimesScreen(
                     }
                 }
             },
-            confirmButton = {
+            confirmButton = {},
+            dismissButton = {
                 TextButton(onClick = { showCityDialog = false }) {
                     Text("Tutup")
                 }
             }
         )
+    }
+}
+
+// ==================== KOMPONEN KARTU WAKTU SALAT (SESUAI GAMBAR 2) ====================
+@Composable
+private fun PrayerRowCard(
+    item: PrayerTimeItem,
+    isFardhu: Boolean,
+    isNext: Boolean,
+    countdownText: String,
+    status: PrayerCheckStatus,
+    isReminderActive: Boolean,
+    isDark: Boolean,
+    onRowClick: () -> Unit,
+    onReminderToggle: () -> Unit
+) {
+    val isChecked = status != PrayerCheckStatus.BELUM
+
+    // Warna status
+    val statusColor = when (status) {
+        PrayerCheckStatus.TEPAT_WAKTU -> Color(0xFF2E7D32)
+        PrayerCheckStatus.BERJAMAAH -> Color(0xFF5E35B1)
+        PrayerCheckStatus.TERLAMBAT -> Color(0xFFE65100)
+        PrayerCheckStatus.TERLEWAT -> Color(0xFF757575)
+        PrayerCheckStatus.BELUM -> MaterialTheme.colorScheme.primary
+    }
+
+    // Background card: jika next prayer atau aktif, berikan container highlight lembut
+    val cardBg = when {
+        isNext -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = if (isDark) 0.45f else 0.55f)
+        isChecked -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = if (isDark) 0.35f else 0.45f)
+        else -> MaterialTheme.colorScheme.surface
+    }
+
+    val cardBorder = when {
+        isNext -> BorderStroke(1.2.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))
+        isChecked -> BorderStroke(1.dp, statusColor.copy(alpha = 0.35f))
+        else -> BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.18f))
+    }
+
+    Card(
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = cardBg),
+        border = cardBorder,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(18.dp))
+            .clickable(enabled = isFardhu, onClick = onRowClick)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.weight(1f)
+            ) {
+                // Checkbox status (Khusus 5 Shalat Fardhu)
+                if (isFardhu) {
+                    Box(
+                        modifier = Modifier
+                            .size(26.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .then(
+                                if (isChecked) {
+                                    Modifier.background(statusColor.copy(alpha = 0.2f))
+                                        .border(1.5.dp, statusColor, RoundedCornerShape(8.dp))
+                                } else {
+                                    Modifier.border(1.5.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f), RoundedCornerShape(8.dp))
+                                }
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (isChecked) {
+                            Icon(
+                                imageVector = when (status) {
+                                    PrayerCheckStatus.TEPAT_WAKTU -> Icons.Default.Check
+                                    PrayerCheckStatus.BERJAMAAH -> Icons.Default.Groups
+                                    PrayerCheckStatus.TERLAMBAT -> Icons.Default.Schedule
+                                    PrayerCheckStatus.TERLEWAT -> Icons.Default.Remove
+                                    PrayerCheckStatus.BELUM -> Icons.Default.Check
+                                },
+                                contentDescription = null,
+                                tint = statusColor,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.width(14.dp))
+                } else {
+                    Spacer(modifier = Modifier.width(12.dp))
+                }
+
+                // Nama Sholat & Subtitle
+                Column {
+                    Text(
+                        text = item.name,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+
+                    if (isFardhu) {
+                        if (isChecked) {
+                            Text(
+                                text = "✓ ${status.label} · ketuk untuk ubah",
+                                fontSize = 11.sp,
+                                color = statusColor,
+                                fontWeight = FontWeight.Medium
+                            )
+                        } else if (isNext) {
+                            Text(
+                                text = "$countdownText lagi",
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Waktu Sholat & Tombol Lonceng Pengingat
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = item.time,
+                    fontSize = 16.5.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                // Tombol Lonceng
+                Surface(
+                    shape = CircleShape,
+                    color = if (isReminderActive) {
+                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f)
+                    } else {
+                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                    },
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .clickable(onClick = onReminderToggle)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = if (isReminderActive) Icons.Default.Notifications else Icons.Default.NotificationsOff,
+                            contentDescription = "Pengingat ${item.name}",
+                            tint = if (isReminderActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+// ==================== PILIHAN OPSI STATUS (SESUAI GAMBAR 1) ====================
+@Composable
+private fun PrayerStatusOptionPill(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    containerColor: Color,
+    contentColor: Color,
+    onClick: () -> Unit
+) {
+    Surface(
+        shape = RoundedCornerShape(16.dp),
+        color = containerColor,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .clickable(onClick = onClick)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = contentColor,
+                modifier = Modifier.size(20.dp)
+            )
+            Spacer(modifier = Modifier.width(14.dp))
+            Text(
+                text = label,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = contentColor
+            )
+        }
     }
 }

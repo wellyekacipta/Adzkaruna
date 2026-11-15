@@ -23,19 +23,21 @@ enum class MainMenuItem(
     val title: String,
     @param:DrawableRes val iconRes: Int
 ) {
-    DOA_HARIAN("Doa", R.drawable.ic_menu_doa),                      // Icon 15: Dua Tangan Berdoa
-    QURAN("Al-Qur'an", R.drawable.ic_menu_quran),                   // Icon 4: Mushaf Al-Qur'an
-    DZIKIR("Dzikir", R.drawable.ic_menu_dzikir),                   // Icon 18: Matahari & Awan
-    WAKTU_SHOLAT("Sholat", R.drawable.ic_menu_jadwal_salat),       // Icon 29: Pin Lokasi Bulan Bintang
-    QIBLAT("Kiblat", R.drawable.ic_menu_kiblat),                   // Icon 30: Ka'bah
-    TOPIK_DOA("Topik", R.drawable.ic_menu_topik_doa),              // Icon 3: Rub el Hizb
-    FAVORIT("Favorit", R.drawable.ic_menu_favorit_love),            // Icon Love
+    DOA_HARIAN("Doa", R.drawable.ic_menu_doa),
+    QURAN("Al-Qur'an", R.drawable.ic_menu_quran),
+    HADITS("Hadits", R.drawable.ic_menu_hadits),
+    DZIKIR("Dzikir", R.drawable.ic_menu_dzikir),
+    WAKTU_SHOLAT("Sholat", R.drawable.ic_menu_jadwal_salat),
+    KALENDER("Kalender", R.drawable.ic_menu_kalender),
+    QIBLAT("Kiblat", R.drawable.ic_menu_kiblat),
+    TOPIK_DOA("Topik", R.drawable.ic_menu_topik_doa),
+    FAVORIT("Favorit", R.drawable.ic_menu_favorit_love),
     BELAJAR_ISLAM("Sirah", R.drawable.ic_menu_belajar_islam)
 }
 
-// 4 Kolom x 2 Baris = 8 Menu Utama
-private val ChunkedMenuItems4Col = MainMenuItem.entries.chunked(4)
-private val MenuBoxShape = RoundedCornerShape(18.dp)
+// 5 Kolom x 2 Baris = 10 Menu Utama
+private val ChunkedMenuItems5Col = MainMenuItem.entries.chunked(5)
+private val MenuBoxShape = RoundedCornerShape(13.dp)
 
 @Composable
 fun MainMenuGrid(
@@ -44,9 +46,9 @@ fun MainMenuGrid(
 ) {
     Column(
         modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
+        verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        ChunkedMenuItems4Col.forEach { rowItems ->
+        ChunkedMenuItems5Col.forEach { rowItems ->
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
@@ -55,32 +57,32 @@ fun MainMenuGrid(
                     Column(
                         modifier = Modifier
                             .weight(1f)
-                            .clip(RoundedCornerShape(14.dp))
+                            .clip(RoundedCornerShape(12.dp))
                             .clickable { onMenuItemClick(item) }
-                            .padding(vertical = 4.dp, horizontal = 2.dp),
+                            .padding(vertical = 2.dp, horizontal = 1.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Surface(
                             shape = MenuBoxShape,
                             color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f),
                             border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.25f)),
-                            modifier = Modifier.size(56.dp)
+                            modifier = Modifier.size(44.dp)
                         ) {
                             Box(contentAlignment = Alignment.Center) {
                                 Icon(
                                     painter = painterResource(id = item.iconRes),
                                     contentDescription = item.title,
                                     tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(28.dp)
+                                    modifier = Modifier.size(23.dp)
                                 )
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(6.dp))
+                        Spacer(modifier = Modifier.height(4.dp))
 
                         Text(
                             text = item.title,
-                            fontSize = 11.5.sp,
+                            fontSize = 10.5.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.onSurface,
                             textAlign = TextAlign.Center,

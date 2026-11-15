@@ -129,7 +129,7 @@ fun FavoritesScreen(
                             Column {
                                 Text(
                                     text = "Favorit Doa & Al-Qur'an",
-                                    fontSize = 16.sp,
+                                    fontSize = 18.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = Color.White,
                                     maxLines = 1,
@@ -137,7 +137,7 @@ fun FavoritesScreen(
                                 )
                                 Text(
                                     text = if (selectedTab == 0) "${doaFavorites.size} Doa Tersimpan" else "${quranFavorites.size} Halaman Al-Qur'an Ditandai",
-                                    fontSize = 11.sp,
+                                    fontSize = 9.5.sp,
                                     color = Color.White.copy(alpha = 0.85f),
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
